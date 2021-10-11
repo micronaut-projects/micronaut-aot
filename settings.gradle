@@ -6,9 +6,9 @@ pluginManagement {
 }
 
 plugins {
-    id 'io.micronaut.build.shared.settings' version '4.2.0'
+    id 'io.micronaut.build.shared.settings' version '4.2.1'
 }
 
-rootProject.name = 'xxx-parent'
+rootProject.name = 'aot-parent'
 
-include 'xxx'
+include 'aot-core'
