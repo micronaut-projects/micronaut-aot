@@ -2,19 +2,19 @@
 
 ## Finding Issues to Work on
 
-If you are interested in contributing to Micronaut and are looking for issues to work on, take a look at the issues tagged with [help wanted](https://github.com/micronaut-projects/micronaut-xxx/issues?q=is%3Aopen+is%3Aissue+label%3A%22status%3A+help+wanted%22).
+If you are interested in contributing to Micronaut and are looking for issues to work on, take a look at the issues tagged with [help wanted](https://github.com/micronaut-projects/micronaut-aot/issues?q=is%3Aopen+is%3Aissue+label%3A%22status%3A+help+wanted%22).
 
 ## JDK Setup
 
-Micronaut XXX currently requires JDK 8
+Micronaut AOT currently requires JDK 8
 
 ## IDE Setup
 
-Micronaut XXX can be imported into IntelliJ IDEA by opening the `build.gradle` file.
+Micronaut AOT can be imported into IntelliJ IDEA by opening the `build.gradle` file.
 
 ## Docker Setup
 
-Micronaut XXX tests currently require docker to be installed.
+Micronaut AOT tests currently require docker to be installed.
 
 ## Running Tests
 
@@ -32,7 +32,7 @@ To also build the javadocs instead run `./gradlew docs`.
 
 If you are working with the IntelliJ IDEA development environment, you can import the project using the Intellij Gradle Tooling ( "File / Import Project" and select the "settings.gradle" file).
 
-To get a local development version of Micronaut XXX working, first run the `publishToMavenLocal` task.
+To get a local development version of Micronaut AOT working, first run the `publishToMavenLocal` task.
 
 ```
 ./gradlew pTML
@@ -52,7 +52,7 @@ Once you are satisfied with your changes:
 
 We want to keep the code clean, following good practices about organization, javadoc and style as much as possible.
 
-Micronaut XXX uses [Checkstyle](https://checkstyle.sourceforge.io/) to make sure that all the code follows those standards. The configuration file is defined in `config/checkstyle/checkstyle.xml` and to execute the Checkstyle you
+Micronaut AOT uses [Checkstyle](https://checkstyle.sourceforge.io/) to make sure that all the code follows those standards. The configuration file is defined in `config/checkstyle/checkstyle.xml` and to execute the Checkstyle you
 need to run:
 
 ```
