@@ -1,0 +1,5 @@
+[versions]
+javapoet = "1.13.0"
+
+[libraries]
+javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
