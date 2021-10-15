@@ -17,22 +17,8 @@ plugins {
     id("io.micronaut.build.internal.aot-module")
 }
 
-description = "Micronaut AOT source generators"
+description = "Micronaut AOT API, for integration in build/CLI tools"
 
 dependencies {
-    api(mn.micronaut.context)
-    api(mn.micronaut.inject)
-    api(mn.micronaut.core.reactive)
-    api(libs.javapoet)
-    implementation(mn.logback)
-    implementation(mn.graal)
-    implementation(mn.graal.sdk)
-
-    testFixturesImplementation(libs.javapoet)
-    testFixturesImplementation(mn.spock)
-    testFixturesImplementation(mn.micronaut.inject.asProvider()) {
-        because("The BOM is not available in the catalog so we need to use an explicit dependency")
-    }
-
-    testImplementation(mn.spock)
+    implementation(project(":aot-core"))
 }

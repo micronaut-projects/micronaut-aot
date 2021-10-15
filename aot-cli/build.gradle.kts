@@ -15,24 +15,31 @@
  */
 plugins {
     id("io.micronaut.build.internal.aot-module")
+    application
 }
 
-description = "Micronaut AOT source generators"
+description = "A CLI tool leveraging Micronaut AOT"
 
 dependencies {
-    api(mn.micronaut.context)
-    api(mn.micronaut.inject)
-    api(mn.micronaut.core.reactive)
-    api(libs.javapoet)
-    implementation(mn.logback)
-    implementation(mn.graal)
-    implementation(mn.graal.sdk)
+    implementation(project(":aot-api"))
+    implementation(mn.picocli)
+}
 
-    testFixturesImplementation(libs.javapoet)
-    testFixturesImplementation(mn.spock)
-    testFixturesImplementation(mn.micronaut.inject.asProvider()) {
-        because("The BOM is not available in the catalog so we need to use an explicit dependency")
+application {
+    mainClass.set("io.micronaut.aot.cli.Main")
+}
+
+val versionInfo = tasks.register<io.micronaut.build.internal.VersionInfo>("versionInfo") {
+    version.set(project.version as String)
+    outputDirectory.set(layout.buildDirectory.dir("generated/version-info"))
+}
+
+sourceSets {
+    main {
+        resources.srcDir(versionInfo)
     }
+}
 
-    testImplementation(mn.spock)
+tasks.named<JavaExec>("run") {
+    args = listOf("--version")
 }

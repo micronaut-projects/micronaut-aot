@@ -3,6 +3,9 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
+    includeBuild("build-logic") {
+        name = "aot-build-logic"
+    }
 }
 
 plugins {
@@ -14,14 +17,22 @@ enableFeaturePreview("VERSION_CATALOGS")
 rootProject.name = "aot-parent"
 
 include("aot-core")
+include("aot-api")
+include("aot-cli")
 
 val micronautVersion = providers.gradleProperty("micronautVersion")
 
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-        mavenLocal()
+        maven {
+            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            content {
+                includeGroup("io.micronaut")
+            }
+        }
     }
+
     versionCatalogs {
         create("mn") {
             from("io.micronaut:micronaut-bom:${micronautVersion.get()}")
