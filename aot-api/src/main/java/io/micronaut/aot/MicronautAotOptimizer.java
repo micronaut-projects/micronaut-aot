@@ -17,9 +17,9 @@ package io.micronaut.aot;
 
 import com.squareup.javapoet.JavaFile;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
-import io.micronaut.aot.core.sourcegen.AbstractSingleClassFileGenerator;
 import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
 import io.micronaut.aot.core.sourcegen.AbstractStaticServiceLoaderSourceGenerator;
+import io.micronaut.aot.core.sourcegen.ApplicationContextCustomizerGenerator;
 import io.micronaut.aot.core.sourcegen.ConstantPropertySourcesSourceGenerator;
 import io.micronaut.aot.core.sourcegen.EnableCachedEnvironmentSourceGenerator;
 import io.micronaut.aot.core.sourcegen.EnvironmentPropertiesSourceGenerator;
@@ -28,14 +28,16 @@ import io.micronaut.aot.core.sourcegen.JitStaticServiceLoaderSourceGenerator;
 import io.micronaut.aot.core.sourcegen.KnownMissingTypesSourceGenerator;
 import io.micronaut.aot.core.sourcegen.LogbackConfigurationSourceGenerator;
 import io.micronaut.aot.core.sourcegen.NativeStaticServiceLoaderSourceGenerator;
-import io.micronaut.aot.core.sourcegen.OptimizedEntryPointGenerator;
 import io.micronaut.aot.core.sourcegen.PublishersSourceGenerator;
 import io.micronaut.aot.core.sourcegen.SourceGenerationContext;
 import io.micronaut.aot.core.sourcegen.SourceGenerator;
 import io.micronaut.aot.core.sourcegen.YamlPropertySourceGenerator;
 import io.micronaut.aot.internal.StreamHelper;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
+import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.annotation.Experimental;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -49,9 +51,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -59,11 +58,17 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -76,8 +81,8 @@ import java.util.stream.Collectors;
  * Typically, generated code will involve the generation of an
  * "optimized" entry point for the application, which delegates
  * to the main entry point, but also performs some static
- * initialization by making calls to the {@link io.micronaut.core.optim.StaticOptimizations}
- * class.
+ * initialization by making calls to the
+ * {@link io.micronaut.core.optim.StaticOptimizations} class.
  *
  * The Micronaut AOT optimizer is experimental and won't do
  * anything by its own: it must be integrated in some form, for
@@ -94,9 +99,11 @@ import java.util.stream.Collectors;
  * classes.
  */
 @Experimental
-public final class MicronautAotOptimizer {
+public final class MicronautAotOptimizer implements ConfigKeys {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MicronautAotOptimizer.class);
+
     public static final String OUTPUT_RESOURCES_FILE_NAME = "resource-filter.txt";
-    public static final String OPTIMIZED_SUFFIX = "$AOTOptimized";
+    public static final String CUSTOMIZER_CLASS_NAME = "AOTApplicationContextCustomizer";
 
     private final List<File> classpath;
     private final File outputSourcesDirectory;
@@ -111,10 +118,6 @@ public final class MicronautAotOptimizer {
         this.outputSourcesDirectory = outputSourcesDirectory;
         this.outputClassesDirectory = outputClassesDirectory;
         this.logsDirectory = logsDirectory;
-    }
-
-    private URLClassLoader openClassloader() {
-        return new URLClassLoader(classpath.stream().map(f -> StreamHelper.trying(() -> f.toURI().toURL())).toArray(URL[]::new), null);
     }
 
     private void compileGeneratedSources(List<File> extraClasspath, List<JavaFile> javaFiles) {
@@ -141,12 +144,72 @@ public final class MicronautAotOptimizer {
         }
     }
 
+    private static String mandatoryValue(Properties config, String key) {
+        String value = config.getProperty(key);
+        if (value == null || value.isEmpty()) {
+            invalidConfiguration(key, "should not be null or empty");
+        }
+        return value;
+    }
+
+    private static <T> T optionalValue(Properties config, String key, Function<Optional<String>, T> producer) {
+        String value = config.getProperty(key);
+        if (value == null) {
+            Object raw = config.get(key);
+            if (raw != null) {
+                value = String.valueOf(raw);
+            }
+        }
+        return producer.apply(Optional.ofNullable(value));
+    }
+
+    private static boolean booleanValue(Properties config, String key, boolean defaultValue) {
+        return optionalValue(config, key, s -> s.map(Boolean::parseBoolean).orElse(defaultValue));
+    }
+
+    private static void invalidConfiguration(String key, String message) {
+        throw new IllegalStateException("Parameter '" + "'" + key + " " + message);
+    }
+
+    private static List<String> splitToList(String value) {
+        return Arrays.stream(value.split("[:,]\\s*"))
+                .filter(s -> !s.trim().isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * This convenience method uses properties to load the configuration.
+     * This is useful because the optimizer must be found on the same
+     * classloader as the application under optimization, otherwise it
+     * would mean that we could have a clash between Micronaut runtime
+     * versions.
+     *
+     * @param config the configuration
+     */
+    public static void execute(Properties config) {
+        String pkg = mandatoryValue(config, GENERATED_PACKAGE);
+        File outputDir = new File(mandatoryValue(config, OUTPUT_DIRECTORY));
+        File sourcesDir = new File(outputDir, "sources");
+        File classesDir = new File(outputDir, "classes");
+        File logsDir = new File(outputDir, "logs");
+        runner(pkg, sourcesDir, classesDir, logsDir)
+                .forRuntime(optionalValue(config, RUNTIME, v -> v.map(r -> Runtime.valueOf(r.toUpperCase())).orElse(Runtime.JIT)))
+                .addClasspath(optionalValue(config, CLASSPATH, v -> v.map(MicronautAotOptimizer::splitToList).map(l -> l.stream().map(File::new).collect(Collectors.toList())).orElse(Collections.emptyList())))
+                .sealEnvironment(booleanValue(config, SEALED_ENVIRONMENT, true))
+                .preCheckRequirements(booleanValue(config, PRECHECK_BEAN_REQUIREMENTS, true))
+                .replaceLogbackXml(booleanValue(config, REPLACE_LOGBACK, false))
+                .preloadEnvironment(booleanValue(config, PRELOAD_ENVIRONMENT, true))
+                .scanForReactiveTypes(booleanValue(config, SCAN_REACTIVE_TYPES, true))
+                .checkMissingTypes(optionalValue(config, TYPES_TO_CHECK, v -> v.map(MicronautAotOptimizer::splitToList)).orElse(Collections.emptyList()))
+                .scanForServiceClasses(optionalValue(config, SERVICE_TYPES, v -> v.map(MicronautAotOptimizer::splitToList)).orElse(Collections.emptyList()))
+                .execute();
+    }
+
     public static Runner runner(String generatedPackage,
-                                String entryPoint,
                                 File outputSourcesDirectory,
                                 File outputClassesDirectory,
                                 File logsDirectory) {
-        return new Runner(generatedPackage, entryPoint, outputSourcesDirectory, outputClassesDirectory, logsDirectory);
+        return new Runner(generatedPackage, outputSourcesDirectory, outputClassesDirectory, logsDirectory);
     }
 
     private static List<File> outputSourceFilesToSourceDir(File srcDir, List<JavaFile> javaFiles) {
@@ -194,14 +257,6 @@ public final class MicronautAotOptimizer {
         return options;
     }
 
-    private void withClassloader(ThrowingConsumer<? super URLClassLoader> consumer) {
-        StreamHelper.trying(() -> {
-            try (URLClassLoader cl = openClassloader()) {
-                consumer.accept(cl);
-            }
-        });
-    }
-
     private void writeLogs(SourceGenerationContext context) {
         if (logsDirectory.isDirectory() || logsDirectory.mkdirs()) {
             writeLines(new File(logsDirectory, OUTPUT_RESOURCES_FILE_NAME), context.getExcludedResources());
@@ -222,86 +277,39 @@ public final class MicronautAotOptimizer {
         }
     }
 
-    private interface ThrowingConsumer<T> {
-        void accept(T t) throws Exception;
-    }
-
     /**
      * The main AOT optimizer runner.
      */
     public static final class Runner {
         private final List<File> classpath = new ArrayList<>();
-        private String generatedPackage;
-        private String entryPoint;
-        private File outputSourcesDirectory;
-        private File outputClassesDirectory;
-        private File logsDirectory;
+        private final String generatedPackage;
+        private final File outputSourcesDirectory;
+        private final File outputClassesDirectory;
+        private final File logsDirectory;
 
         private final List<String> classesToCheck = new ArrayList<>();
         private final List<String> serviceClasses = new ArrayList<>();
 
         private Runtime runtime = Runtime.JIT;
+        private boolean sealEnvironment = true;
         private boolean preloadEnvironment = true;
         private boolean scanForReactiveTypes = true;
-        private boolean cacheEnvironment = true;
         private boolean replaceLogbackXml = true;
         private boolean precheckRequirements = true;
 
         public Runner(String generatedPackage,
-                      String entryPoint,
                       File outputSourcesDirectory,
                       File outputClassesDirectory,
                       File logsDirectory
         ) {
             this.generatedPackage = generatedPackage;
-            this.entryPoint = entryPoint;
             this.outputSourcesDirectory = outputSourcesDirectory;
             this.outputClassesDirectory = outputClassesDirectory;
             this.logsDirectory = logsDirectory;
-            try {
-                this.classpath.add(new File(ApplicationContextAnalyzer.class.getProtectionDomain().getCodeSource().getLocation().toURI()));
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public Runner withEntryPoint(String entryPoint) {
-            this.entryPoint = entryPoint;
-            return this;
-        }
-
-        public Runner withGeneratedPackage(String generatedPackage) {
-            this.generatedPackage = generatedPackage;
-            return this;
-        }
-
-        public Runner withOutputSourcesDirectory(File outputDirectory) {
-            this.outputSourcesDirectory = outputDirectory;
-            return this;
-        }
-
-        public Runner withOutputClassesDirectory(File outputDirectory) {
-            this.outputClassesDirectory = outputDirectory;
-            return this;
-        }
-
-        public Runner withLogsDirectory(File logsDirectory) {
-            this.logsDirectory = logsDirectory;
-            return this;
         }
 
         public Runner forRuntime(Runtime runtime) {
             this.runtime = runtime;
-            return this;
-        }
-
-        public Runner forJit() {
-            this.runtime = Runtime.JIT;
-            return this;
-        }
-
-        public Runner forNative() {
-            this.runtime = Runtime.GRAALVM;
             return this;
         }
 
@@ -320,24 +328,13 @@ public final class MicronautAotOptimizer {
             return this;
         }
 
-        public Runner cacheEnvironment(boolean cache) {
-            this.cacheEnvironment = cache;
+        public Runner sealEnvironment(boolean cache) {
+            this.sealEnvironment = cache;
             return this;
         }
 
         public Runner replaceLogbackXml(boolean replace) {
             this.replaceLogbackXml = replace;
-            return this;
-        }
-
-        /**
-         * Adds elements to the application classpath.
-         *
-         * @param elements the files to add to classpath
-         * @return this builder
-         */
-        public Runner addClasspath(File... elements) {
-            Collections.addAll(classpath, elements);
             return this;
         }
 
@@ -361,21 +358,8 @@ public final class MicronautAotOptimizer {
          * to {@link io.micronaut.core.reflect.ClassUtils#forName(String, ClassLoader)}
          * @return this builder
          */
-        public Runner checkMissingTypes(String... classNames) {
-            Collections.addAll(classesToCheck, classNames);
-            return this;
-        }
-
-        /**
-         * Adds service classes to be searched for on classpath. Under the hood
-         * it will use the service loader to scan for services and generate
-         * classes which optimize their lookup.
-         *
-         * @param serviceClasses the list of service types to search for
-         * @return this builder
-         */
-        public Runner scanForServiceClasses(String... serviceClasses) {
-            Collections.addAll(this.serviceClasses, serviceClasses);
+        public Runner checkMissingTypes(Collection<String> classNames) {
+            classesToCheck.addAll(classNames);
             return this;
         }
 
@@ -399,71 +383,69 @@ public final class MicronautAotOptimizer {
                     outputSourcesDirectory,
                     outputClassesDirectory,
                     logsDirectory);
-            optimizer.withClassloader(cl -> {
-                String optimizedEntryPoint = AbstractSourceGenerator.simpleNameOf(entryPoint) + OPTIMIZED_SUFFIX;
-                Predicate<Object> analyzer = c -> true;
-                if (precheckRequirements) {
-                    Class<?> entryPointClass = cl.loadClass(entryPoint);
-                    analyzer = (Predicate<Object>) cl.loadClass(ApplicationContextAnalyzer.class.getName())
-                            .getDeclaredMethod("forEntryPoint", Class.class)
-                            .invoke(null, entryPointClass);
+            ApplicationContextAnalyzer analyzer = ApplicationContextAnalyzer.create();
+            Set<String> environmentNames = analyzer.getEnvironmentNames();
+            LOGGER.info("Detected environments: {}", environmentNames);
+            Predicate<AnnotationMetadataProvider> beanFilter = precheckRequirements ? analyzer.getAnnotationMetadataPredicate() : p -> true;
+            SourceGenerationContext context = new SourceGenerationContext(generatedPackage);
+            List<SourceGenerator> sourceGenerators = new ArrayList<>();
+            if (!classesToCheck.isEmpty()) {
+                sourceGenerators.add(new KnownMissingTypesSourceGenerator(context, classesToCheck));
+            }
+            AbstractStaticServiceLoaderSourceGenerator serviceLoaderGenerator = null;
+            if (!serviceClasses.isEmpty()) {
+                Set<String> resourceNames = new LinkedHashSet<>();
+                resourceNames.add("application");
+                environmentNames.stream()
+                        .map(env -> "application-" + env)
+                        .forEach(resourceNames::add);
+                Map<String, AbstractSourceGenerator> substitutions = Collections.singletonMap(YamlPropertySourceLoader.class.getName(), new YamlPropertySourceGenerator(context, resourceNames));
+                if (runtime == Runtime.JIT) {
+                    serviceLoaderGenerator = new JitStaticServiceLoaderSourceGenerator(
+                            context,
+                            beanFilter,
+                            serviceClasses,
+                            n -> false,
+                            substitutions
+                    );
+                } else {
+                    serviceLoaderGenerator = new NativeStaticServiceLoaderSourceGenerator(
+                            context,
+                            beanFilter,
+                            serviceClasses,
+                            n -> false,
+                            substitutions
+                    );
                 }
-                SourceGenerationContext context = new SourceGenerationContext(cl, generatedPackage);
-                List<SourceGenerator> sourceGenerators = new ArrayList<>();
-                if (!classesToCheck.isEmpty()) {
-                    sourceGenerators.add(new KnownMissingTypesSourceGenerator(context, classesToCheck));
-                }
-                AbstractStaticServiceLoaderSourceGenerator serviceLoaderGenerator = null;
-                if (!serviceClasses.isEmpty()) {
-                    Map<String, AbstractSingleClassFileGenerator> substitutions = Collections.singletonMap(YamlPropertySourceLoader.class.getName(), new YamlPropertySourceGenerator(context, "application"));
-                    if (runtime == Runtime.JIT) {
-                        serviceLoaderGenerator = new JitStaticServiceLoaderSourceGenerator(
-                                context,
-                                analyzer,
-                                serviceClasses,
-                                n -> false,
-                                substitutions
-                        );
-                    } else {
-                        serviceLoaderGenerator = new NativeStaticServiceLoaderSourceGenerator(
-                                context,
-                                analyzer,
-                                serviceClasses,
-                                n -> false,
-                                substitutions
-                        );
-                    }
-                    sourceGenerators.add(serviceLoaderGenerator);
-                }
-                if (preloadEnvironment) {
-                    sourceGenerators.add(new EnvironmentPropertiesSourceGenerator(context));
-                }
-                if (scanForReactiveTypes) {
-                    sourceGenerators.add(new PublishersSourceGenerator(context));
-                }
-                if (!serviceClasses.isEmpty()) {
-                    sourceGenerators.add(new ConstantPropertySourcesSourceGenerator(context, serviceLoaderGenerator));
-                }
-                if (cacheEnvironment) {
-                    sourceGenerators.add(new EnableCachedEnvironmentSourceGenerator(context));
-                }
-                if (replaceLogbackXml) {
-                    sourceGenerators.add(new LogbackConfigurationSourceGenerator(context));
-                }
-                if (runtime == Runtime.GRAALVM) {
-                    sourceGenerators.add(new GraalVMOptimizationFeatureSourceGenerator(context, optimizedEntryPoint, serviceClasses));
-                }
-                OptimizedEntryPointGenerator generator = new OptimizedEntryPointGenerator(
-                        context,
-                        entryPoint,
-                        optimizedEntryPoint,
-                        sourceGenerators
-                );
-                generator.init();
-                optimizer.compileGeneratedSources(context.getExtraClasspath(), generator.generateSourceFiles());
-                generator.generateResourceFiles(outputClassesDirectory);
-                optimizer.writeLogs(context);
-            });
+                sourceGenerators.add(serviceLoaderGenerator);
+            }
+            if (preloadEnvironment) {
+                sourceGenerators.add(new EnvironmentPropertiesSourceGenerator(context));
+            }
+            if (scanForReactiveTypes) {
+                sourceGenerators.add(new PublishersSourceGenerator(context));
+            }
+            if (!serviceClasses.isEmpty()) {
+                sourceGenerators.add(new ConstantPropertySourcesSourceGenerator(context, serviceLoaderGenerator));
+            }
+            if (sealEnvironment) {
+                sourceGenerators.add(new EnableCachedEnvironmentSourceGenerator(context));
+            }
+            if (replaceLogbackXml) {
+                sourceGenerators.add(new LogbackConfigurationSourceGenerator(context));
+            }
+            if (runtime == Runtime.NATIVE) {
+                sourceGenerators.add(new GraalVMOptimizationFeatureSourceGenerator(context, CUSTOMIZER_CLASS_NAME, serviceClasses));
+            }
+            ApplicationContextCustomizerGenerator generator = new ApplicationContextCustomizerGenerator(
+                    context,
+                    CUSTOMIZER_CLASS_NAME,
+                    sourceGenerators
+            );
+            generator.init();
+            optimizer.compileGeneratedSources(context.getExtraClasspath(), generator.generateSourceFiles());
+            generator.generateResourceFiles(outputClassesDirectory);
+            optimizer.writeLogs(context);
             return this;
         }
     }
@@ -473,7 +455,7 @@ public final class MicronautAotOptimizer {
      */
     public enum Runtime {
         JIT,
-        GRAALVM
+        NATIVE
     }
 
 }

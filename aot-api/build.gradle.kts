@@ -20,5 +20,5 @@ plugins {
 description = "Micronaut AOT API, for integration in build/CLI tools"
 
 dependencies {
-    implementation(project(":aot-core"))
+    implementation(projects.aotCore)
 }

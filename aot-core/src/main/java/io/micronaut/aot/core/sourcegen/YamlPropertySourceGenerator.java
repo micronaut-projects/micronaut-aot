@@ -20,7 +20,12 @@ import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
 import io.micronaut.core.io.scan.DefaultClassPathResourceLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,20 +35,33 @@ import java.util.Optional;
  * with a static configuration.
  *
  */
-public class YamlPropertySourceGenerator extends AbstractSingleClassFileGenerator {
-    private final String resource;
+public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(YamlPropertySourceGenerator.class);
+
+    private final Collection<String> resources;
 
     public YamlPropertySourceGenerator(SourceGenerationContext context,
-                                       String resource) {
+                                       Collection<String> resources) {
         super(context);
-        this.resource = resource;
+        this.resources = resources;
     }
 
     @Override
-    protected JavaFile generate() {
+    public List<JavaFile> generateSourceFiles() {
         YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
-        Optional<PropertySource> optionalSource = loader.load(resource, new DefaultClassPathResourceLoader(getClassLoader()));
+        List<JavaFile> files = new ArrayList<>();
+
+        for (String resource : resources) {
+            createMapProperty(loader, files, resource);
+        }
+
+        return files;
+    }
+
+    private void createMapProperty(YamlPropertySourceLoader loader, List<JavaFile> files, String resource) {
+        Optional<PropertySource> optionalSource = loader.load(resource, new DefaultClassPathResourceLoader(this.getClass().getClassLoader()));
         if (optionalSource.isPresent()) {
+            LOGGER.info("Converting {} into Java based configuration", resource + ".yml");
             PropertySource ps = optionalSource.get();
             if (ps instanceof MapPropertySource) {
                 MapPropertySource mps = (MapPropertySource) ps;
@@ -52,12 +70,11 @@ public class YamlPropertySourceGenerator extends AbstractSingleClassFileGenerato
                         getContext(),
                         resource,
                         values);
-                return generator.generate();
+                files.add(generator.generate());
             } else {
                 throw new UnsupportedOperationException("Unknown property source type:" + ps.getClass());
             }
         }
-        return null;
     }
 
 }

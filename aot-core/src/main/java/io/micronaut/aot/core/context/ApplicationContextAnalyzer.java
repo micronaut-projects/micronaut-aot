@@ -27,13 +27,13 @@ import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.convert.ArgumentConversionContext;
 import io.micronaut.core.type.Argument;
 import io.micronaut.inject.BeanDefinition;
-import io.micronaut.runtime.Micronaut;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -48,37 +48,33 @@ import java.util.stream.Stream;
  * the analyzed classpath.
  *
  */
-public class ApplicationContextAnalyzer implements Predicate<Object> {
+@SuppressWarnings("unused")
+public final class ApplicationContextAnalyzer {
     private final ApplicationContext applicationContext;
 
-    public ApplicationContextAnalyzer(ApplicationContext applicationContext) {
+    private ApplicationContextAnalyzer(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }
 
-    private boolean test(AnnotationMetadataProvider component) {
-        ShallowConditionContext<AnnotationMetadataProvider> context = new ShallowConditionContext<>(component);
-        return new RequiresCondition(component.getAnnotationMetadata()).matches(context);
-    }
-
-    @Override
-    public boolean test(Object o) {
-        if (o instanceof AnnotationMetadataProvider) {
-            return test((AnnotationMetadataProvider) o);
-        }
-        return true;
+    public Set<String> getEnvironmentNames() {
+        return applicationContext.getEnvironment().getActiveNames();
     }
 
     /**
-     * Instantiates an application context analyzer for the provided
-     * application class.
-     * @param clazz the application class name
+     * Instantiates an application context analyzer
      * @return an analyzer
      */
-    public static ApplicationContextAnalyzer forEntryPoint(Class<?> clazz) {
-        ApplicationContext context = Micronaut.build(new String[0])
-                .mainClass(clazz)
-                .build();
-        return new ApplicationContextAnalyzer(context);
+    public static ApplicationContextAnalyzer create() {
+        return new ApplicationContextAnalyzer(ApplicationContext.builder().build());
+    }
+
+    /**
+     * Returns a predicate which can be used to determine, from annotation metadata,
+     * if a bean matches requirements.
+     * @return a predicate
+     */
+    public Predicate<AnnotationMetadataProvider> getAnnotationMetadataPredicate() {
+        return new AnnotationMetadataProviderPredicate();
     }
 
     private final class ShallowConditionContext<T extends AnnotationMetadataProvider> implements ConditionContext<T> {
@@ -172,5 +168,15 @@ public class ApplicationContextAnalyzer implements Predicate<Object> {
             failures.add(failure);
             return this;
         }
+    }
+
+    private class AnnotationMetadataProviderPredicate implements Predicate<AnnotationMetadataProvider> {
+
+        @Override
+        public boolean test(AnnotationMetadataProvider component) {
+            ShallowConditionContext<AnnotationMetadataProvider> context = new ShallowConditionContext<>(component);
+            return new RequiresCondition(component.getAnnotationMetadata()).matches(context);
+        }
+
     }
 }

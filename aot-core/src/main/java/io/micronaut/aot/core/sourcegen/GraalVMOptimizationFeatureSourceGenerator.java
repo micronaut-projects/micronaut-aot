@@ -15,73 +15,43 @@
  */
 package io.micronaut.aot.core.sourcegen;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
-import com.oracle.svm.hosted.ServiceLoaderFeature;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeSpec;
-import io.micronaut.core.annotation.Generated;
-import org.graalvm.nativeimage.hosted.Feature;
-import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
-
-import javax.lang.model.element.Modifier;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 
 /**
- * Generates the GraalVM feature class which is going to configure
+ * Generates the GraalVM configuration file which is going to configure
  * the native image code generation, typically asking to initialize
  * the optimized entry point at build time.
  */
-public class GraalVMOptimizationFeatureSourceGenerator extends AbstractSingleClassFileGenerator {
+public class GraalVMOptimizationFeatureSourceGenerator extends AbstractSourceGenerator {
 
-    public static final String MICRONAUT_AOT_FEATURE_CLASS_NAME = "MicronautAOTFeature";
-
-    private final String optimizedEntryPoint;
+    private final String simpleServiceTypeName;
     private final List<String> serviceTypes;
 
     public GraalVMOptimizationFeatureSourceGenerator(SourceGenerationContext context,
-                                                     String optimizedEntryPoint,
+                                                     String simpleServiceTypeName,
                                                      List<String> serviceTypes) {
         super(context);
-        this.optimizedEntryPoint = optimizedEntryPoint;
+        this.simpleServiceTypeName = simpleServiceTypeName;
         this.serviceTypes = serviceTypes;
     }
 
     @Override
-    protected void doInit() throws Exception {
-        getContext().registerClassNeededAtCompileTime(Feature.class);
-        getContext().registerClassNeededAtCompileTime(AutomaticFeature.class);
-    }
-
-    @Override
-    protected JavaFile generate() {
-        return getContext().javaFile(createFeatureType());
-    }
-
-    private TypeSpec createFeatureType() {
-        CodeBlock.Builder staticInit = CodeBlock.builder();
-        for (String serviceType : serviceTypes) {
-            staticInit.addStatement(
-                    CodeBlock.of("$T.ServiceLoaderFeatureExcludeServices.getValue()" +
-                            ".valueUpdate($S)", ServiceLoaderFeature.Options.class, serviceType)
-            );
+    public void generateResourceFiles(File targetDirectory) {
+        File nativeImageDir = new File(targetDirectory, "META-INF/native-image/" + getContext().getPackageName());
+        if (nativeImageDir.isDirectory() || nativeImageDir.mkdirs()) {
+            File propertiesFile = new File(nativeImageDir, "native-image.properties");
+            try (PrintWriter wrt = new PrintWriter(new FileWriter(propertiesFile))) {
+                wrt.println("--initialize-at-build-time=" + getContext().getPackageName() + "." + simpleServiceTypeName);
+                for (String serviceType : serviceTypes) {
+                    wrt.println("-H:ServiceLoaderFeatureExcludeServices=" + serviceType);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
-        return TypeSpec.classBuilder(MICRONAUT_AOT_FEATURE_CLASS_NAME)
-                .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(Generated.class)
-                .addAnnotation(AutomaticFeature.class)
-                .addSuperinterface(Feature.class)
-                .addMethod(MethodSpec.methodBuilder("beforeAnalysis")
-                        .addModifiers(Modifier.PUBLIC)
-                        .addParameter(Feature.BeforeAnalysisAccess.class, "access")
-                        .addStatement(
-                                CodeBlock.of("$T.initializeAtBuildTime($T.class)", RuntimeClassInitialization.class, ClassName.bestGuess(optimizedEntryPoint))
-                        )
-                        .build())
-                .addStaticBlock(staticInit.build())
-                .build();
     }
-
 }

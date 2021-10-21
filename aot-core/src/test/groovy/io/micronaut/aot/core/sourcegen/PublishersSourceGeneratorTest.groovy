@@ -29,8 +29,9 @@ class PublishersSourceGeneratorTest extends AbstractSourceGeneratorSpec {
         then:
         assertThatGeneratedSources {
             doesNotGenerateClasses()
-            createsInitializer """private static void preparePublishers() {
-  io.micronaut.core.optim.StaticOptimizations.set(new io.micronaut.core.async.publisher.PublishersOptimizations(java.util.Arrays.asList(reactor.core.publisher.Flux.class, reactor.core.publisher.Mono.class), java.util.Arrays.asList(io.micronaut.core.async.publisher.CompletableFuturePublisher.class, io.micronaut.core.async.publisher.Publishers.JustPublisher.class, reactor.core.publisher.Mono.class), java.util.Arrays.asList(io.micronaut.core.async.subscriber.Completable.class)));
+            createsInitializer """
+private static void preparePublishers() {
+  io.micronaut.core.optim.StaticOptimizations.set(new io.micronaut.core.async.publisher.PublishersOptimizations(java.util.Arrays.asList(), java.util.Arrays.asList(io.micronaut.core.async.publisher.CompletableFuturePublisher.class, io.micronaut.core.async.publisher.Publishers.JustPublisher.class), java.util.Arrays.asList(io.micronaut.core.async.subscriber.Completable.class)));
 }
 """
         }

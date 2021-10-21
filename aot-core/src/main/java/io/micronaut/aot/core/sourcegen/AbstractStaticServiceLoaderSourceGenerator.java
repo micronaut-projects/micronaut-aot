@@ -21,6 +21,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.WildcardTypeName;
+import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.annotation.Generated;
 import io.micronaut.core.io.service.SoftServiceLoader;
 import io.micronaut.core.optim.StaticOptimizations;
@@ -28,7 +29,6 @@ import io.micronaut.core.optim.StaticOptimizations;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,19 +51,18 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  */
 public abstract class AbstractStaticServiceLoaderSourceGenerator extends AbstractSourceGenerator {
     public static final String SERVICE_LOADING_CATEGORY = "service-loading";
-    private final Predicate<Object> applicationContextAnalyzer;
+    private final Predicate<AnnotationMetadataProvider> applicationContextAnalyzer;
     private final List<String> serviceNames;
     private final Predicate<String> rejectedClasses;
-    private final Map<String, AbstractSingleClassFileGenerator> substitutions;
+    private final Map<String, AbstractSourceGenerator> substitutions;
     private final Map<String, List<JavaFile>> substitutes = new HashMap<>();
     private Map<String, TypeSpec> staticServiceClasses;
-    private Class<?> annotationMetadataProviderClass;
 
     protected AbstractStaticServiceLoaderSourceGenerator(SourceGenerationContext context,
-                                                         Predicate<Object> applicationContextAnalyzer,
+                                                         Predicate<AnnotationMetadataProvider> applicationContextAnalyzer,
                                                       List<String> serviceNames,
                                                       Predicate<String> rejectedClasses,
-                                                      Map<String, AbstractSingleClassFileGenerator> substitutions) {
+                                                      Map<String, AbstractSourceGenerator> substitutions) {
         super(context);
         this.applicationContextAnalyzer = applicationContextAnalyzer;
         this.serviceNames = serviceNames;
@@ -81,7 +80,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     }
 
     private void generateServiceLoader(Predicate<String> rejectedClasses, String serviceName) throws ClassNotFoundException {
-        Class<?> serviceType = getClassLoader().loadClass(serviceName);
+        Class<?> serviceType = this.getClass().getClassLoader().loadClass(serviceName);
         TypeSpec.Builder factory = prepareServiceLoaderType(serviceName, serviceType);
         generateFindAllMethod(rejectedClasses, serviceName, serviceType, factory);
         staticServiceClasses.put(serviceName, factory.build());
@@ -90,24 +89,25 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     protected final <T> List<T> collectServiceImplementations(String serviceName,
                                                         BiFunction<Class<?>, Boolean, T> emitter) {
         context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Starting service discovery for type " + serviceName);
-        URLClassLoader cl = getClassLoader();
+        ClassLoader cl = this.getClass().getClassLoader();
         Set<String> seen = Collections.synchronizedSet(new HashSet<>());
         SoftServiceLoader.ServiceCollector<T> collector = SoftServiceLoader.newCollector(serviceName, s -> !s.isEmpty(), cl, className -> {
             if (rejectedClasses.test(className) || !seen.add(className)) {
                 return null;
             }
-            AbstractSingleClassFileGenerator substitution = substitutions.get(className);
+            AbstractSourceGenerator substitution = substitutions.get(className);
             if (substitution != null) {
-                JavaFile substitute = substitution.generate();
-                if (substitute != null) {
-                    substitutes.computeIfAbsent(serviceName, k -> new ArrayList<>()).add(substitute);
+                List<JavaFile> javaFiles = substitution.generateSourceFiles();
+                javaFiles.forEach(substitute -> substitutes.computeIfAbsent(serviceName, k -> new ArrayList<>()).add(substitute));
+                if (!javaFiles.isEmpty()) {
                     return null;
                 }
             }
             try {
                 Class<?> clazz = cl.loadClass(className);
                 DeepAnalyzer deepAnalyzer = deepAnalyzerFor(clazz, serviceName);
-                if (!deepAnalyzer.isAvailable(clazz)) {
+                boolean available = deepAnalyzer.isAvailable(clazz);
+                if (!available) {
                     context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Skipping " + clazz + " because it doesn't match bean requirements");
                     return null;
                 }
@@ -122,7 +122,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                     }
                 }
             } catch (ClassNotFoundException | NoClassDefFoundError e) {
-                context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Skipping service " + serviceName + " implementation " + className + " because of missing dependencies");
+                context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Skipping service " + serviceName + " implementation " + className + " because of missing dependencies: " + e.getMessage());
                 return null;
             }
             context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Skipping service " + serviceName + " implementation " + className + " because it's not a service provider");
@@ -135,10 +135,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     }
 
     private DeepAnalyzer deepAnalyzerFor(Class<?> clazz, String serviceName) throws ClassNotFoundException {
-        if (annotationMetadataProviderClass == null) {
-            annotationMetadataProviderClass = getClassLoader().loadClass("io.micronaut.core.annotation.AnnotationMetadataProvider");
-        }
-        if (annotationMetadataProviderClass.isAssignableFrom(clazz)) {
+        if (AnnotationMetadataProvider.class.isAssignableFrom(clazz)) {
             return new AnnotationMetadataAnalyzer(context, applicationContextAnalyzer, serviceName);
         }
         return DeepAnalyzer.DEFAULT;
@@ -210,27 +207,27 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
 
     private static final class AnnotationMetadataAnalyzer implements DeepAnalyzer {
         private final SourceGenerationContext context;
-        private final Predicate<Object> analyzer;
+        private final Predicate<AnnotationMetadataProvider> predicate;
         private final String serviceName;
 
-        private AnnotationMetadataAnalyzer(SourceGenerationContext context, Predicate<Object> analyzer, String serviceName) {
+        private AnnotationMetadataAnalyzer(SourceGenerationContext context, Predicate<AnnotationMetadataProvider> predicate, String serviceName) {
             this.context = context;
-            this.analyzer = analyzer;
+            this.predicate = predicate;
             this.serviceName = serviceName;
         }
 
         @Override
         public boolean isAvailable(Class<?> clazz) {
             try {
-                Object reference = clazz.getConstructor().newInstance();
-                return analyzer.test(reference);
+                AnnotationMetadataProvider reference = (AnnotationMetadataProvider) clazz.getConstructor().newInstance();
+                return predicate.test(reference);
             } catch (Throwable e) {
-                return skipService(clazz);
+                return skipService(clazz, e);
             }
         }
 
-        private boolean skipService(Class<?> clazz) {
-            context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Skipping service " + serviceName + " implementation " + clazz.getName() + " because of missing dependencies");
+        private boolean skipService(Class<?> clazz, Throwable e) {
+            context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Skipping service " + serviceName + " implementation " + clazz.getName() + " because of missing dependencies:" + e.getMessage());
             return false;
         }
     }

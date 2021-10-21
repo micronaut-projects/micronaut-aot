@@ -19,20 +19,32 @@ plugins {
 
 description = "Micronaut AOT source generators"
 
+//                      WARNING
+// While the architecture of the optimizer itself would
+// benefit from using Micronaut Inject, we can't do it because
+// we perform analysis of the user application classpath and this
+// analysis must happen within the same classloaders. It means
+// that when we would build the application context of Micronaut
+// AOT, we would see customizations from the user environment,
+// which we don't want.
+
 dependencies {
-    api(mn.micronaut.context)
-    api(mn.micronaut.inject)
-    api(mn.micronaut.core.reactive)
+    // Most AOT dependencies need to be compile only API
+    // because the Micronaut runtime that is going to be
+    // used is the one from the application being analyzed
+    compileOnlyApi(mn.micronaut.context)
+    compileOnlyApi(mn.micronaut.core.reactive)
+
     api(libs.javapoet)
-    implementation(mn.logback)
-    implementation(mn.graal)
-    implementation(mn.graal.sdk)
+
+    compileOnly(mn.logback)
 
     testFixturesImplementation(libs.javapoet)
     testFixturesImplementation(mn.spock)
-    testFixturesImplementation(mn.micronaut.inject.asProvider()) {
-        because("The BOM is not available in the catalog so we need to use an explicit dependency")
-    }
 
     testImplementation(mn.spock)
+
+    // Runtime libraries used to introspect Micronaut context
+    testRuntimeOnly(mn.micronaut.context)
+    testRuntimeOnly(mn.micronaut.core.reactive)
 }

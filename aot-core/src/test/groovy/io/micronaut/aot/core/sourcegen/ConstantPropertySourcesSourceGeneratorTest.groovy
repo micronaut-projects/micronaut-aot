@@ -17,6 +17,7 @@ package io.micronaut.aot.core.sourcegen
 
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeSpec
+import io.micronaut.core.annotation.AnnotationMetadataProvider
 
 import java.util.function.Predicate
 
@@ -54,7 +55,7 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
 
     static class TestServiceLoaderGenerator extends AbstractStaticServiceLoaderSourceGenerator {
 
-        protected TestServiceLoaderGenerator(SourceGenerationContext context, Predicate<Object> applicationContextAnalyzer, List<String> serviceNames, Predicate<String> rejectedClasses, Map<String, AbstractSingleClassFileGenerator> substitutions) {
+        protected TestServiceLoaderGenerator(SourceGenerationContext context, Predicate<AnnotationMetadataProvider> applicationContextAnalyzer, List<String> serviceNames, Predicate<String> rejectedClasses, Map<String, AbstractSingleClassFileGenerator> substitutions) {
             super(context, applicationContextAnalyzer, serviceNames, rejectedClasses, substitutions)
         }
 

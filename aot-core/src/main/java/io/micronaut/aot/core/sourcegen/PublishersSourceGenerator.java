@@ -18,12 +18,12 @@ package io.micronaut.aot.core.sourcegen;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
+import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.core.async.publisher.PublishersOptimizations;
 import io.micronaut.core.optim.StaticOptimizations;
 
-import java.lang.reflect.InvocationTargetException;
-import java.net.URLClassLoader;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -55,25 +55,14 @@ public class PublishersSourceGenerator extends AbstractSourceGenerator {
         return knownReactiveBlock.build();
     }
 
-    @SuppressWarnings("unchecked")
-    private static List<String> findPublishersType(Class<?> publishers, String method) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        return ((List<Class<?>>) publishers.getDeclaredMethod(method)
-                .invoke(null))
-                .stream()
-                .map(Class::getName)
-                .collect(Collectors.toList());
+    private static List<String> typeNamesOf(Collection<Class<?>> classes) {
+        return classes.stream().map(Class::getName).collect(Collectors.toList());
     }
 
     protected final void doInit() {
-        URLClassLoader cl = getClassLoader();
-        try {
-            Class<?> publishers = cl.loadClass("io.micronaut.core.async.publisher.Publishers");
-            knownReactiveTypes = findPublishersType(publishers, "getKnownReactiveTypes");
-            knownSingleTypes = findPublishersType(publishers, "getKnownSingleTypes");
-            knownCompletableTypes = findPublishersType(publishers, "getKnownCompletableTypes");
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-        }
+        knownReactiveTypes = typeNamesOf(Publishers.getKnownReactiveTypes());
+        knownSingleTypes = typeNamesOf(Publishers.getKnownSingleTypes());
+        knownCompletableTypes = typeNamesOf(Publishers.getKnownCompletableTypes());
     }
 
     @Override

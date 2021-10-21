@@ -21,14 +21,20 @@ import groovy.transform.CompileStatic
 import io.micronaut.aot.core.sourcegen.SourceGenerationContext
 import io.micronaut.aot.core.sourcegen.SourceGenerator
 import spock.lang.Specification
+import spock.lang.TempDir
+
+import java.nio.file.Path
 
 @CompileStatic
 abstract class AbstractSourceGeneratorSpec extends Specification {
     final String packageName = "io.micronaut.test"
 
+    @TempDir
+    Path testDirectory
+
     private GeneratedSources generatedSources
 
-    SourceGenerationContext context = new SourceGenerationContext(newClassLoader(), packageName)
+    SourceGenerationContext context = new SourceGenerationContext(packageName)
 
     private URLClassLoader newClassLoader(URL... urls) {
         new URLClassLoader(urls, this.class.classLoader)
@@ -45,7 +51,9 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
             [it, writer.toString()]
         }
         def init = sourceGenerator.generateStaticInit()
-        this.generatedSources = new GeneratedSources(sources, init)
+        def resourcesDir = testDirectory.resolve("resources").toFile()
+        sourceGenerator.generateResourceFiles(resourcesDir)
+        this.generatedSources = new GeneratedSources(sources, init, resourcesDir)
     }
 
     void assertThatGeneratedSources(@DelegatesTo(value=GeneratedSources, strategy = Closure.DELEGATE_FIRST) Closure<?> spec) {
@@ -76,11 +84,13 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
         private final Map<JavaFile, String> sources
         private final Optional<MethodSpec> init
         private final Set<String> verifiedClasses = []
+        private final File resourcesDir
         private boolean checkedForInitializer
 
-        GeneratedSources(Map<JavaFile, String> sources, Optional<MethodSpec> init) {
+        GeneratedSources(Map<JavaFile, String> sources, Optional<MethodSpec> init, File resourcesDir) {
             this.sources = sources
             this.init = init
+            this.resourcesDir = resourcesDir
         }
 
         void doesNotGenerateClasses() {
@@ -129,6 +139,35 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
             if (!helper.checkedSources) {
                 throw new AssertionError("Too few assertions. You also need to check the generated code.")
             }
+        }
+
+        void generatesServiceFile(Class<?> serviceType, String... implementationTypes) {
+            generatesServiceFile(serviceType.name, implementationTypes)
+        }
+
+        void generatesServiceFile(String serviceType, String... implementationTypes) {
+            def serviceFile = new File(resourcesDir, "META-INF/services/$serviceType")
+            assert serviceFile.exists()
+            Set<String> actualImplementationTypes = serviceFile.readLines().findAll() as Set<String>
+            Set<String> expectedImplementationTypes = implementationTypes as Set<String>
+            assert actualImplementationTypes == expectedImplementationTypes
+        }
+
+        void generatesMetaInfResource(String path, String contents) {
+            def file = new File(resourcesDir, "META-INF/$path")
+            assert file.exists()
+            def actualContents = file.text.trim()
+            def expectedContents = contents.trim()
+            if (actualContents != expectedContents) {
+                println "ACTUAL CONTENTS"
+                println "---------------"
+                println actualContents
+
+                println "EXPECTED CONTENTS"
+                println "-----------------"
+                println expectedContents
+            }
+            assert actualContents == expectedContents
         }
 
         Set<String> getGeneratedClasses() {

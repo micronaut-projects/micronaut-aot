@@ -20,7 +20,6 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.reflect.ClassUtils;
 
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +41,7 @@ public class KnownMissingTypesSourceGenerator extends AbstractSourceGenerator {
 
     private List<String> findMissingClasses(List<String> classNames) {
         List<String> knownMissingClasses = new ArrayList<>();
-        URLClassLoader cl = getClassLoader();
+        ClassLoader cl = this.getClass().getClassLoader();
         for (String name : classNames) {
             try {
                 cl.loadClass(name);

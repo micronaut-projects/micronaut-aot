@@ -19,7 +19,10 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 
 import javax.lang.model.element.Modifier;
-import java.net.URLClassLoader;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -37,17 +40,6 @@ public abstract class AbstractSourceGenerator implements SourceGenerator {
 
     public static String simpleNameOf(String fqcn) {
         return fqcn.substring(fqcn.lastIndexOf(".") + 1);
-    }
-
-    /**
-     * Returns the classloader which can be used to load application
-     * classes.
-     * Consumers must not close this classloader as its the responsibility
-     * of the creator to do it.
-     * @return the application classloader
-     */
-    public URLClassLoader getClassLoader() {
-        return context.getClassloader();
     }
 
     /**
@@ -84,5 +76,17 @@ public abstract class AbstractSourceGenerator implements SourceGenerator {
         return staticMethodBuilder(name, m -> {
             m.addCode(bodyBuilder.build());
         });
+    }
+
+    protected final void writeServiceFile(File targetDirectory, Class<?> serviceType, String simpleServiceName) {
+        File serviceDir = new File(targetDirectory, "META-INF/services");
+        if (serviceDir.isDirectory() || serviceDir.mkdirs()) {
+            File serviceFile = new File(serviceDir, serviceType.getName());
+            try (PrintWriter wrt = new PrintWriter(new FileWriter(serviceFile))) {
+                wrt.println(getContext().getPackageName() + "." + simpleServiceName);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

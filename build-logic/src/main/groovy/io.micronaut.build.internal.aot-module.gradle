@@ -16,7 +16,7 @@
 // This script is using Groovy because of Gradle bug
 // https://github.com/gradle/gradle/issues/18663
 plugins {
-    id "io.micronaut.build.internal.module"
+    id "io.micronaut.build.internal.base-module"
     id "java-test-fixtures"
 }
 
@@ -28,4 +28,9 @@ version = projectVersion
 plugins.withId('java') {
     components.java.withVariantsFromConfiguration(configurations.testFixturesApiElements) { skip() }
     components.java.withVariantsFromConfiguration(configurations.testFixturesRuntimeElements) { skip() }
+}
+
+micronautBuild {
+    enableProcessing = false
+    enableBom = false
 }

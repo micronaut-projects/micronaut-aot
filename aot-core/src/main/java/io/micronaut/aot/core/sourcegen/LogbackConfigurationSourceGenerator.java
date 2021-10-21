@@ -33,9 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Locale;
 
 /**
@@ -79,15 +76,7 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
 
     @Override
     public void generateResourceFiles(File targetDirectory) {
-        File serviceDir = new File(targetDirectory, "META-INF/services");
-        if (serviceDir.isDirectory() || serviceDir.mkdirs()) {
-            File serviceFile = new File(serviceDir, Configurator.class.getName());
-            try (PrintWriter wrt = new PrintWriter(new FileWriter(serviceFile))) {
-                wrt.println(getContext().getPackageName() + ".StaticLogbackConfiguration");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        writeServiceFile(targetDirectory, Configurator.class, "StaticLogbackConfiguration");
     }
 
     private static MethodSpec addStatusMethod() {

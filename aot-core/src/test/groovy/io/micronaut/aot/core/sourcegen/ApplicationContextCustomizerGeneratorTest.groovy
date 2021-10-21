@@ -18,39 +18,34 @@ package io.micronaut.aot.core.sourcegen
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.TypeSpec
+import io.micronaut.context.ApplicationContextCustomizer
 
-class OptimizedEntryPointGeneratorTest extends AbstractSourceGeneratorSpec {
-    private String entryPoint = 'io.micronaut.demo.Application'
+class ApplicationContextCustomizerGeneratorTest extends AbstractSourceGeneratorSpec {
     private List<SourceGenerator> generators = []
 
     @Override
     SourceGenerator newGenerator() {
-        new OptimizedEntryPointGenerator(context, entryPoint, "Application\$Optimized", generators)
+        new ApplicationContextCustomizerGenerator(context, "ApplicationService", generators)
     }
 
-    def "generates a simple entry point delegating to the user entry point"() {
+    def "generates an application context builder service"() {
         when:
         generate()
 
         then:
         assertThatGeneratedSources {
             doesNotCreateInitializer()
-            hasClass('Application$Optimized') {
+            hasClass('ApplicationService') {
                 withSources '''package io.micronaut.test;
 
-import io.micronaut.demo.Application;
-import java.lang.String;
+import io.micronaut.context.ApplicationContextCustomizer;
 
-public class Application$Optimized {
+public class ApplicationService implements ApplicationContextCustomizer {
   static {
   }
-
-  public static void main(String[] args) {
-    Application.main(args);
-  }
-}
-'''
+}'''
             }
+            generatesServiceFile(ApplicationContextCustomizer, "io.micronaut.test.ApplicationService")
         }
     }
 
@@ -64,20 +59,15 @@ public class Application$Optimized {
         then:
         assertThatGeneratedSources {
             doesNotCreateInitializer()
-            hasClass('Application$Optimized') {
+            hasClass('ApplicationService') {
                 withSources '''package io.micronaut.test;
 
-import io.micronaut.demo.Application;
-import java.lang.String;
+import io.micronaut.context.ApplicationContextCustomizer;
 
-public class Application$Optimized {
+public class ApplicationService implements ApplicationContextCustomizer {
   static {
     initializer1();
     initializer2();
-  }
-
-  public static void main(String[] args) {
-    Application.main(args);
   }
 
   private static void initializer1() {
@@ -87,6 +77,7 @@ public class Application$Optimized {
   }
 }
 '''
+                generatesServiceFile(ApplicationContextCustomizer, "io.micronaut.test.ApplicationService")
             }
         }
     }
@@ -107,8 +98,8 @@ class SomeClass {
 }
 """
             }
-            hasClass('Application$Optimized') {
-                containingSources('class Application$Optimized')
+            hasClass('ApplicationService') {
+                containingSources('class ApplicationService')
             }
         }
     }

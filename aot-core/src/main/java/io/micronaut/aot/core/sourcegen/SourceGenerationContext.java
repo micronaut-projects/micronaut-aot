@@ -19,7 +19,6 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.File;
-import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -47,24 +46,13 @@ import java.util.stream.Collectors;
  * which are written to log files during code generation.
  */
 public class SourceGenerationContext {
-    private final URLClassLoader classloader;
     private final String packageName;
     private final Set<String> excludedResources = new TreeSet<>();
     private final Map<String, List<String>> diagnostics = new HashMap<>();
     private final Set<Class<?>> classesRequiredAtCompilation = new HashSet<>();
 
-    public SourceGenerationContext(URLClassLoader classloader, String packageName) {
-        this.classloader = classloader;
+    public SourceGenerationContext(String packageName) {
         this.packageName = packageName;
-    }
-
-    /**
-     * Returns the application classloader, which contains the
-     * full application runtime classpath as known at build time.
-     * @return a classloader which can be used to laod application classes
-     */
-    public URLClassLoader getClassloader() {
-        return classloader;
     }
 
     /**

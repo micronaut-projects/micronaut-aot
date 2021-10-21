@@ -21,6 +21,7 @@ import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
+import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.io.service.SoftServiceLoader;
 
 import java.util.Arrays;
@@ -43,10 +44,10 @@ import static javax.lang.model.element.Modifier.STATIC;
  */
 public class JitStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
     public JitStaticServiceLoaderSourceGenerator(SourceGenerationContext context,
-                                                 Predicate<Object> applicationContextAnalyzer,
+                                                 Predicate<AnnotationMetadataProvider> applicationContextAnalyzer,
                                                  List<String> serviceNames,
                                                  Predicate<String> rejectedClasses,
-                                                 Map<String, AbstractSingleClassFileGenerator> substitutions) {
+                                                 Map<String, AbstractSourceGenerator> substitutions) {
         super(context, applicationContextAnalyzer, serviceNames, rejectedClasses, substitutions);
     }
 

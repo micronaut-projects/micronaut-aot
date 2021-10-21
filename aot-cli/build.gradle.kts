@@ -21,7 +21,7 @@ plugins {
 description = "A CLI tool leveraging Micronaut AOT"
 
 dependencies {
-    implementation(project(":aot-api"))
+    implementation(projects.aotApi)
     implementation(mn.picocli)
 }
 
@@ -38,8 +38,4 @@ sourceSets {
     main {
         resources.srcDir(versionInfo)
     }
-}
-
-tasks.named<JavaExec>("run") {
-    args = listOf("--version")
 }
