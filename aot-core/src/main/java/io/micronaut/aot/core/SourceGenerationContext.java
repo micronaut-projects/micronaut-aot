@@ -88,7 +88,7 @@ public interface SourceGenerationContext {
     Set<String> getExcludedResources();
 
     /**
-     * Generates a java file spec
+     * Generates a java file spec.
      * @param typeSpec the type spec of the main class
      * @return a java file
      */
@@ -125,14 +125,22 @@ public interface SourceGenerationContext {
     <T> Optional<T> get(@NonNull Class<T> type);
 
     /**
+<<<<<<< HEAD
      * Returns the diagnostics map
+=======
+     * Returns the diagnostics map.
+>>>>>>> Rework how the AOT module is configured
      * @return the diagnostics
      */
     @NonNull
     Map<String, List<String>> getDiagnostics();
 
     /**
+<<<<<<< HEAD
      * Returns the target runtime environment
+=======
+     * Returns the target runtime environment.
+>>>>>>> Rework how the AOT module is configured
      * @return target runtime
      */
     @NonNull

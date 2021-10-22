@@ -110,7 +110,7 @@ public interface Configuration {
     }
 
     /**
-     * Returns the target runtime for optimizations
+     * Returns the target runtime for optimizations.
      * @return the target runtime
      */
     @NonNull
