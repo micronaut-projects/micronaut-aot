@@ -22,12 +22,16 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import io.micronaut.context.env.CachedEnvironment;
 import io.micronaut.context.env.ConstantPropertySources;
 import io.micronaut.context.env.PropertySource;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.util.EnvironmentProperties;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -36,17 +40,37 @@ import java.util.stream.Collectors;
  * (and constant).
  */
 public class ConstantPropertySourcesSourceGenerator extends AbstractSourceGenerator {
-    private final AbstractStaticServiceLoaderSourceGenerator serviceLoaderGenerator;
+    public static final String ID = "sealed.property.source";
+    public static final String DESCRIPTION = "Precomputes property sources at build time";
 
-    public ConstantPropertySourcesSourceGenerator(SourceGenerationContext context,
-                                                  AbstractStaticServiceLoaderSourceGenerator serviceLoaderGenerator) {
-        super(context);
-        this.serviceLoaderGenerator = serviceLoaderGenerator;
+    @Override
+    @NonNull
+    public String getId() {
+        return ID;
     }
 
     @Override
+    @NonNull
+    public Optional<String> getDescription() {
+        return Optional.of(DESCRIPTION);
+    }
+
+    @Override
+    @NonNull
+    public Set<String> getDependencies() {
+        return new HashSet<String>() {
+            {
+                add(JitStaticServiceLoaderSourceGenerator.ID);
+                add(NativeStaticServiceLoaderSourceGenerator.ID);
+            }
+        };
+    }
+
+    @Override
+    @NonNull
     public Optional<MethodSpec> generateStaticInit() {
-        List<String> substitutes = serviceLoaderGenerator.findSubstitutesFor("io.micronaut.context.env.PropertySourceLoader")
+        Optional<AbstractStaticServiceLoaderSourceGenerator.Substitutes> maybeSubstitutes = context.get(AbstractStaticServiceLoaderSourceGenerator.Substitutes.class);
+        List<String> substitutes = maybeSubstitutes.map(s -> s.findSubstitutesFor("io.micronaut.context.env.PropertySourceLoader")).orElse(Collections.emptyList())
                 .stream()
                 .map(javaFile -> javaFile.packageName + "." + javaFile.typeSpec.name)
                 .collect(Collectors.toList());

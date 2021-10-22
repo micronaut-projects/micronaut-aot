@@ -1,12 +1,15 @@
 package io.micronaut.aot.core.sourcegen
 
+import io.micronaut.aot.core.AOTSourceGenerator
+
 class GraalVMOptimizationFeatureSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
-    SourceGenerator newGenerator() {
-        new GraalVMOptimizationFeatureSourceGenerator(context, 'ApplicationService', ['A', 'B', 'C'])
+    AOTSourceGenerator newGenerator() {
+        props.put(GraalVMOptimizationFeatureSourceGenerator.OPTION.key, ['A', 'B', 'C'].join(','))
+        new GraalVMOptimizationFeatureSourceGenerator()
     }
 
-    def "generates a feature class"() {
+    def "generates a feature file"() {
         when:
         generate()
 
@@ -14,10 +17,10 @@ class GraalVMOptimizationFeatureSourceGeneratorTest extends AbstractSourceGenera
         assertThatGeneratedSources {
             doesNotCreateInitializer()
             generatesMetaInfResource("native-image/$packageName/native-image.properties", """
---initialize-at-build-time=io.micronaut.test.ApplicationService
--H:ServiceLoaderFeatureExcludeServices=A
--H:ServiceLoaderFeatureExcludeServices=B
--H:ServiceLoaderFeatureExcludeServices=C
+Args=--initialize-at-build-time=io.micronaut.test.AOTApplicationContextCustomizer \\
+     -H:ServiceLoaderFeatureExcludeServices=A \\
+     -H:ServiceLoaderFeatureExcludeServices=B \\
+     -H:ServiceLoaderFeatureExcludeServices=C
 """)
         }
     }

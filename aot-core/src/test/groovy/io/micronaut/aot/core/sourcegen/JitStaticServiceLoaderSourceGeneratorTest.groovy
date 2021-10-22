@@ -15,21 +15,16 @@
  */
 package io.micronaut.aot.core.sourcegen
 
+import io.micronaut.aot.core.AOTSourceGenerator
+
 class JitStaticServiceLoaderSourceGeneratorTest extends AbstractSourceGeneratorSpec {
-    private final List<String> services = []
     @Override
-    SourceGenerator newGenerator() {
-        new JitStaticServiceLoaderSourceGenerator(
-                context,
-                { true },
-                services,
-                { false },
-                [:]
-        )
+    AOTSourceGenerator newGenerator() {
+        new JitStaticServiceLoaderSourceGenerator()
     }
 
     def "generates a service loader for a single service"() {
-        services << TestService.name
+        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES.key, TestService.name)
 
         when:
         generate()
@@ -95,7 +90,7 @@ public class TestServiceFactory implements SoftServiceLoader.StaticServiceLoader
     }
 
     def "generates a service loader for a multiple implementations of a service"() {
-        services << TestServiceWithMoreThanOneImpl.name
+        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES.key, TestServiceWithMoreThanOneImpl.name)
 
         when:
         generate()

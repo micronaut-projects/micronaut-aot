@@ -16,25 +16,17 @@
 package io.micronaut.aot;
 
 import com.squareup.javapoet.JavaFile;
+import io.micronaut.aot.core.AOTSourceGenerator;
+import io.micronaut.aot.core.Configuration;
+import io.micronaut.aot.core.Option;
+import io.micronaut.aot.core.Runtime;
+import io.micronaut.aot.core.SourceGenerationContext;
+import io.micronaut.aot.core.config.DefaultConfiguration;
+import io.micronaut.aot.core.config.SourceGeneratorLoader;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
-import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
-import io.micronaut.aot.core.sourcegen.AbstractStaticServiceLoaderSourceGenerator;
 import io.micronaut.aot.core.sourcegen.ApplicationContextCustomizerGenerator;
-import io.micronaut.aot.core.sourcegen.ConstantPropertySourcesSourceGenerator;
-import io.micronaut.aot.core.sourcegen.EnableCachedEnvironmentSourceGenerator;
-import io.micronaut.aot.core.sourcegen.EnvironmentPropertiesSourceGenerator;
-import io.micronaut.aot.core.sourcegen.GraalVMOptimizationFeatureSourceGenerator;
-import io.micronaut.aot.core.sourcegen.JitStaticServiceLoaderSourceGenerator;
-import io.micronaut.aot.core.sourcegen.KnownMissingTypesSourceGenerator;
-import io.micronaut.aot.core.sourcegen.LogbackConfigurationSourceGenerator;
-import io.micronaut.aot.core.sourcegen.NativeStaticServiceLoaderSourceGenerator;
-import io.micronaut.aot.core.sourcegen.PublishersSourceGenerator;
-import io.micronaut.aot.core.sourcegen.SourceGenerationContext;
-import io.micronaut.aot.core.sourcegen.SourceGenerator;
-import io.micronaut.aot.core.sourcegen.YamlPropertySourceGenerator;
+import io.micronaut.aot.core.sourcegen.DefaultSourceGenerationContext;
 import io.micronaut.aot.internal.StreamHelper;
-import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
-import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.annotation.Experimental;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,16 +52,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -100,10 +86,9 @@ import java.util.stream.Collectors;
  */
 @Experimental
 public final class MicronautAotOptimizer implements ConfigKeys {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MicronautAotOptimizer.class);
-
     public static final String OUTPUT_RESOURCES_FILE_NAME = "resource-filter.txt";
-    public static final String CUSTOMIZER_CLASS_NAME = "AOTApplicationContextCustomizer";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MicronautAotOptimizer.class);
 
     private final List<File> classpath;
     private final File outputSourcesDirectory;
@@ -144,37 +129,32 @@ public final class MicronautAotOptimizer implements ConfigKeys {
         }
     }
 
-    private static String mandatoryValue(Properties config, String key) {
-        String value = config.getProperty(key);
-        if (value == null || value.isEmpty()) {
-            invalidConfiguration(key, "should not be null or empty");
-        }
-        return value;
-    }
-
-    private static <T> T optionalValue(Properties config, String key, Function<Optional<String>, T> producer) {
-        String value = config.getProperty(key);
-        if (value == null) {
-            Object raw = config.get(key);
-            if (raw != null) {
-                value = String.valueOf(raw);
+    /**
+     * Scans the list of available optimization services and generates
+     * a configuration file which includes all entries.
+     * @param runtime the runtime for which to generate a properties file
+     * @param propertiesFile the generated properties file
+     */
+    public static void exportConfiguration(String runtime, File propertiesFile) {
+        List<AOTSourceGenerator> list = SourceGeneratorLoader.list(Runtime.valueOf(runtime.toUpperCase(Locale.ENGLISH)));
+        try (PrintWriter wrt = new PrintWriter(new FileOutputStream(propertiesFile))) {
+            for (AOTSourceGenerator generator : list) {
+                generator.getDescription().ifPresent(desc ->
+                        Arrays.stream(desc.split("\r?\n")).forEach(line ->
+                                wrt.println("# " + line)));
+                wrt.println(generator.getId() + ".enabled = true");
+                for (Option option : generator.getConfigurationOptions()) {
+                    if (option.getDescription().isPresent()) {
+                        wrt.println("# " + option.getDescription().get());
+                    }
+                    String sample = option.getSampleValue().orElse("");
+                    wrt.println(option.getKey() + " = " + sample);
+                }
+                wrt.println();
             }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
-        return producer.apply(Optional.ofNullable(value));
-    }
-
-    private static boolean booleanValue(Properties config, String key, boolean defaultValue) {
-        return optionalValue(config, key, s -> s.map(Boolean::parseBoolean).orElse(defaultValue));
-    }
-
-    private static void invalidConfiguration(String key, String message) {
-        throw new IllegalStateException("Parameter '" + "'" + key + " " + message);
-    }
-
-    private static List<String> splitToList(String value) {
-        return Arrays.stream(value.split("[:,]\\s*"))
-                .filter(s -> !s.trim().isEmpty())
-                .collect(Collectors.toList());
     }
 
     /**
@@ -184,32 +164,27 @@ public final class MicronautAotOptimizer implements ConfigKeys {
      * would mean that we could have a clash between Micronaut runtime
      * versions.
      *
-     * @param config the configuration
+     * @param props the configuration properties
      */
-    public static void execute(Properties config) {
-        String pkg = mandatoryValue(config, GENERATED_PACKAGE);
-        File outputDir = new File(mandatoryValue(config, OUTPUT_DIRECTORY));
+    public static void execute(Properties props) {
+        Configuration config = new DefaultConfiguration(props);
+        String pkg = config.mandatoryValue(GENERATED_PACKAGE);
+        File outputDir = new File(config.mandatoryValue(OUTPUT_DIRECTORY));
         File sourcesDir = new File(outputDir, "sources");
         File classesDir = new File(outputDir, "classes");
         File logsDir = new File(outputDir, "logs");
-        runner(pkg, sourcesDir, classesDir, logsDir)
-                .forRuntime(optionalValue(config, RUNTIME, v -> v.map(r -> Runtime.valueOf(r.toUpperCase())).orElse(Runtime.JIT)))
-                .addClasspath(optionalValue(config, CLASSPATH, v -> v.map(MicronautAotOptimizer::splitToList).map(l -> l.stream().map(File::new).collect(Collectors.toList())).orElse(Collections.emptyList())))
-                .sealEnvironment(booleanValue(config, SEALED_ENVIRONMENT, true))
-                .preCheckRequirements(booleanValue(config, PRECHECK_BEAN_REQUIREMENTS, true))
-                .replaceLogbackXml(booleanValue(config, REPLACE_LOGBACK, false))
-                .preloadEnvironment(booleanValue(config, PRELOAD_ENVIRONMENT, true))
-                .scanForReactiveTypes(booleanValue(config, SCAN_REACTIVE_TYPES, true))
-                .checkMissingTypes(optionalValue(config, TYPES_TO_CHECK, v -> v.map(MicronautAotOptimizer::splitToList)).orElse(Collections.emptyList()))
-                .scanForServiceClasses(optionalValue(config, SERVICE_TYPES, v -> v.map(MicronautAotOptimizer::splitToList)).orElse(Collections.emptyList()))
+
+        runner(pkg, sourcesDir, classesDir, logsDir, config)
+                .addClasspath(config.stringList(CLASSPATH).stream().map(File::new).collect(Collectors.toList()))
                 .execute();
     }
 
     public static Runner runner(String generatedPackage,
                                 File outputSourcesDirectory,
                                 File outputClassesDirectory,
-                                File logsDirectory) {
-        return new Runner(generatedPackage, outputSourcesDirectory, outputClassesDirectory, logsDirectory);
+                                File logsDirectory,
+                                Configuration config) {
+        return new Runner(generatedPackage, outputSourcesDirectory, outputClassesDirectory, logsDirectory, config);
     }
 
     private static List<File> outputSourceFilesToSourceDir(File srcDir, List<JavaFile> javaFiles) {
@@ -287,55 +262,19 @@ public final class MicronautAotOptimizer implements ConfigKeys {
         private final File outputClassesDirectory;
         private final File logsDirectory;
 
-        private final List<String> classesToCheck = new ArrayList<>();
-        private final List<String> serviceClasses = new ArrayList<>();
-
-        private Runtime runtime = Runtime.JIT;
-        private boolean sealEnvironment = true;
-        private boolean preloadEnvironment = true;
-        private boolean scanForReactiveTypes = true;
-        private boolean replaceLogbackXml = true;
-        private boolean precheckRequirements = true;
+        private final Configuration config;
 
         public Runner(String generatedPackage,
                       File outputSourcesDirectory,
                       File outputClassesDirectory,
-                      File logsDirectory
+                      File logsDirectory,
+                      Configuration config
         ) {
             this.generatedPackage = generatedPackage;
             this.outputSourcesDirectory = outputSourcesDirectory;
             this.outputClassesDirectory = outputClassesDirectory;
             this.logsDirectory = logsDirectory;
-        }
-
-        public Runner forRuntime(Runtime runtime) {
-            this.runtime = runtime;
-            return this;
-        }
-
-        public Runner preloadEnvironment(boolean preload) {
-            this.preloadEnvironment = preload;
-            return this;
-        }
-
-        public Runner scanForReactiveTypes(boolean scan) {
-            this.scanForReactiveTypes = scan;
-            return this;
-        }
-
-        public Runner preCheckRequirements(boolean test) {
-            this.precheckRequirements = test;
-            return this;
-        }
-
-        public Runner sealEnvironment(boolean cache) {
-            this.sealEnvironment = cache;
-            return this;
-        }
-
-        public Runner replaceLogbackXml(boolean replace) {
-            this.replaceLogbackXml = replace;
-            return this;
+            this.config = config;
         }
 
         /**
@@ -349,33 +288,6 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             return this;
         }
 
-        /**
-         * Registers a number of class names which we want to find on classpath.
-         * If they are not, code will be optimized at runtime so that verification
-         * is done at no cost.
-         *
-         * @param classNames a list of class names which are typically passed
-         * to {@link io.micronaut.core.reflect.ClassUtils#forName(String, ClassLoader)}
-         * @return this builder
-         */
-        public Runner checkMissingTypes(Collection<String> classNames) {
-            classesToCheck.addAll(classNames);
-            return this;
-        }
-
-        /**
-         * Adds service classes to be searched for on classpath. Under the hood
-         * it will use the service loader to scan for services and generate
-         * classes which optimize their lookup.
-         *
-         * @param serviceClasses the list of service types to search for
-         * @return this builder
-         */
-        public Runner scanForServiceClasses(Collection<String> serviceClasses) {
-            this.serviceClasses.addAll(serviceClasses);
-            return this;
-        }
-
         @SuppressWarnings("unchecked")
         public Runner execute() {
             MicronautAotOptimizer optimizer = new MicronautAotOptimizer(
@@ -386,76 +298,17 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             ApplicationContextAnalyzer analyzer = ApplicationContextAnalyzer.create();
             Set<String> environmentNames = analyzer.getEnvironmentNames();
             LOGGER.info("Detected environments: {}", environmentNames);
-            Predicate<AnnotationMetadataProvider> beanFilter = precheckRequirements ? analyzer.getAnnotationMetadataPredicate() : p -> true;
-            SourceGenerationContext context = new SourceGenerationContext(generatedPackage);
-            List<SourceGenerator> sourceGenerators = new ArrayList<>();
-            if (!classesToCheck.isEmpty()) {
-                sourceGenerators.add(new KnownMissingTypesSourceGenerator(context, classesToCheck));
-            }
-            AbstractStaticServiceLoaderSourceGenerator serviceLoaderGenerator = null;
-            if (!serviceClasses.isEmpty()) {
-                Set<String> resourceNames = new LinkedHashSet<>();
-                resourceNames.add("application");
-                environmentNames.stream()
-                        .map(env -> "application-" + env)
-                        .forEach(resourceNames::add);
-                Map<String, AbstractSourceGenerator> substitutions = Collections.singletonMap(YamlPropertySourceLoader.class.getName(), new YamlPropertySourceGenerator(context, resourceNames));
-                if (runtime == Runtime.JIT) {
-                    serviceLoaderGenerator = new JitStaticServiceLoaderSourceGenerator(
-                            context,
-                            beanFilter,
-                            serviceClasses,
-                            n -> false,
-                            substitutions
-                    );
-                } else {
-                    serviceLoaderGenerator = new NativeStaticServiceLoaderSourceGenerator(
-                            context,
-                            beanFilter,
-                            serviceClasses,
-                            n -> false,
-                            substitutions
-                    );
-                }
-                sourceGenerators.add(serviceLoaderGenerator);
-            }
-            if (preloadEnvironment) {
-                sourceGenerators.add(new EnvironmentPropertiesSourceGenerator(context));
-            }
-            if (scanForReactiveTypes) {
-                sourceGenerators.add(new PublishersSourceGenerator(context));
-            }
-            if (!serviceClasses.isEmpty()) {
-                sourceGenerators.add(new ConstantPropertySourcesSourceGenerator(context, serviceLoaderGenerator));
-            }
-            if (sealEnvironment) {
-                sourceGenerators.add(new EnableCachedEnvironmentSourceGenerator(context));
-            }
-            if (replaceLogbackXml) {
-                sourceGenerators.add(new LogbackConfigurationSourceGenerator(context));
-            }
-            if (runtime == Runtime.NATIVE) {
-                sourceGenerators.add(new GraalVMOptimizationFeatureSourceGenerator(context, CUSTOMIZER_CLASS_NAME, serviceClasses));
-            }
+            SourceGenerationContext context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config);
+            List<AOTSourceGenerator> sourceGenerators = SourceGeneratorLoader.load(config.getRuntime(), context);
             ApplicationContextCustomizerGenerator generator = new ApplicationContextCustomizerGenerator(
-                    context,
-                    CUSTOMIZER_CLASS_NAME,
                     sourceGenerators
             );
-            generator.init();
+            generator.init(context);
             optimizer.compileGeneratedSources(context.getExtraClasspath(), generator.generateSourceFiles());
             generator.generateResourceFiles(outputClassesDirectory);
             optimizer.writeLogs(context);
             return this;
         }
-    }
-
-    /**
-     * The targetted type of runtime.
-     */
-    public enum Runtime {
-        JIT,
-        NATIVE
     }
 
 }

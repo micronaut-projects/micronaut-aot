@@ -15,11 +15,13 @@
  */
 package io.micronaut.aot.core.sourcegen
 
+import io.micronaut.aot.core.AOTSourceGenerator
+
 class PublishersSourceGeneratorTest extends AbstractSourceGeneratorSpec {
 
     @Override
-    SourceGenerator newGenerator() {
-        new PublishersSourceGenerator(context)
+    AOTSourceGenerator newGenerator() {
+        new PublishersSourceGenerator()
     }
 
     def "generates publishers optimization sources"() {

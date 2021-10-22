@@ -20,6 +20,7 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import io.micronaut.context.env.CachedEnvironment;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.util.EnvironmentProperties;
 
@@ -35,18 +36,33 @@ import java.util.stream.Collectors;
  * names from environment variable names at build time.
  */
 public class EnvironmentPropertiesSourceGenerator extends AbstractSourceGenerator {
+    public static final String ID = "precompute.environment.properties";
+    public static final String DESCRIPTION = "Precomputes Micronaut configuration property keys from the current environment variables";
+
     private final Map<String, String> env;
 
-    public EnvironmentPropertiesSourceGenerator(SourceGenerationContext context, Map<String, String> env) {
-        super(context);
+    public EnvironmentPropertiesSourceGenerator(Map<String, String> env) {
         this.env = env;
     }
 
-    public EnvironmentPropertiesSourceGenerator(SourceGenerationContext context) {
-        this(context, CachedEnvironment.getenv());
+    public EnvironmentPropertiesSourceGenerator() {
+        this(CachedEnvironment.getenv());
     }
 
     @Override
+    @NonNull
+    public String getId() {
+        return ID;
+    }
+
+    @Override
+    @NonNull
+    public Optional<String> getDescription() {
+        return Optional.of(DESCRIPTION);
+    }
+
+    @Override
+    @NonNull
     public Optional<MethodSpec> generateStaticInit() {
         CodeBlock.Builder initializer = CodeBlock.builder();
         EnvironmentProperties props = EnvironmentProperties.empty();

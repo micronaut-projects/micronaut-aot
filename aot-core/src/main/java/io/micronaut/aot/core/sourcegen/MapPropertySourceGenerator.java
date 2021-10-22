@@ -21,6 +21,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.core.annotation.Generated;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.util.StringUtils;
 
 import java.util.HashMap;
@@ -33,18 +34,22 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * set of values at build time.
  */
 public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator {
-    private final SourceGenerationContext context;
+    public static final String BASE_ID = "map.property.";
+
     private final String resourceName;
     private final Map<String, Object> values;
 
     public MapPropertySourceGenerator(
-            SourceGenerationContext context,
             String resourceName,
             Map<String, Object> values) {
-        super(context);
-        this.context = context;
         this.resourceName = resourceName;
         this.values = values;
+    }
+
+    @Override
+    @NonNull
+    public String getId() {
+        return BASE_ID + resourceName;
     }
 
     private CodeBlock generateMap() {
@@ -70,6 +75,7 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
     }
 
     @Override
+    @NonNull
     protected JavaFile generate() {
         String typeName = computeTypeName();
         TypeSpec type = TypeSpec.classBuilder(typeName)

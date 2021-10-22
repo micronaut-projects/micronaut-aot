@@ -21,8 +21,12 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.WildcardTypeName;
+import io.micronaut.aot.core.Option;
+import io.micronaut.aot.core.SourceGenerationContext;
+import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
 import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.annotation.Generated;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.io.service.SoftServiceLoader;
 import io.micronaut.core.optim.StaticOptimizations;
 
@@ -30,14 +34,17 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,33 +57,66 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * have dedicated implementations for both (see subclasses).
  */
 public abstract class AbstractStaticServiceLoaderSourceGenerator extends AbstractSourceGenerator {
-    public static final String SERVICE_LOADING_CATEGORY = "service-loading";
-    private final Predicate<AnnotationMetadataProvider> applicationContextAnalyzer;
-    private final List<String> serviceNames;
-    private final Predicate<String> rejectedClasses;
-    private final Map<String, AbstractSourceGenerator> substitutions;
-    private final Map<String, List<JavaFile>> substitutes = new HashMap<>();
+    public static final String SERVICE_LOADING_CATEGORY = "serviceloading";
+    public static final String DESCRIPTION = "Scans for service types ahead-of-time, avoiding classpath scanning at startup";
+    public static final Option SERVICE_TYPES = Option.of("service.types", "The list of service types to be scanned (comma separated)", "io.micronaut.Service1,io.micronaut.Service2");
+    public static final Option REJECTED_CLASSES = Option.of("serviceloading.rejected.impls", "A list of implementation types which shouldn't be included in the final application (comma separated)", "com.Misc,org.Bar");
+
+    private Predicate<AnnotationMetadataProvider> metadataProviderPredicate;
+    private List<String> serviceNames;
+    private Predicate<String> rejectedClasses;
+    private Map<String, AbstractSourceGenerator> substitutions;
+    private final Substitutes substitutes = new Substitutes();
     private Map<String, TypeSpec> staticServiceClasses;
 
-    protected AbstractStaticServiceLoaderSourceGenerator(SourceGenerationContext context,
-                                                         Predicate<AnnotationMetadataProvider> applicationContextAnalyzer,
-                                                      List<String> serviceNames,
-                                                      Predicate<String> rejectedClasses,
-                                                      Map<String, AbstractSourceGenerator> substitutions) {
-        super(context);
-        this.applicationContextAnalyzer = applicationContextAnalyzer;
-        this.serviceNames = serviceNames;
-        this.rejectedClasses = rejectedClasses;
-        this.substitutions = substitutions;
+    @NonNull
+    @Override
+    public Optional<String> getDescription() {
+        return Optional.of(DESCRIPTION);
+    }
+
+    @NonNull
+    @Override
+    public Set<Option> getConfigurationOptions() {
+        return new LinkedHashSet<Option>() {{
+            add(SERVICE_TYPES);
+            add(REJECTED_CLASSES);
+        }};
     }
 
     protected final void doInit() throws ClassNotFoundException {
+        if (serviceNames == null) {
+            serviceNames = context.getConfiguration().stringList(SERVICE_TYPES.getKey());
+        }
+        if (substitutions == null) {
+            Set<String> resourceNames = new LinkedHashSet<>();
+            resourceNames.add("application");
+            context.getAnalyzer().getEnvironmentNames()
+                    .stream()
+                    .map(env -> "application-" + env)
+                    .forEach(resourceNames::add);
+            substitutions = new HashMap<>();
+            YamlPropertySourceGenerator yaml = new YamlPropertySourceGenerator(resourceNames);
+            yaml.init(context);
+            if (yaml.isEnabledOn(context.getRuntime())) {
+                substitutions.put(YamlPropertySourceLoader.class.getName(), yaml);
+            }
+        }
+        if (metadataProviderPredicate == null) {
+            metadataProviderPredicate = context.getAnalyzer().getAnnotationMetadataPredicate();
+        }
+        if (rejectedClasses == null) {
+            List<String> strings = context.getConfiguration().stringList(REJECTED_CLASSES.getKey());
+            Set<String> rejected = strings.isEmpty() ? Collections.emptySet() : new HashSet<>(strings);
+            rejectedClasses = rejected::contains;
+        }
         if (staticServiceClasses == null) {
             staticServiceClasses = new HashMap<>();
             for (String serviceName : serviceNames) {
                 generateServiceLoader(rejectedClasses, serviceName);
             }
         }
+        context.put(Substitutes.class, substitutes);
     }
 
     private void generateServiceLoader(Predicate<String> rejectedClasses, String serviceName) throws ClassNotFoundException {
@@ -136,7 +176,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
 
     private DeepAnalyzer deepAnalyzerFor(Class<?> clazz, String serviceName) throws ClassNotFoundException {
         if (AnnotationMetadataProvider.class.isAssignableFrom(clazz)) {
-            return new AnnotationMetadataAnalyzer(context, applicationContextAnalyzer, serviceName);
+            return new AnnotationMetadataAnalyzer(context, metadataProviderPredicate, serviceName);
         }
         return DeepAnalyzer.DEFAULT;
     }
@@ -155,6 +195,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
         return factory;
     }
 
+    @NonNull
     @Override
     public Optional<MethodSpec> generateStaticInit() {
         return staticMethod("staticServices", body -> {
@@ -173,6 +214,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
         });
     }
 
+    @NonNull
     @Override
     public List<JavaFile> generateSourceFiles() {
         return Stream.concat(
@@ -184,16 +226,31 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     }
 
     /**
-     * Returns the list of java source files which will are generated
-     * in replacement of a known service type.
-     * This mechanism is used to substitute, for example, Yaml property
-     * source loader with individual property sources (which are not of
-     * the requested service type).
-     * @param serviceType the service implementation type
-     * @return the list of source files generated in replacement
+     * Data holder for substitutes.
      */
-    public List<JavaFile> findSubstitutesFor(String serviceType) {
-        return substitutes.getOrDefault(serviceType, Collections.emptyList());
+    static final class Substitutes {
+        private final Map<String, List<JavaFile>> substitutes = new HashMap<>();
+
+        private Collection<List<JavaFile>> values() {
+            return substitutes.values();
+        }
+
+        private List<JavaFile> computeIfAbsent(String key, Function<? super String, ? extends List<JavaFile>> mappingFunction) {
+            return substitutes.computeIfAbsent(key, mappingFunction);
+        }
+
+        /**
+         * Returns the list of java source files which will are generated
+         * in replacement of a known service type.
+         * This mechanism is used to substitute, for example, Yaml property
+         * source loader with individual property sources (which are not of
+         * the requested service type).
+         * @param serviceType the service implementation type
+         * @return the list of source files generated in replacement
+         */
+        public List<JavaFile> findSubstitutesFor(String serviceType) {
+            return substitutes.getOrDefault(serviceType, Collections.emptyList());
+        }
     }
 
     interface DeepAnalyzer {

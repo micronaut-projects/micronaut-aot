@@ -15,14 +15,19 @@
  */
 package io.micronaut.aot.core.sourcegen
 
+import io.micronaut.aot.core.AOTSourceGenerator
+
 class KnownMissingTypesSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
-    SourceGenerator newGenerator() {
-        new KnownMissingTypesSourceGenerator(context, [
-                'non.existing.ClassName',
-                SourceGenerator.class.name,
-                'another.missing.Clazz'
-        ])
+    AOTSourceGenerator newGenerator() {
+        props.put(KnownMissingTypesSourceGenerator.OPTION.key,
+                [
+                        'non.existing.ClassName',
+                        AOTSourceGenerator.class.name,
+                        'another.missing.Clazz'
+                ].join(",")
+        )
+        new KnownMissingTypesSourceGenerator()
     }
 
     def "generates known missing classes initializer"() {

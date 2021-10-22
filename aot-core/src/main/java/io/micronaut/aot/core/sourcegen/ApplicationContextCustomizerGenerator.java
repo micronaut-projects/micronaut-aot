@@ -20,7 +20,9 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+import io.micronaut.aot.core.AOTSourceGenerator;
 import io.micronaut.context.ApplicationContextCustomizer;
+import io.micronaut.core.annotation.NonNull;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -38,35 +40,34 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * delegate optimizers which are passed to this generator.
  */
 public class ApplicationContextCustomizerGenerator extends AbstractSourceGenerator {
-    private final String generatedServiceName;
-    private final List<SourceGenerator> sourceGenerators;
+    public static final String ID = "application.context.customizer";
 
-    public ApplicationContextCustomizerGenerator(SourceGenerationContext context,
-                                                 String generatedServiceName,
-                                                 List<SourceGenerator> sourceGenerators) {
-        super(context);
-        this.generatedServiceName = generatedServiceName;
+    public static final String CUSTOMIZER_CLASS_NAME = "AOTApplicationContextCustomizer";
+
+    private final List<AOTSourceGenerator> sourceGenerators;
+
+    public ApplicationContextCustomizerGenerator(List<AOTSourceGenerator> sourceGenerators) {
         this.sourceGenerators = sourceGenerators;
     }
 
     @Override
-    protected final void doInit() {
-        for (SourceGenerator generator : sourceGenerators) {
-            generator.init();
-        }
+    @NonNull
+    public String getId() {
+        return ID;
     }
 
     @Override
+    @NonNull
     public List<JavaFile> generateSourceFiles() {
         List<JavaFile> allFiles = new ArrayList<>();
-        for (SourceGenerator sourceGenerator : sourceGenerators) {
+        for (AOTSourceGenerator sourceGenerator : sourceGenerators) {
             allFiles.addAll(sourceGenerator.generateSourceFiles());
         }
-        TypeSpec.Builder optimizedEntryPoint = TypeSpec.classBuilder(generatedServiceName)
+        TypeSpec.Builder optimizedEntryPoint = TypeSpec.classBuilder(CUSTOMIZER_CLASS_NAME)
                 .addSuperinterface(ApplicationContextCustomizer.class)
                 .addModifiers(PUBLIC);
         CodeBlock.Builder staticInitializer = CodeBlock.builder();
-        for (SourceGenerator sourceGenerator : sourceGenerators) {
+        for (AOTSourceGenerator sourceGenerator : sourceGenerators) {
             sourceGenerator.generateStaticInit().ifPresent(method -> appendInitializer(optimizedEntryPoint, staticInitializer, method));
         }
         optimizedEntryPoint.addStaticBlock(staticInitializer.build());
@@ -75,11 +76,11 @@ public class ApplicationContextCustomizerGenerator extends AbstractSourceGenerat
     }
 
     @Override
-    public void generateResourceFiles(File targetDirectory) {
-        for (SourceGenerator sourceGenerator : sourceGenerators) {
+    public void generateResourceFiles(@NonNull File targetDirectory) {
+        for (AOTSourceGenerator sourceGenerator : sourceGenerators) {
             sourceGenerator.generateResourceFiles(targetDirectory);
         }
-        writeServiceFile(targetDirectory, ApplicationContextCustomizer.class, generatedServiceName);
+        writeServiceFile(targetDirectory, ApplicationContextCustomizer.class, CUSTOMIZER_CLASS_NAME);
     }
 
     private static void appendInitializer(TypeSpec.Builder optimizedEntryPoint, CodeBlock.Builder staticInitializer, MethodSpec method) {

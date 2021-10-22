@@ -16,6 +16,7 @@
 package io.micronaut.aot.core.sourcegen;
 
 import com.squareup.javapoet.JavaFile;
+import io.micronaut.core.annotation.NonNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,12 +25,10 @@ import java.util.List;
  * Base class for source generators which generate a single class file.
  */
 public abstract class AbstractSingleClassFileGenerator extends AbstractSourceGenerator {
-    protected AbstractSingleClassFileGenerator(SourceGenerationContext context) {
-        super(context);
-    }
 
     protected abstract JavaFile generate();
 
+    @NonNull
     @Override
     public final List<JavaFile> generateSourceFiles() {
         JavaFile file = generate();

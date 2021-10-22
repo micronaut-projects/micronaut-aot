@@ -19,6 +19,7 @@ import com.squareup.javapoet.JavaFile;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.io.scan.DefaultClassPathResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,17 +37,23 @@ import java.util.Optional;
  *
  */
 public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
+    public static final String ID = "yaml.to.java.config";
     private static final Logger LOGGER = LoggerFactory.getLogger(YamlPropertySourceGenerator.class);
 
     private final Collection<String> resources;
 
-    public YamlPropertySourceGenerator(SourceGenerationContext context,
-                                       Collection<String> resources) {
-        super(context);
+    public YamlPropertySourceGenerator(Collection<String> resources) {
         this.resources = resources;
     }
 
     @Override
+    @NonNull
+    public String getId() {
+        return ID;
+    }
+
+    @Override
+    @NonNull
     public List<JavaFile> generateSourceFiles() {
         YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
         List<JavaFile> files = new ArrayList<>();
@@ -67,9 +74,9 @@ public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
                 MapPropertySource mps = (MapPropertySource) ps;
                 Map<String, Object> values = mps.asMap();
                 MapPropertySourceGenerator generator = new MapPropertySourceGenerator(
-                        getContext(),
                         resource,
                         values);
+                generator.init(context);
                 files.add(generator.generate());
             } else {
                 throw new UnsupportedOperationException("Unknown property source type:" + ps.getClass());

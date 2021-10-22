@@ -13,24 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.aot.core.sourcegen
+package io.micronaut.aot.core;
 
-class EnableCachedEnvironmentSourceGeneratorTest extends AbstractSourceGeneratorSpec {
-    @Override
-    SourceGenerator newGenerator() {
-        new EnableCachedEnvironmentSourceGenerator(context)
-    }
-
-    def "generates code to enable environment caching"() {
-        when:
-        generate()
-
-        then:
-        assertThatGeneratedSources {
-            createsInitializer """private static void enableEnvironmentCaching() {
-  io.micronaut.core.optim.StaticOptimizations.cacheEnvironment();
-}
-"""
-        }
-    }
+/**
+ * The targetted type of runtime.
+ */
+public enum Runtime {
+    JIT,
+    NATIVE
 }

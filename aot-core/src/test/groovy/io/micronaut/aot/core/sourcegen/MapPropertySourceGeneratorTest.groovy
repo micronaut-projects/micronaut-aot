@@ -15,12 +15,14 @@
  */
 package io.micronaut.aot.core.sourcegen
 
+import io.micronaut.aot.core.AOTSourceGenerator
+
 class MapPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
     private final Map<String, Object> values = [:]
 
     @Override
-    SourceGenerator newGenerator() {
-        new MapPropertySourceGenerator(context, "test", values)
+    AOTSourceGenerator newGenerator() {
+        new MapPropertySourceGenerator("test", values)
     }
 
     def "supports generating an empty property source"() {

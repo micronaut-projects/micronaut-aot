@@ -21,13 +21,13 @@ import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
-import io.micronaut.core.annotation.AnnotationMetadataProvider;
+import io.micronaut.aot.core.Runtime;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.io.service.SoftServiceLoader;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Predicate;
@@ -43,18 +43,17 @@ import static javax.lang.model.element.Modifier.STATIC;
  * at execution in JIT mode.
  */
 public class JitStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
-    public JitStaticServiceLoaderSourceGenerator(SourceGenerationContext context,
-                                                 Predicate<AnnotationMetadataProvider> applicationContextAnalyzer,
-                                                 List<String> serviceNames,
-                                                 Predicate<String> rejectedClasses,
-                                                 Map<String, AbstractSourceGenerator> substitutions) {
-        super(context, applicationContextAnalyzer, serviceNames, rejectedClasses, substitutions);
+    public static final String ID = "serviceloading.jit";
+
+    @Override
+    public boolean isEnabledOn(@NonNull Runtime runtime) {
+        return runtime == Runtime.JIT;
     }
 
     protected final void generateFindAllMethod(Predicate<String> rejectedClasses,
-                                         String serviceName,
-                                         Class<?> serviceType,
-                                         TypeSpec.Builder factory) {
+                                               String serviceName,
+                                               Class<?> serviceType,
+                                               TypeSpec.Builder factory) {
         List<String> initializers = collectServiceImplementations(
                 serviceName,
                 (clazz, provider) -> clazz.getName()
@@ -112,5 +111,11 @@ public class JitStaticServiceLoaderSourceGenerator extends AbstractStaticService
                         ".map(c -> $T.of(c.getName(), c))",
                 Arrays.class, Objects.class, SoftServiceLoader.StaticDefinition.class);
         factory.addMethod(method.build());
+    }
+
+    @Override
+    @NonNull
+    public String getId() {
+        return ID;
     }
 }

@@ -22,13 +22,15 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -51,32 +53,14 @@ public class Main implements Runnable, ConfigKeys {
     @Option(names = {"--package", "-p"}, description = "The target package for generated classes", required = true)
     private String packageName;
 
-    @Option(names = {"--output", "-o"}, description = "The output directory", required = true)
+    @Option(names = {"--runtime"}, description = "The target runtime. Possible values: jit, native")
+    private String runtime = "jit";
+
+    @Option(names = {"--config"}, description = "The configuration file (.properties)", required = true)
+    private File config;
+
+    @Option(names = {"--output", "-o"}, description = "The output directory", required = false)
     private File outputDirectory;
-
-    @Option(names = {"--seal-env", "-se"}, description = "If set to true, the environment variables and system properties will be deemed immutable during application execution.")
-    private boolean sealEnvironment;
-
-    @Option(names = {"--precheck-requirements", "-pr"}, description = "If enabled, the AOT optimizer will verify bean requirements statically and eliminate from classpath those which do not meet the requirements.")
-    private boolean precheckRequirements;
-
-    @Option(names = {"--preload-environment", "-pe"}, description = "If enabled, the AOT optimizer will use the current environment variables as values for runtime.")
-    private boolean preloadEnvironment;
-
-    @Option(names = {"--scan-reactive", "-sr"}, description = "If enabled, the AOT optimizer will pre-compute the set of reactive types")
-    private boolean scanForReactiveTypes;
-
-    @Option(names = {"--replace-logback", "-rl"}, description = "If enabled, the AOT optimizer will replace the logback.xml configuration file with a Java configuration")
-    private boolean replaceLogback;
-
-    @Option(names = {"--runtime"}, description = "The target runtime. Possible values: ${COMPLETION-CANDIDATES}")
-    private MicronautAotOptimizer.Runtime runtime = MicronautAotOptimizer.Runtime.NATIVE;
-
-    @Option(names = {"--missing-types", "-mt"}, description = "A set of classes which the AOT compiler should lookup for. If they aren't on classpath, they will be identified as missing.")
-    private List<String> missingTypes = Collections.emptyList();
-
-    @Option(names = {"--service-types", "-st"}, description = "A set of service type names which the AOT compiler should scan and generate service loaders for")
-    private List<String> serviceTypes = Collections.emptyList();
 
     @Override
     public void run() {
@@ -84,6 +68,13 @@ public class Main implements Runnable, ConfigKeys {
         classpath.addAll(toURLs(aotClasspath));
         classpath.addAll(toURLs(this.classpath));
         Properties props = new Properties();
+        if (config.exists()) {
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(config))) {
+                props.load(reader);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         props.put(CLASSPATH, classpath.stream().map(url -> {
             try {
                 return new File(url.toURI()).getAbsolutePath();
@@ -92,23 +83,40 @@ public class Main implements Runnable, ConfigKeys {
             }
         }).collect(Collectors.joining(":")));
         props.put(GENERATED_PACKAGE, packageName);
-        props.put(OUTPUT_DIRECTORY, outputDirectory.getAbsolutePath());
-        props.put(RUNTIME, runtime.toString());
-        props.put(SEALED_ENVIRONMENT, sealEnvironment);
-        props.put(PRELOAD_ENVIRONMENT, preloadEnvironment);
-        props.put(TYPES_TO_CHECK, String.join(",", missingTypes));
-        props.put(PRECHECK_BEAN_REQUIREMENTS, precheckRequirements);
-        props.put(REPLACE_LOGBACK, replaceLogback);
-        props.put(SCAN_REACTIVE_TYPES, scanForReactiveTypes);
-        props.put(SERVICE_TYPES, String.join(",", serviceTypes));
+        if (outputDirectory != null) {
+            props.put(OUTPUT_DIRECTORY, outputDirectory.getAbsolutePath());
+        }
+        props.put(RUNTIME, runtime);
         URL[] urls = classpath.toArray(new URL[0]);
-        URLClassLoader cl = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
+        executeInIsolatedLoader(props, urls, Thread.currentThread().getContextClassLoader());
+    }
+
+    /**
+     * The Micronaut AOT runtime needs to be in the same classloader as the
+     * application classes. This method ensures that we create an isolated
+     * loader which can still see the bootstrap loader classes, but still
+     * isolates from the AOT classes which were loaded by this main class.
+     * @param props the configuration of the AOT optimizer
+     * @param urls the URLs to add to the classpath
+     * @param ctxClassLoader the current context classloader
+     */
+    private void executeInIsolatedLoader(Properties props, URL[] urls, ClassLoader ctxClassLoader) {
+        URLClassLoader cl = new URLClassLoader(urls, ctxClassLoader);
         try {
+            Thread.currentThread().setContextClassLoader(cl);
             Class<?> runnerClass = cl.loadClass(MicronautAotOptimizer.class.getName());
-            runnerClass.getDeclaredMethod("execute", Properties.class)
-                    .invoke(null, props);
+            assert runnerClass != MicronautAotOptimizer.class;
+            if (outputDirectory != null) {
+                runnerClass.getDeclaredMethod("execute", Properties.class)
+                        .invoke(null, props);
+            } else {
+                runnerClass.getDeclaredMethod("exportConfiguration", String.class, File.class)
+                        .invoke(null, runtime, config);
+            }
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
+        } finally {
+            Thread.currentThread().setContextClassLoader(ctxClassLoader);
         }
     }
 

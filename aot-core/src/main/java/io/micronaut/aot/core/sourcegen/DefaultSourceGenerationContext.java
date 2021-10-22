@@ -17,6 +17,11 @@ package io.micronaut.aot.core.sourcegen;
 
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
+import io.micronaut.aot.core.Configuration;
+import io.micronaut.aot.core.Runtime;
+import io.micronaut.aot.core.SourceGenerationContext;
+import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
+import io.micronaut.core.annotation.NonNull;
 
 import java.io.File;
 import java.security.CodeSource;
@@ -27,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -45,48 +51,59 @@ import java.util.stream.Collectors;
  * Last but not least, this context can be used to send diagnostic messages
  * which are written to log files during code generation.
  */
-public class SourceGenerationContext {
+public class DefaultSourceGenerationContext implements SourceGenerationContext {
     private final String packageName;
+    private final ApplicationContextAnalyzer analyzer;
     private final Set<String> excludedResources = new TreeSet<>();
     private final Map<String, List<String>> diagnostics = new HashMap<>();
     private final Set<Class<?>> classesRequiredAtCompilation = new HashSet<>();
+    private final Configuration configuration;
+    private final Map<Class<?>, Object> context = new HashMap<>();
 
-    public SourceGenerationContext(String packageName) {
+    public DefaultSourceGenerationContext(String packageName,
+                                          ApplicationContextAnalyzer analyzer,
+                                          Configuration configuration) {
         this.packageName = packageName;
+        this.analyzer = analyzer;
+        this.configuration = configuration;
     }
 
-    /**
-     * The package which should be used for generated classes.
-     * @return the package name
-     */
+    @NonNull
+    @Override
     public String getPackageName() {
         return packageName;
     }
 
-    /**
-     * Registers a resource path as excluded.
-     * Excluded resources should be removed, as much as possible,
-     * from the final binary/deliverable since they are either
-     * not used or substituted with code.
-     *
-     * @param path the path of the resource to exclude
-     */
-    public void registerExcludedResource(String path) {
+    @NonNull
+    @Override
+    public Runtime getRuntime() {
+        return configuration.getRuntime();
+    }
+
+    @NonNull
+    @Override
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    @NonNull
+    @Override
+    public ApplicationContextAnalyzer getAnalyzer() {
+        return analyzer;
+    }
+
+    @Override
+    public void registerExcludedResource(@NonNull String path) {
         excludedResources.add(path);
     }
 
-    /**
-     * Registers a class as needed at compile time (where compile time
-     * is the compile time of generated classes).
-     * This will typically be used when source generators need classes
-     * which are not on the application classpath.
-     *
-     * @param clazz a class
-     */
-    public void registerClassNeededAtCompileTime(Class<?> clazz) {
+    @Override
+    public void registerClassNeededAtCompileTime(@NonNull Class<?> clazz) {
         classesRequiredAtCompilation.add(clazz);
     }
 
+    @NonNull
+    @Override
     public final List<File> getExtraClasspath() {
         return classesRequiredAtCompilation.stream()
                 .map(Class::getProtectionDomain)
@@ -103,33 +120,38 @@ public class SourceGenerationContext {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Returns the list of resources to be excluded from
-     * the binary.
-     *
-     * @see SourceGenerationContext#registerExcludedResource
-     *
-     * @return the list of resources registered to be excluded.
-     */
+    @NonNull
+    @Override
     public Set<String> getExcludedResources() {
         return excludedResources;
     }
 
+    @NonNull
+    @Override
     public final JavaFile javaFile(TypeSpec typeSpec) {
         return JavaFile.builder(packageName, typeSpec).build();
     }
 
-    /**
-     * Adds a diagnostic message, which is going to be written
-     * in a log file.
-     * @param category a category for the message, typically corresponding
-     * to the source generator type
-     * @param message a message to log
-     */
+    @Override
     public void addDiagnostics(String category, String message) {
         diagnostics.computeIfAbsent(category, c -> new ArrayList<>()).add(message);
     }
 
+    @Override
+    public <T> void put(@NonNull Class<T> type, @NonNull T value) {
+        context.put(type, value);
+    }
+
+    @NonNull
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> Optional<T> get(@NonNull Class<T> type) {
+        T o = (T) context.get(type);
+        return Optional.ofNullable(o);
+    }
+
+    @NonNull
+    @Override
     public final Map<String, List<String>> getDiagnostics() {
         return diagnostics;
     }

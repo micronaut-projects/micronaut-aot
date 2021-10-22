@@ -15,12 +15,14 @@
  */
 package io.micronaut.aot.core.sourcegen
 
+import io.micronaut.aot.core.AOTSourceGenerator
+
 class EnvironmentPropertiesSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     private final Map<String, String> env = [:]
 
     @Override
-    SourceGenerator newGenerator() {
-        new EnvironmentPropertiesSourceGenerator(context, env)
+    AOTSourceGenerator newGenerator() {
+        new EnvironmentPropertiesSourceGenerator(env)
     }
 
     def "generates static optimizations for environment variables"() {

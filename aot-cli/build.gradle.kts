@@ -20,9 +20,28 @@ plugins {
 
 description = "A CLI tool leveraging Micronaut AOT"
 
+val testAotRuntime by configurations.creating {
+    isCanBeResolved = true
+    isCanBeConsumed = false
+    extendsFrom(configurations.testRuntimeClasspath.get())
+}
+
 dependencies {
     implementation(projects.aotApi)
     implementation(mn.picocli)
+
+    testImplementation(mn.spock)
+    testCompileOnly(projects.aotCore)
+
+    testAotRuntime(mn.micronaut.context)
+    testAotRuntime(mn.micronaut.inject)
+}
+
+tasks.named<Test>("test") {
+    inputs.files(testAotRuntime)
+    doFirst {
+        systemProperty("aot.runtime", testAotRuntime.asPath)
+    }
 }
 
 application {

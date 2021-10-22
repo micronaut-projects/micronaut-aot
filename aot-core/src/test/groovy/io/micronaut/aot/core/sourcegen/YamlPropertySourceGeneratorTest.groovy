@@ -15,12 +15,14 @@
  */
 package io.micronaut.aot.core.sourcegen
 
+import io.micronaut.aot.core.AOTSourceGenerator
+
 class YamlPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
     private String resource = "test-config"
 
     @Override
-    SourceGenerator newGenerator() {
-        new YamlPropertySourceGenerator(context, resource)
+    AOTSourceGenerator newGenerator() {
+        new YamlPropertySourceGenerator([resource])
     }
 
     def "generates a class from a YAML configuration file"() {

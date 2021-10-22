@@ -61,7 +61,7 @@ public final class ApplicationContextAnalyzer {
     }
 
     /**
-     * Instantiates an application context analyzer
+     * Instantiates an application context analyzer.
      * @return an analyzer
      */
     public static ApplicationContextAnalyzer create() {

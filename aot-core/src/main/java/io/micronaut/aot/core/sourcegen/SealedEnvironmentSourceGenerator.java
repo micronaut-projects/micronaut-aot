@@ -16,6 +16,7 @@
 package io.micronaut.aot.core.sourcegen;
 
 import com.squareup.javapoet.MethodSpec;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
 
 import java.util.Optional;
@@ -24,12 +25,24 @@ import java.util.Optional;
  * Generates the code used to enable environment variables and system
  * properties caching in Micronaut.
  */
-public class EnableCachedEnvironmentSourceGenerator extends AbstractSourceGenerator {
-    public EnableCachedEnvironmentSourceGenerator(SourceGenerationContext context) {
-        super(context);
+public class SealedEnvironmentSourceGenerator extends AbstractSourceGenerator {
+    public static final String ID = "sealed.environment";
+    public static final String DESCRIPTION = "Seals environment property values: environment properties will be deemed immutable after application startup.";
+
+    @Override
+    @NonNull
+    public String getId() {
+        return ID;
     }
 
     @Override
+    @NonNull
+    public Optional<String> getDescription() {
+        return Optional.of(DESCRIPTION);
+    }
+
+    @Override
+    @NonNull
     public Optional<MethodSpec> generateStaticInit() {
         return staticMethod("enableEnvironmentCaching", body ->
                 body.addStatement("$T.cacheEnvironment()", StaticOptimizations.class));

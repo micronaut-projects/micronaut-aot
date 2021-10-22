@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.aot.core.sourcegen;
+package io.micronaut.aot.core;
 
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
+import io.micronaut.core.annotation.NonNull;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A source generator is the main entity of the AOT project.
@@ -38,8 +40,61 @@ import java.util.Optional;
  *     <li>one or more resource files</li>
  * </ul>
  */
-public interface SourceGenerator {
-    default void init() {
+public interface AOTSourceGenerator {
+    /**
+     * A unique identifier for this source generator.
+     * @return the id
+     */
+    @NonNull
+    String getId();
+
+    /**
+     * Returns a description for this source generator.
+     * Description is optional because some code generators
+     * are purely internal and not exposed to users.
+     * @return a description or an empty options
+     */
+    @NonNull
+    default Optional<String> getDescription() {
+        return Optional.empty();
+    }
+
+    /**
+     * Determines if this source generator should be enabled
+     * when targetting a particular runtime.
+     * @param runtime the target runtime
+     * @return true if the source generator should be enabled
+     */
+    @NonNull
+    default boolean isEnabledOn(@NonNull Runtime runtime) {
+        return true;
+    }
+
+    /**
+     * Returns the identifiers of source generators which must
+     * be executed before this generator is called.
+     * @return the list of ids
+     */
+    @NonNull
+    default Set<String> getDependencies() {
+        return Collections.emptySet();
+    }
+
+    /**
+     * Returns the set of configuration keys which affect
+     * the configuration of this source generator.
+     * @return a set of configuration keys
+     */
+    @NonNull
+    default Set<Option> getConfigurationOptions() {
+        return Collections.emptySet();
+    }
+
+    /**
+     * Initializes the source generator.
+     * @param context the context to be injected
+     */
+    default void init(@NonNull SourceGenerationContext context) {
     }
 
     /**
@@ -48,6 +103,7 @@ public interface SourceGenerator {
      *
      * @return a method spec, if any
      */
+    @NonNull
     default Optional<MethodSpec> generateStaticInit() {
         return Optional.empty();
     }
@@ -57,6 +113,7 @@ public interface SourceGenerator {
      *
      * @return the list of generated source files, never null.
      */
+    @NonNull
     default List<JavaFile> generateSourceFiles() {
         return Collections.emptyList();
     }
@@ -65,6 +122,6 @@ public interface SourceGenerator {
      * Generates resource files in the target directory.
      * @param targetDirectory the directory where to generate resources
      */
-    default void generateResourceFiles(File targetDirectory) {
+    default void generateResourceFiles(@NonNull File targetDirectory) {
     }
 }

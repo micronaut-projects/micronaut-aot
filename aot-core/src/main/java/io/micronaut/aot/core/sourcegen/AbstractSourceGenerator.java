@@ -17,6 +17,9 @@ package io.micronaut.aot.core.sourcegen;
 
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
+import io.micronaut.aot.core.SourceGenerationContext;
+import io.micronaut.aot.core.AOTSourceGenerator;
+import io.micronaut.core.annotation.NonNull;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -31,12 +34,8 @@ import java.util.function.Consumer;
  * context (for example to get a handle on the analyzed application classloader,
  * or to register resources to be excluded from the final binary).
  */
-public abstract class AbstractSourceGenerator implements SourceGenerator {
-    protected final SourceGenerationContext context;
-
-    protected AbstractSourceGenerator(SourceGenerationContext context) {
-        this.context = context;
-    }
+public abstract class AbstractSourceGenerator implements AOTSourceGenerator {
+    protected SourceGenerationContext context;
 
     public static String simpleNameOf(String fqcn) {
         return fqcn.substring(fqcn.lastIndexOf(".") + 1);
@@ -47,11 +46,15 @@ public abstract class AbstractSourceGenerator implements SourceGenerator {
      * @return the source generation context
      */
     protected SourceGenerationContext getContext() {
+        if (context == null) {
+            throw new IllegalStateException("Cannot call getContext before context is injected");
+        }
         return context;
     }
 
     @Override
-    public final void init() {
+    public final void init(@NonNull SourceGenerationContext context) {
+        this.context = context;
         try {
             doInit();
         } catch (Exception ex) {

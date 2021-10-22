@@ -18,6 +18,7 @@ package io.micronaut.aot.core.sourcegen;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.core.async.publisher.PublishersOptimizations;
 import io.micronaut.core.optim.StaticOptimizations;
@@ -33,12 +34,42 @@ import java.util.stream.Collectors;
  * types are found at build time.
  */
 public class PublishersSourceGenerator extends AbstractSourceGenerator {
+    public static final String ID = "scan.reactive.types";
+    public static final String DESCRIPTION = "Scans reactive types at build time instead of runtime";
+
     private List<String> knownReactiveTypes;
     private List<String> knownSingleTypes;
     private List<String> knownCompletableTypes;
 
-    public PublishersSourceGenerator(SourceGenerationContext context) {
-        super(context);
+    @Override
+    @NonNull
+    public Optional<String> getDescription() {
+        return Optional.of(DESCRIPTION);
+    }
+
+    protected final void doInit() {
+        knownReactiveTypes = typeNamesOf(Publishers.getKnownReactiveTypes());
+        knownSingleTypes = typeNamesOf(Publishers.getKnownSingleTypes());
+        knownCompletableTypes = typeNamesOf(Publishers.getKnownCompletableTypes());
+    }
+
+    @Override
+    @NonNull
+    public String getId() {
+        return ID;
+    }
+
+    @Override
+    @NonNull
+    public Optional<MethodSpec> generateStaticInit() {
+        return staticMethod("preparePublishers", body -> body.addStatement(
+                "$T.set(new $T($L, $L, $L))",
+                StaticOptimizations.class,
+                PublishersOptimizations.class,
+                asClassList(knownReactiveTypes),
+                asClassList(knownSingleTypes),
+                asClassList(knownCompletableTypes)
+        ));
     }
 
     private static CodeBlock asClassList(List<String> types) {
@@ -59,21 +90,4 @@ public class PublishersSourceGenerator extends AbstractSourceGenerator {
         return classes.stream().map(Class::getName).collect(Collectors.toList());
     }
 
-    protected final void doInit() {
-        knownReactiveTypes = typeNamesOf(Publishers.getKnownReactiveTypes());
-        knownSingleTypes = typeNamesOf(Publishers.getKnownSingleTypes());
-        knownCompletableTypes = typeNamesOf(Publishers.getKnownCompletableTypes());
-    }
-
-    @Override
-    public Optional<MethodSpec> generateStaticInit() {
-        return staticMethod("preparePublishers", body -> body.addStatement(
-                "$T.set(new $T($L, $L, $L))",
-                StaticOptimizations.class,
-                PublishersOptimizations.class,
-                asClassList(knownReactiveTypes),
-                asClassList(knownSingleTypes),
-                asClassList(knownCompletableTypes)
-        ));
-    }
 }

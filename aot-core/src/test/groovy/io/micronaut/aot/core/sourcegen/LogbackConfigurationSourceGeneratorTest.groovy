@@ -15,10 +15,12 @@
  */
 package io.micronaut.aot.core.sourcegen
 
+import io.micronaut.aot.core.AOTSourceGenerator
+
 class LogbackConfigurationSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
-    SourceGenerator newGenerator() {
-        new LogbackConfigurationSourceGenerator(context)
+    AOTSourceGenerator newGenerator() {
+        new LogbackConfigurationSourceGenerator()
     }
 
     def "adds logback.xml to the excluded resources"() {

@@ -18,8 +18,10 @@ package io.micronaut.aot.core.sourcegen
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.MethodSpec
 import groovy.transform.CompileStatic
-import io.micronaut.aot.core.sourcegen.SourceGenerationContext
-import io.micronaut.aot.core.sourcegen.SourceGenerator
+import io.micronaut.aot.core.AOTSourceGenerator
+import io.micronaut.aot.core.Configuration
+import io.micronaut.aot.core.config.DefaultConfiguration
+import io.micronaut.aot.core.context.ApplicationContextAnalyzer
 import spock.lang.Specification
 import spock.lang.TempDir
 
@@ -32,19 +34,17 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
     @TempDir
     Path testDirectory
 
+    final Properties props = new Properties()
+    final Configuration config = new DefaultConfiguration(props)
     private GeneratedSources generatedSources
 
-    SourceGenerationContext context = new SourceGenerationContext(packageName)
+    DefaultSourceGenerationContext context = new DefaultSourceGenerationContext(packageName, ApplicationContextAnalyzer.create(), config)
 
-    private URLClassLoader newClassLoader(URL... urls) {
-        new URLClassLoader(urls, this.class.classLoader)
-    }
-
-    abstract SourceGenerator newGenerator()
+    abstract AOTSourceGenerator newGenerator()
 
     void generate() {
         def sourceGenerator = newGenerator()
-        sourceGenerator.init()
+        sourceGenerator.init(context)
         def sources = sourceGenerator.generateSourceFiles().collectEntries([:]) {
             def writer = new StringWriter()
             it.writeTo(writer)
@@ -77,7 +77,7 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
     void excludesResources(String... resources) {
         Set<String> expectedResources = resources as Set
         // cast is workaround for Groovy compiler bug
-        assert ((SourceGenerationContext)context).excludedResources == expectedResources
+        assert ((DefaultSourceGenerationContext)context).excludedResources == expectedResources
     }
 
     class GeneratedSources {

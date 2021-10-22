@@ -13,16 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.aot;
+package io.micronaut.aot.core.sourcegen
 
-/**
- * Configuration keys which may be found in the properties
- * used to configure the AOT analyzer, but shouldn't be
- * declared directly by the user.
- */
-public interface ConfigKeys {
-    String CLASSPATH = "classpath";
-    String GENERATED_PACKAGE = "package";
-    String OUTPUT_DIRECTORY = "output.directory";
-    String RUNTIME = "runtime";
+import io.micronaut.aot.core.AOTSourceGenerator
+
+class SealedEnvironmentSourceGeneratorTest extends AbstractSourceGeneratorSpec {
+    @Override
+    AOTSourceGenerator newGenerator() {
+        new SealedEnvironmentSourceGenerator()
+    }
+
+    def "generates code to enable environment caching"() {
+        when:
+        generate()
+
+        then:
+        assertThatGeneratedSources {
+            createsInitializer """private static void enableEnvironmentCaching() {
+  io.micronaut.core.optim.StaticOptimizations.cacheEnvironment();
+}
+"""
+        }
+    }
 }

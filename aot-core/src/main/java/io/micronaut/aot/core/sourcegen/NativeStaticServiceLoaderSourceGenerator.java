@@ -20,13 +20,13 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
-import io.micronaut.core.annotation.AnnotationMetadataProvider;
+import io.micronaut.aot.core.Runtime;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.io.service.SoftServiceLoader;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -37,18 +37,23 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * executing in native images, where classloading is basically free.
  */
 public class NativeStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
-    public NativeStaticServiceLoaderSourceGenerator(SourceGenerationContext context,
-                                                    Predicate<AnnotationMetadataProvider> applicationContextAnalyzer,
-                                                    List<String> serviceNames,
-                                                    Predicate<String> rejectedClasses,
-                                                    Map<String, AbstractSourceGenerator> substitutions) {
-        super(context, applicationContextAnalyzer, serviceNames, rejectedClasses, substitutions);
+    public static final String ID = "serviceloading.native";
+
+    @Override
+    @NonNull
+    public String getId() {
+        return ID;
+    }
+
+    @Override
+    public boolean isEnabledOn(@NonNull Runtime runtime) {
+        return runtime == Runtime.NATIVE;
     }
 
     protected final void generateFindAllMethod(Predicate<String> rejectedClasses,
-                                         String serviceName,
-                                         Class<?> serviceType,
-                                         TypeSpec.Builder factory) {
+                                               String serviceName,
+                                               Class<?> serviceType,
+                                               TypeSpec.Builder factory) {
         class Service {
             final String name;
             final CodeBlock codeBlock;

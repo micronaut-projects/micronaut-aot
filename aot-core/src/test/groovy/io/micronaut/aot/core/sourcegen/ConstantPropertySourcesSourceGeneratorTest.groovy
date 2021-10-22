@@ -17,7 +17,9 @@ package io.micronaut.aot.core.sourcegen
 
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeSpec
-import io.micronaut.core.annotation.AnnotationMetadataProvider
+import io.micronaut.aot.core.AOTSourceGenerator
+import io.micronaut.core.annotation.NonNull
+import org.jetbrains.annotations.NotNull
 
 import java.util.function.Predicate
 
@@ -25,17 +27,11 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
     private final Map<String, AbstractSingleClassFileGenerator> substitutions = [:]
 
     @Override
-    SourceGenerator newGenerator() {
-        substitutions[TestServiceImpl.name] = new SubstituteGenerator(context)
-        AbstractStaticServiceLoaderSourceGenerator generator = new TestServiceLoaderGenerator(
-                context,
-                { true },
-                [TestService.name],
-                { false },
-                substitutions
-        )
-        generator.init()
-        new ConstantPropertySourcesSourceGenerator(context, generator)
+    AOTSourceGenerator newGenerator() {
+        substitutions[TestServiceImpl.name] = new SubstituteGenerator()
+        AbstractStaticServiceLoaderSourceGenerator generator = new TestServiceLoaderGenerator()
+        generator.init(context)
+        new ConstantPropertySourcesSourceGenerator()
     }
 
     def "can generate constant property source class"() {
@@ -55,10 +51,6 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
 
     static class TestServiceLoaderGenerator extends AbstractStaticServiceLoaderSourceGenerator {
 
-        protected TestServiceLoaderGenerator(SourceGenerationContext context, Predicate<AnnotationMetadataProvider> applicationContextAnalyzer, List<String> serviceNames, Predicate<String> rejectedClasses, Map<String, AbstractSingleClassFileGenerator> substitutions) {
-            super(context, applicationContextAnalyzer, serviceNames, rejectedClasses, substitutions)
-        }
-
         @Override
         protected void generateFindAllMethod(Predicate<String> rejectedClasses, String serviceName, Class<?> serviceType, TypeSpec.Builder factory) {
             collectServiceImplementations(
@@ -66,18 +58,29 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
                     (clazz, provider) -> clazz.getName()
             )
         }
+
+        @NotNull
+        @Override
+        String getId() {
+            "loader"
+        }
     }
 
     class SubstituteGenerator extends AbstractSingleClassFileGenerator {
-
-        protected SubstituteGenerator(SourceGenerationContext context) {
-            super(context)
-        }
+        private static final String ID = "internal.substitute.generator";
 
         @Override
+        @NonNull
         protected JavaFile generate() {
             TypeSpec typeSpec = TypeSpec.classBuilder("Substitute").build()
             JavaFile.builder(packageName, typeSpec).build()
+        }
+
+        @NotNull
+        @Override
+        @NonNull
+        String getId() {
+            return ID;
         }
     }
 }
