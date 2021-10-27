@@ -1,0 +1,5 @@
+micronaut:
+  application:
+    name: demoApp
+  server:
+    port: 8181

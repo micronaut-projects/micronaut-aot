@@ -1,0 +1,9 @@
+io.micronaut.aot.core.sourcegen.KnownMissingTypesSourceGenerator
+io.micronaut.aot.core.sourcegen.JitStaticServiceLoaderSourceGenerator
+io.micronaut.aot.core.sourcegen.NativeStaticServiceLoaderSourceGenerator
+io.micronaut.aot.core.sourcegen.EnvironmentPropertiesSourceGenerator
+io.micronaut.aot.core.sourcegen.PublishersSourceGenerator
+io.micronaut.aot.core.sourcegen.ConstantPropertySourcesSourceGenerator
+io.micronaut.aot.core.sourcegen.SealedEnvironmentSourceGenerator
+io.micronaut.aot.core.sourcegen.LogbackConfigurationSourceGenerator
+io.micronaut.aot.core.sourcegen.GraalVMOptimizationFeatureSourceGenerator
