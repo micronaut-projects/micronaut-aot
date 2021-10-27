@@ -26,18 +26,18 @@ val micronautVersion = providers.gradleProperty("micronautVersion")
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-        mavenLocal()
-       /* maven {
+//        mavenLocal()
+        maven {
             url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
             content {
                 includeGroup("io.micronaut")
             }
-        }*/
+        }
     }
 
     versionCatalogs {
         create("mn") {
-            from("io.micronaut:micronaut-bom:${micronautVersion.get()}")
+            from(micronautVersion.map { v -> "io.micronaut:micronaut-bom:${v}" }.get())
         }
     }
 }
