@@ -1,0 +1,7 @@
+io.micronaut.aot
+io.micronaut.aot.cli
+io.micronaut.aot.core
+io.micronaut.aot.core.config
+io.micronaut.aot.core.context
+io.micronaut.aot.core.sourcegen
+io.micronaut.aot.internal
