@@ -125,22 +125,14 @@ public interface SourceGenerationContext {
     <T> Optional<T> get(@NonNull Class<T> type);
 
     /**
-<<<<<<< HEAD
-     * Returns the diagnostics map
-=======
      * Returns the diagnostics map.
->>>>>>> Rework how the AOT module is configured
      * @return the diagnostics
      */
     @NonNull
     Map<String, List<String>> getDiagnostics();
 
     /**
-<<<<<<< HEAD
-     * Returns the target runtime environment
-=======
      * Returns the target runtime environment.
->>>>>>> Rework how the AOT module is configured
      * @return target runtime
      */
     @NonNull
