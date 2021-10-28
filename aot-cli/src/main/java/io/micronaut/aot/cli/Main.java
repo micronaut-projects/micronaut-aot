@@ -44,10 +44,10 @@ import java.util.stream.Collectors;
         versionProvider = VersionProvider.class,
         description = "Generates classes for Micronaut AOT (build time optimizations)")
 public class Main implements Runnable, ConfigKeys {
-    @Option(names = {"--optimizer-classpath", "-ocp"}, description = "The Micronaut AOT classpath", required = true, split = "[:,]")
+    @Option(names = {"--optimizer-classpath", "-ocp"}, description = "The Micronaut AOT classpath", required = true, split = "[:,;]")
     private List<File> aotClasspath;
 
-    @Option(names = {"--classpath", "-cp"}, description = "The Micronaut application classpath", required = true, split = "[:,]")
+    @Option(names = {"--classpath", "-cp"}, description = "The Micronaut application classpath", required = true, split = "[:,;]")
     private List<File> classpath;
 
     @Option(names = {"--package", "-p"}, description = "The target package for generated classes", required = true)
