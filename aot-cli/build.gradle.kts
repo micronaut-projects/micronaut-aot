@@ -31,10 +31,12 @@ dependencies {
     implementation(mn.picocli)
 
     testImplementation(mn.spock)
-    testCompileOnly(projects.aotCore)
+    testImplementation(projects.aotCore)
+    testImplementation(projects.aotStdOptimizers)
 
     testAotRuntime(mn.micronaut.context)
     testAotRuntime(mn.micronaut.inject)
+    testAotRuntime(projects.aotStdOptimizers)
 }
 
 tasks.named<Test>("test") {

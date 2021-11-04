@@ -18,10 +18,12 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "aot-parent"
 
 include("aot-core")
+include("aot-std-optimizers")
 include("aot-api")
 include("aot-cli")
 
 val micronautVersion = providers.gradleProperty("micronautVersion")
+        .forUseAtConfigurationTime()
 
 dependencyResolutionManagement {
     repositories {

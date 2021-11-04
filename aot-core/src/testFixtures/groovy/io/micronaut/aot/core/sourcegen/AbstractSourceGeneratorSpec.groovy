@@ -22,6 +22,7 @@ import io.micronaut.aot.core.AOTSourceGenerator
 import io.micronaut.aot.core.Configuration
 import io.micronaut.aot.core.config.DefaultConfiguration
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer
+import io.micronaut.aot.core.context.DefaultSourceGenerationContext
 import spock.lang.Specification
 import spock.lang.TempDir
 
