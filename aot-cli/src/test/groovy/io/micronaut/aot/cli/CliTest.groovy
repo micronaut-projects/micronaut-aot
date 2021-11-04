@@ -38,8 +38,8 @@ class CliTest extends Specification {
 
         then:
         Files.exists(configFile)
-        def config = configFile.toFile().text.trim()
-        String expected = [
+        def config = normalize(configFile.toFile().text)
+        String expected = normalize([
                 runtime == 'native' ? [GraalVMOptimizationFeatureSourceGenerator.DESCRIPTION, "graalvm.config.enabled = true\n${GraalVMOptimizationFeatureSourceGenerator.OPTION.toPropertiesSample()}"] : null,
                 [KnownMissingTypesSourceGenerator.DESCRIPTION, """known.missing.types.enabled = true
 ${KnownMissingTypesSourceGenerator.OPTION.toPropertiesSample()}"""],
@@ -53,13 +53,17 @@ ${AbstractStaticServiceLoaderSourceGenerator.REJECTED_CLASSES.toPropertiesSample
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
         ].findAll().collect { desc, c -> """# $desc
 $c
-""" }.join("\n").trim()
+""" }.join("\n").trim())
 
         println config
         config == expected
 
         where:
         runtime << ['jit', 'native']
+    }
+
+    static String normalize(Object input) {
+        input.toString().trim().replaceAll("\\r", "")
     }
 
     @CompileStatic
