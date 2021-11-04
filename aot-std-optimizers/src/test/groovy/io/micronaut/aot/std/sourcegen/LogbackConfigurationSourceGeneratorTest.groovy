@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// This script is using Groovy because of Gradle bug
-// https://github.com/gradle/gradle/issues/18663
-plugins {
-    id "io.micronaut.build.internal.base-module"
-}
+package io.micronaut.aot.std.sourcegen
 
-repositories.clear()
+import io.micronaut.aot.core.AOTSourceGenerator
+import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
 
-group = "io.micronaut.aot"
-version = projectVersion
+class LogbackConfigurationSourceGeneratorTest extends AbstractSourceGeneratorSpec {
+    @Override
+    AOTSourceGenerator newGenerator() {
+        new LogbackConfigurationSourceGenerator()
+    }
 
-micronautBuild {
-    enableProcessing = false
-    enableBom = false
+    def "adds logback.xml to the excluded resources"() {
+        when:
+        generate()
+
+        then:
+        excludesResources("logback.xml")
+    }
 }

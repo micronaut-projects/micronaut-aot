@@ -13,18 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// This script is using Groovy because of Gradle bug
-// https://github.com/gradle/gradle/issues/18663
-plugins {
-    id "io.micronaut.build.internal.base-module"
-}
+package io.micronaut.aot.std.sourcegen
 
-repositories.clear()
+interface TestService {
 
-group = "io.micronaut.aot"
-version = projectVersion
-
-micronautBuild {
-    enableProcessing = false
-    enableBom = false
 }

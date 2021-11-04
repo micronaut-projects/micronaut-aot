@@ -1,14 +1,14 @@
 package io.micronaut.aot.cli
 
 import groovy.transform.CompileStatic
-import io.micronaut.aot.core.sourcegen.AbstractStaticServiceLoaderSourceGenerator
-import io.micronaut.aot.core.sourcegen.ConstantPropertySourcesSourceGenerator
-import io.micronaut.aot.core.sourcegen.EnvironmentPropertiesSourceGenerator
-import io.micronaut.aot.core.sourcegen.GraalVMOptimizationFeatureSourceGenerator
-import io.micronaut.aot.core.sourcegen.KnownMissingTypesSourceGenerator
-import io.micronaut.aot.core.sourcegen.LogbackConfigurationSourceGenerator
-import io.micronaut.aot.core.sourcegen.PublishersSourceGenerator
-import io.micronaut.aot.core.sourcegen.SealedEnvironmentSourceGenerator
+import io.micronaut.aot.std.sourcegen.AbstractStaticServiceLoaderSourceGenerator
+import io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
+import io.micronaut.aot.std.sourcegen.EnvironmentPropertiesSourceGenerator
+import io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
+import io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
+import io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
+import io.micronaut.aot.std.sourcegen.PublishersSourceGenerator
+import io.micronaut.aot.std.sourcegen.SealedEnvironmentSourceGenerator
 import spock.lang.Specification
 import spock.lang.TempDir
 import spock.lang.Unroll

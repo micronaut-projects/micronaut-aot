@@ -25,7 +25,7 @@ import io.micronaut.aot.core.config.DefaultConfiguration;
 import io.micronaut.aot.core.config.SourceGeneratorLoader;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
 import io.micronaut.aot.core.sourcegen.ApplicationContextConfigurerGenerator;
-import io.micronaut.aot.core.sourcegen.DefaultSourceGenerationContext;
+import io.micronaut.aot.core.context.DefaultSourceGenerationContext;
 import io.micronaut.aot.internal.StreamHelper;
 import io.micronaut.core.annotation.Experimental;
 import org.slf4j.Logger;
