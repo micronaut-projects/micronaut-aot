@@ -110,8 +110,8 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
         void createsInitializer(String expectedContents) {
             hasInitializer()
             init.ifPresent { spec ->
-                String actualCode = spec.toString().trim()
-                expectedContents = expectedContents.trim()
+                String actualCode = normalize(spec)
+                expectedContents = normalize(expectedContents)
                 assert actualCode == expectedContents
             }
         }
@@ -156,8 +156,8 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
         void generatesMetaInfResource(String path, String contents) {
             def file = new File(resourcesDir, "META-INF/$path")
             assert file.exists()
-            def actualContents = file.text.trim()
-            def expectedContents = contents.trim()
+            def actualContents = normalize(file.text)
+            def expectedContents = normalize(contents)
             if (actualContents != expectedContents) {
                 println "ACTUAL CONTENTS"
                 println "---------------"
@@ -184,12 +184,12 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
 
         JavaFileAssertions(JavaFile javaFile, String sources) {
             this.javaFile = javaFile
-            this.generatedSource = sources.trim()
+            this.generatedSource = normalize(sources)
         }
 
         void withSources(String expectedSource) {
             checkedSources = true
-            expectedSource = expectedSource.trim()
+            expectedSource = normalize(expectedSource)
             if (generatedSource != expectedSource) {
                 println("GENERATED")
                 println("=========")
@@ -206,4 +206,10 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
             assert generatedSource.contains(expected)
         }
     }
+
+    static String normalize(Object input) {
+        input.toString().trim().replaceAll("\\r", "")
+    }
+
+
 }
