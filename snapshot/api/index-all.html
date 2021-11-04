@@ -113,14 +113,14 @@
  an application context and inferring whether a bean should be
  included in the application binaries.</div>
 </dd>
-<dt><a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html" title="class in io.micronaut.aot.core.sourcegen"><span class="typeNameLink">ApplicationContextCustomizerGenerator</span></a> - Class in <a href="io/micronaut/aot/core/sourcegen/package-summary.html">io.micronaut.aot.core.sourcegen</a></dt>
+<dt><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen"><span class="typeNameLink">ApplicationContextConfigurerGenerator</span></a> - Class in <a href="io/micronaut/aot/core/sourcegen/package-summary.html">io.micronaut.aot.core.sourcegen</a></dt>
 <dd>
 <div class="block">The "optimized" entry point generator is the main source generator:
  it is responsible for generating a new entry point, which delegates
  to the original entry point of the application, and injects a number
  of optimizations before starting the application.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html#ApplicationContextCustomizerGenerator-java.util.List-">ApplicationContextCustomizerGenerator(List&lt;AOTSourceGenerator&gt;)</a></span> - Constructor for class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextCustomizerGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#ApplicationContextConfigurerGenerator-java.util.List-">ApplicationContextConfigurerGenerator(List&lt;AOTSourceGenerator&gt;)</a></span> - Constructor for class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <a name="I:B">
@@ -168,7 +168,7 @@
 <dd>
 <div class="block">Instantiates an application context analyzer.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html#CUSTOMIZER_CLASS_NAME">CUSTOMIZER_CLASS_NAME</a></span> - Static variable in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextCustomizerGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#CUSTOMIZER_CLASS_NAME">CUSTOMIZER_CLASS_NAME</a></span> - Static variable in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <a name="I:D">
@@ -265,7 +265,7 @@
 <dd>
 <div class="block">Generates resource files in the target directory.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles(File)</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextCustomizerGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles(File)</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles(File)</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
@@ -279,7 +279,7 @@
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateSourceFiles--">generateSourceFiles()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html#generateSourceFiles--">generateSourceFiles()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextCustomizerGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#generateSourceFiles--">generateSourceFiles()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/YamlPropertySourceGenerator.html#generateSourceFiles--">generateSourceFiles()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">YamlPropertySourceGenerator</a></dt>
 <dd>&nbsp;</dd>
@@ -394,7 +394,7 @@
 <dd>
 <div class="block">A unique identifier for this source generator.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextCustomizerGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ConstantPropertySourcesSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
@@ -468,7 +468,7 @@
 </a>
 <h2 class="title">I</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextCustomizerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextCustomizerGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ConstantPropertySourcesSourceGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
