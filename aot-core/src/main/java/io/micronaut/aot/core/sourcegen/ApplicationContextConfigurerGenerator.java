@@ -21,7 +21,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTSourceGenerator;
-import io.micronaut.context.ApplicationContextCustomizer;
+import io.micronaut.context.ApplicationContextConfigurer;
 import io.micronaut.core.annotation.NonNull;
 
 import java.io.File;
@@ -39,14 +39,14 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * The list of optimizations to inject is determined by the list of
  * delegate optimizers which are passed to this generator.
  */
-public class ApplicationContextCustomizerGenerator extends AbstractSourceGenerator {
+public class ApplicationContextConfigurerGenerator extends AbstractSourceGenerator {
     public static final String ID = "application.context.customizer";
 
-    public static final String CUSTOMIZER_CLASS_NAME = "AOTApplicationContextCustomizer";
+    public static final String CUSTOMIZER_CLASS_NAME = "AOTApplicationContextConfigurer";
 
     private final List<AOTSourceGenerator> sourceGenerators;
 
-    public ApplicationContextCustomizerGenerator(List<AOTSourceGenerator> sourceGenerators) {
+    public ApplicationContextConfigurerGenerator(List<AOTSourceGenerator> sourceGenerators) {
         this.sourceGenerators = sourceGenerators;
     }
 
@@ -64,7 +64,7 @@ public class ApplicationContextCustomizerGenerator extends AbstractSourceGenerat
             allFiles.addAll(sourceGenerator.generateSourceFiles());
         }
         TypeSpec.Builder optimizedEntryPoint = TypeSpec.classBuilder(CUSTOMIZER_CLASS_NAME)
-                .addSuperinterface(ApplicationContextCustomizer.class)
+                .addSuperinterface(ApplicationContextConfigurer.class)
                 .addModifiers(PUBLIC);
         CodeBlock.Builder staticInitializer = CodeBlock.builder();
         for (AOTSourceGenerator sourceGenerator : sourceGenerators) {
@@ -80,7 +80,7 @@ public class ApplicationContextCustomizerGenerator extends AbstractSourceGenerat
         for (AOTSourceGenerator sourceGenerator : sourceGenerators) {
             sourceGenerator.generateResourceFiles(targetDirectory);
         }
-        writeServiceFile(targetDirectory, ApplicationContextCustomizer.class, CUSTOMIZER_CLASS_NAME);
+        writeServiceFile(targetDirectory, ApplicationContextConfigurer.class, CUSTOMIZER_CLASS_NAME);
     }
 
     private static void appendInitializer(TypeSpec.Builder optimizedEntryPoint, CodeBlock.Builder staticInitializer, MethodSpec method) {

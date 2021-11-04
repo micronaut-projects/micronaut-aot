@@ -19,16 +19,16 @@ import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.TypeSpec
 import io.micronaut.aot.core.AOTSourceGenerator
-import io.micronaut.context.ApplicationContextCustomizer
+import io.micronaut.context.ApplicationContextConfigurer
 import io.micronaut.core.annotation.NonNull
 import org.jetbrains.annotations.NotNull
 
-class ApplicationContextCustomizerGeneratorTest extends AbstractSourceGeneratorSpec {
+class ApplicationContextConfigurerGeneratorTest extends AbstractSourceGeneratorSpec {
     private List<AOTSourceGenerator> generators = []
 
     @Override
     AOTSourceGenerator newGenerator() {
-        new ApplicationContextCustomizerGenerator(generators)
+        new ApplicationContextConfigurerGenerator(generators)
     }
 
     def "generates an application context builder service"() {
@@ -38,17 +38,17 @@ class ApplicationContextCustomizerGeneratorTest extends AbstractSourceGeneratorS
         then:
         assertThatGeneratedSources {
             doesNotCreateInitializer()
-            hasClass('AOTApplicationContextCustomizer') {
+            hasClass('AOTApplicationContextConfigurer') {
                 withSources '''package io.micronaut.test;
 
-import io.micronaut.context.ApplicationContextCustomizer;
+import io.micronaut.context.ApplicationContextConfigurer;
 
-public class AOTApplicationContextCustomizer implements ApplicationContextCustomizer {
+public class AOTApplicationContextConfigurer implements ApplicationContextConfigurer {
   static {
   }
 }'''
             }
-            generatesServiceFile(ApplicationContextCustomizer, "io.micronaut.test.AOTApplicationContextCustomizer")
+            generatesServiceFile(ApplicationContextConfigurer, "io.micronaut.test.AOTApplicationContextConfigurer")
         }
     }
 
@@ -62,12 +62,12 @@ public class AOTApplicationContextCustomizer implements ApplicationContextCustom
         then:
         assertThatGeneratedSources {
             doesNotCreateInitializer()
-            hasClass('AOTApplicationContextCustomizer') {
+            hasClass('AOTApplicationContextConfigurer') {
                 withSources '''package io.micronaut.test;
 
-import io.micronaut.context.ApplicationContextCustomizer;
+import io.micronaut.context.ApplicationContextConfigurer;
 
-public class AOTApplicationContextCustomizer implements ApplicationContextCustomizer {
+public class AOTApplicationContextConfigurer implements ApplicationContextConfigurer {
   static {
     initializer1();
     initializer2();
@@ -80,7 +80,7 @@ public class AOTApplicationContextCustomizer implements ApplicationContextCustom
   }
 }
 '''
-                generatesServiceFile(ApplicationContextCustomizer, "io.micronaut.test.AOTApplicationContextCustomizer")
+                generatesServiceFile(ApplicationContextConfigurer, "io.micronaut.test.AOTApplicationContextConfigurer")
             }
         }
     }
@@ -101,8 +101,8 @@ class SomeClass {
 }
 """
             }
-            hasClass('AOTApplicationContextCustomizer') {
-                containingSources('class AOTApplicationContextCustomizer')
+            hasClass('AOTApplicationContextConfigurer') {
+                containingSources('class AOTApplicationContextConfigurer')
             }
         }
     }

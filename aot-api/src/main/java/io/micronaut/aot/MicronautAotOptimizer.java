@@ -24,7 +24,7 @@ import io.micronaut.aot.core.SourceGenerationContext;
 import io.micronaut.aot.core.config.DefaultConfiguration;
 import io.micronaut.aot.core.config.SourceGeneratorLoader;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
-import io.micronaut.aot.core.sourcegen.ApplicationContextCustomizerGenerator;
+import io.micronaut.aot.core.sourcegen.ApplicationContextConfigurerGenerator;
 import io.micronaut.aot.core.sourcegen.DefaultSourceGenerationContext;
 import io.micronaut.aot.internal.StreamHelper;
 import io.micronaut.core.annotation.Experimental;
@@ -300,7 +300,7 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             LOGGER.info("Detected environments: {}", environmentNames);
             SourceGenerationContext context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config);
             List<AOTSourceGenerator> sourceGenerators = SourceGeneratorLoader.load(config.getRuntime(), context);
-            ApplicationContextCustomizerGenerator generator = new ApplicationContextCustomizerGenerator(
+            ApplicationContextConfigurerGenerator generator = new ApplicationContextConfigurerGenerator(
                     sourceGenerators
             );
             generator.init(context);
