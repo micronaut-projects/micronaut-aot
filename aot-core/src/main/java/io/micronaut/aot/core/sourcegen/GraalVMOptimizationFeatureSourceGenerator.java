@@ -70,7 +70,7 @@ public class GraalVMOptimizationFeatureSourceGenerator extends AbstractSourceGen
             File propertiesFile = new File(nativeImageDir, "native-image.properties");
             try (PrintWriter wrt = new PrintWriter(new FileWriter(propertiesFile))) {
                 wrt.print("Args=");
-                wrt.println("--initialize-at-build-time=" + getContext().getPackageName() + "." + ApplicationContextCustomizerGenerator.CUSTOMIZER_CLASS_NAME + NEXT_LINE);
+                wrt.println("--initialize-at-build-time=" + getContext().getPackageName() + "." + ApplicationContextConfigurerGenerator.CUSTOMIZER_CLASS_NAME + NEXT_LINE);
                 for (int i = 0; i < serviceTypes.size(); i++) {
                     String serviceType = serviceTypes.get(i);
                     wrt.print("     -H:ServiceLoaderFeatureExcludeServices=" + serviceType);
