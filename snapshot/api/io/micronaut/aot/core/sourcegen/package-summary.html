@@ -95,104 +95,12 @@
 </td>
 </tr>
 <tr class="altColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">Base class for generation of service loader classes.</div>
-</td>
-</tr>
-<tr class="rowColor">
 <td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></td>
 <td class="colLast">
 <div class="block">The "optimized" entry point generator is the main source generator:
  it is responsible for generating a new entry point, which delegates
  to the original entry point of the application, and injects a number
  of optimizations before starting the application.</div>
-</td>
-</tr>
-<tr class="altColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ConstantPropertySourcesSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">Generates a "constant" property source, that is to say a
- <code>PropertySource</code> which properties are known at build time
- (and constant).</div>
-</td>
-</tr>
-<tr class="rowColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.sourcegen">DefaultSourceGenerationContext</a></td>
-<td class="colLast">
-<div class="block">The source generation context.</div>
-</td>
-</tr>
-<tr class="altColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">EnvironmentPropertiesSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">A code generator which is responsible for precomputing the Micronaut property
- names from environment variable names at build time.</div>
-</td>
-</tr>
-<tr class="rowColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">Generates the GraalVM configuration file which is going to configure
- the native image code generation, typically asking to initialize
- the optimized entry point at build time.</div>
-</td>
-</tr>
-<tr class="altColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/JitStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">JitStaticServiceLoaderSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">A specialized version of static service loader generator aimed
- at execution in JIT mode.</div>
-</td>
-</tr>
-<tr class="rowColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">KnownMissingTypesSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">A source generator which will check for existence of a number of classes
- at build time.</div>
-</td>
-</tr>
-<tr class="altColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">LogbackConfigurationSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">A source generator responsible for converting a logback.xml configuration into
- Java configuration.</div>
-</td>
-</tr>
-<tr class="rowColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">MapPropertySourceGenerator</a></td>
-<td class="colLast">
-<div class="block">A source generator which generates a map property source with a fixed
- set of values at build time.</div>
-</td>
-</tr>
-<tr class="altColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/NativeStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">NativeStaticServiceLoaderSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">A specialized version of service loader generation which is aimed at
- executing in native images, where classloading is basically free.</div>
-</td>
-</tr>
-<tr class="rowColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">PublishersSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">An optimizer which is responsible for determining what reactive
- types are found at build time.</div>
-</td>
-</tr>
-<tr class="altColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/SealedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">SealedEnvironmentSourceGenerator</a></td>
-<td class="colLast">
-<div class="block">Generates the code used to enable environment variables and system
- properties caching in Micronaut.</div>
-</td>
-</tr>
-<tr class="rowColor">
-<td class="colFirst"><a href="../../../../../io/micronaut/aot/core/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">YamlPropertySourceGenerator</a></td>
-<td class="colLast">
-<div class="block">A source generator which will generate a static <code>PropertySource</code>
- from a given YAML configuration file, in order to substitute the dynamic loader
- with a static configuration.</div>
 </td>
 </tr>
 </tbody>

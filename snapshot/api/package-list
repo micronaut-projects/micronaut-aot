@@ -5,3 +5,4 @@ io.micronaut.aot.core.config
 io.micronaut.aot.core.context
 io.micronaut.aot.core.sourcegen
 io.micronaut.aot.internal
+io.micronaut.aot.std.sourcegen
