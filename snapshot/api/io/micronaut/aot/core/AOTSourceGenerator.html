@@ -17,7 +17,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":18,"i1":18,"i2":18,"i3":18,"i4":18,"i5":18,"i6":6,"i7":18,"i8":18};
+var methods = {"i0":18,"i1":18,"i2":18,"i3":18,"i4":18,"i5":18,"i6":6,"i7":18,"i8":18,"i9":18};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -181,12 +181,19 @@ var activeTableTab = "activeTableTab";
 </td>
 </tr>
 <tr id="i7" class="rowColor">
+<td class="colFirst"><code>default java.util.List&lt;<a href="../../../../io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a>&gt;</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/AOTSourceGenerator.html#getSubGenerators--">getSubGenerators</a></span>()</code>
+<div class="block">Returns a list of generators which are directly managed (or instantiated_
+ by this source generator.</div>
+</td>
+</tr>
+<tr id="i8" class="altColor">
 <td class="colFirst"><code>default void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/AOTSourceGenerator.html#init-io.micronaut.aot.core.SourceGenerationContext-">init</a></span>(<a href="../../../../io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a>&nbsp;context)</code>
 <div class="block">Initializes the source generator.</div>
 </td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>default boolean</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/AOTSourceGenerator.html#isEnabledOn-io.micronaut.aot.core.Runtime-">isEnabledOn</a></span>(<a href="../../../../io/micronaut/aot/core/Runtime.html" title="enum in io.micronaut.aot.core">Runtime</a>&nbsp;runtime)</code>
 <div class="block">Determines if this source generator should be enabled
@@ -272,6 +279,24 @@ default&nbsp;java.util.Set&lt;java.lang.String&gt;&nbsp;getDependencies()</pre>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>the list of ids</dd>
+</dl>
+</li>
+</ul>
+<a name="getSubGenerators--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getSubGenerators</h4>
+<pre>@NonNull
+default&nbsp;java.util.List&lt;<a href="../../../../io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a>&gt;&nbsp;getSubGenerators()</pre>
+<div class="block">Returns a list of generators which are directly managed (or instantiated_
+ by this source generator. Such optimizers are typically not registered as
+ services because they make no sense in isolation.
+ This method should be used for introspection only.</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>the list of sub features</dd>
 </dl>
 </li>
 </ul>

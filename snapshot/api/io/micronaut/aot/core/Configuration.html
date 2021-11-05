@@ -17,7 +17,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":18,"i1":6,"i2":6,"i3":18,"i4":6,"i5":18,"i6":18};
+var methods = {"i0":18,"i1":6,"i2":18,"i3":6,"i4":18,"i5":6,"i6":18,"i7":18};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -137,13 +137,20 @@ var activeTableTab = "activeTableTab";
 </td>
 </tr>
 <tr id="i2" class="altColor">
+<td class="colFirst"><code>default boolean</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#isFeatureEnabled-java.lang.String-">isFeatureEnabled</a></span>(java.lang.String&nbsp;featureId)</code>
+<div class="block">Returns true if a particular optimizer is enabled, independently
+ of the runtime.</div>
+</td>
+</tr>
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#mandatoryValue-java.lang.String-">mandatoryValue</a></span>(java.lang.String&nbsp;key)</code>
 <div class="block">Returns the value of the configuration for the requested
  key or fails if not available.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i4" class="altColor">
 <td class="colFirst"><code>default java.lang.String</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#optionalString-java.lang.String-java.lang.String-">optionalString</a></span>(java.lang.String&nbsp;key,
               java.lang.String&nbsp;defaultValue)</code>
@@ -151,20 +158,20 @@ var activeTableTab = "activeTableTab";
  default value when missing.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code>&lt;T&gt;&nbsp;T</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#optionalValue-java.lang.String-java.util.function.Function-">optionalValue</a></span>(java.lang.String&nbsp;key,
              java.util.function.Function&lt;java.util.Optional&lt;java.lang.String&gt;,T&gt;&nbsp;producer)</code>
 <div class="block">Returns the value for the requested key.</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><code>default java.util.List&lt;java.lang.String&gt;</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#stringList-java.lang.String-">stringList</a></span>(java.lang.String&nbsp;key)</code>
 <div class="block">Returns a list of strings from a configuration entry.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code>default java.util.List&lt;java.lang.String&gt;</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#stringList-java.lang.String-java.lang.String-">stringList</a></span>(java.lang.String&nbsp;key,
           java.lang.String&nbsp;separator)</code>
@@ -307,6 +314,25 @@ default&nbsp;java.util.List&lt;java.lang.String&gt;&nbsp;stringList(@NonNull
 <dd><code>defaultValue</code> - the default value when missing</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>the boolean value</dd>
+</dl>
+</li>
+</ul>
+<a name="isFeatureEnabled-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isFeatureEnabled</h4>
+<pre>default&nbsp;boolean&nbsp;isFeatureEnabled(@NonNull
+                                 java.lang.String&nbsp;featureId)</pre>
+<div class="block">Returns true if a particular optimizer is enabled, independently
+ of the runtime. All features need to be explicitly enabled by
+ configuration.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>featureId</code> - the feature id</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>true if the feature is enabled</dd>
 </dl>
 </li>
 </ul>
