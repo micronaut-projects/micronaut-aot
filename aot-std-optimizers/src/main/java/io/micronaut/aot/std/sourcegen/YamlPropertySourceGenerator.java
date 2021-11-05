@@ -39,6 +39,7 @@ import java.util.Optional;
  */
 public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
     public static final String ID = "yaml.to.java.config";
+    public static final String DESCRIPTION = "Converts YAML configuration files to Java configuration";
     private static final Logger LOGGER = LoggerFactory.getLogger(YamlPropertySourceGenerator.class);
 
     private final Collection<String> resources;
@@ -51,6 +52,11 @@ public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
     @NonNull
     public String getId() {
         return ID;
+    }
+
+    @Override
+    public Optional<String> getDescription() {
+        return Optional.of(DESCRIPTION);
     }
 
     @Override

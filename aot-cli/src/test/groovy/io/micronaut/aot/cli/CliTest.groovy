@@ -9,6 +9,7 @@ import io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
 import io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
 import io.micronaut.aot.std.sourcegen.PublishersSourceGenerator
 import io.micronaut.aot.std.sourcegen.SealedEnvironmentSourceGenerator
+import io.micronaut.aot.std.sourcegen.YamlPropertySourceGenerator
 import spock.lang.Specification
 import spock.lang.TempDir
 import spock.lang.Unroll
@@ -50,6 +51,7 @@ ${KnownMissingTypesSourceGenerator.OPTION.toPropertiesSample()}"""],
                 [AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION, """serviceloading.${runtime}.enabled = true
 ${AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES.toPropertiesSample()}
 ${AbstractStaticServiceLoaderSourceGenerator.REJECTED_CLASSES.toPropertiesSample()}"""],
+                [YamlPropertySourceGenerator.DESCRIPTION, 'yaml.to.java.config.enabled = true'],
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
         ].findAll().collect { desc, c -> """# $desc
 $c

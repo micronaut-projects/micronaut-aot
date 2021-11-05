@@ -24,8 +24,8 @@ import io.micronaut.aot.core.SourceGenerationContext;
 import io.micronaut.aot.core.config.DefaultConfiguration;
 import io.micronaut.aot.core.config.SourceGeneratorLoader;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
-import io.micronaut.aot.core.sourcegen.ApplicationContextConfigurerGenerator;
 import io.micronaut.aot.core.context.DefaultSourceGenerationContext;
+import io.micronaut.aot.core.sourcegen.ApplicationContextConfigurerGenerator;
 import io.micronaut.aot.internal.StreamHelper;
 import io.micronaut.core.annotation.Experimental;
 import org.slf4j.Logger;
@@ -49,9 +49,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -138,11 +141,16 @@ public final class MicronautAotOptimizer implements ConfigKeys {
     public static void exportConfiguration(String runtime, File propertiesFile) {
         List<AOTSourceGenerator> list = SourceGeneratorLoader.list(Runtime.valueOf(runtime.toUpperCase(Locale.ENGLISH)));
         try (PrintWriter wrt = new PrintWriter(new FileOutputStream(propertiesFile))) {
-            for (AOTSourceGenerator generator : list) {
+            Deque<AOTSourceGenerator> queue = new ArrayDeque<>(list);
+            while (!queue.isEmpty()) {
+            AOTSourceGenerator generator = queue.pop();
                 generator.getDescription().ifPresent(desc ->
                         Arrays.stream(desc.split("\r?\n")).forEach(line ->
                                 wrt.println("# " + line)));
                 wrt.println(generator.getId() + ".enabled = true");
+                generator.getSubGenerators().stream()
+                        .sorted(Collections.reverseOrder())
+                        .forEachOrdered(queue::addFirst);
                 for (Option option : generator.getConfigurationOptions()) {
                     if (option.getDescription().isPresent()) {
                         wrt.println("# " + option.getDescription().get());
