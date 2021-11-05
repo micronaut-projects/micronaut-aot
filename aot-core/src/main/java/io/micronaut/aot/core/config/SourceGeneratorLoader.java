@@ -50,7 +50,7 @@ public class SourceGeneratorLoader {
         Configuration configuration = context.getConfiguration();
         return sourceGeneratorStream()
                 .filter(sg -> sg.isEnabledOn(runtime))
-                .filter(sg -> configuration.booleanValue(sg.getId() + ".enabled", true))
+                .filter(sg -> configuration.isFeatureEnabled(sg.getId()))
                 .sorted(EXECUTION_ORDER)
                 .peek(sg -> sg.init(context))
                 .collect(Collectors.toList());

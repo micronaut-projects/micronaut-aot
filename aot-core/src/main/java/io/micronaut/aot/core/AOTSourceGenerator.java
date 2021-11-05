@@ -81,6 +81,19 @@ public interface AOTSourceGenerator {
     }
 
     /**
+     * Returns a list of generators which are directly managed (or instantiated_
+     * by this source generator. Such optimizers are typically not registered as
+     * services because they make no sense in isolation.
+     * This method should be used for introspection only.
+     *
+     * @return the list of sub features
+     */
+    @NonNull
+    default List<AOTSourceGenerator> getSubGenerators() {
+        return Collections.emptyList();
+    }
+
+    /**
      * Returns the set of configuration keys which affect
      * the configuration of this source generator.
      * @return a set of configuration keys

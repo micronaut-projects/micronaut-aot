@@ -110,6 +110,18 @@ public interface Configuration {
     }
 
     /**
+     * Returns true if a particular optimizer is enabled, independently
+     * of the runtime. All features need to be explicitly enabled by
+     * configuration.
+     *
+     * @param featureId the feature id
+     * @return true if the feature is enabled
+     */
+    default boolean isFeatureEnabled(@NonNull String featureId) {
+        return booleanValue(featureId + ".enabled", false);
+    }
+
+    /**
      * Returns the target runtime for optimizations.
      * @return the target runtime
      */

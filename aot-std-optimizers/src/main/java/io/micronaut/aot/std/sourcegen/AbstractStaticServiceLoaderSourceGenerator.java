@@ -21,6 +21,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.WildcardTypeName;
+import io.micronaut.aot.core.AOTSourceGenerator;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.SourceGenerationContext;
 import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
@@ -85,6 +86,12 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
         }};
     }
 
+    @Override
+    @NonNull
+    public List<AOTSourceGenerator> getSubGenerators() {
+        return Collections.singletonList(new YamlPropertySourceGenerator(Collections.emptyList()));
+    }
+
     protected final void doInit() throws ClassNotFoundException {
         if (serviceNames == null) {
             serviceNames = context.getConfiguration().stringList(SERVICE_TYPES.getKey());
@@ -97,10 +104,12 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                     .map(env -> "application-" + env)
                     .forEach(resourceNames::add);
             substitutions = new HashMap<>();
-            YamlPropertySourceGenerator yaml = new YamlPropertySourceGenerator(resourceNames);
-            yaml.init(context);
-            if (yaml.isEnabledOn(context.getRuntime())) {
-                substitutions.put(YamlPropertySourceLoader.class.getName(), yaml);
+            if (context.getConfiguration().isFeatureEnabled(YamlPropertySourceGenerator.ID)) {
+                YamlPropertySourceGenerator yaml = new YamlPropertySourceGenerator(resourceNames);
+                yaml.init(context);
+                if (yaml.isEnabledOn(context.getRuntime())) {
+                    substitutions.put(YamlPropertySourceLoader.class.getName(), yaml);
+                }
             }
         }
         if (metadataProviderPredicate == null) {

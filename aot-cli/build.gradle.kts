@@ -33,6 +33,7 @@ dependencies {
     testImplementation(mn.spock)
     testImplementation(projects.aotCore)
     testImplementation(projects.aotStdOptimizers)
+    testImplementation(mn.micronaut.core)
 
     testAotRuntime(mn.micronaut.context)
     testAotRuntime(mn.micronaut.inject)
