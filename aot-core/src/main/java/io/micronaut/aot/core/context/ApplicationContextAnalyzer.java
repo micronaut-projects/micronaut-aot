@@ -28,12 +28,14 @@ import io.micronaut.core.convert.ArgumentConversionContext;
 import io.micronaut.core.type.Argument;
 import io.micronaut.inject.BeanDefinition;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -42,20 +44,35 @@ import java.util.stream.Stream;
  * an application context and inferring whether a bean should be
  * included in the application binaries.
  *
- * It uses a {@code Predicate<Object>} as superinterface because it
- * needs to run in the same classloader as the optimizer, where the
- * Micronaut specific types are different from the ones loaded in
- * the analyzed classpath.
- *
+ * Source generators may access the application context to compute
+ * optimizations.
  */
 @SuppressWarnings("unused")
-public final class ApplicationContextAnalyzer {
+public final class ApplicationContextAnalyzer implements Closeable {
     private final ApplicationContext applicationContext;
 
     private ApplicationContextAnalyzer(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }
 
+    /**
+     * Executes a function on the application context.
+     * Callers shouldn't retain a reference to the application context
+     * as it's not guaranteed that it's going to be closed properly
+     * if they do.
+     *
+     * @param function the function to apply
+     * @param <T> the return type of the operation
+     * @return the result of the operation
+     */
+    public <T> T withApplicationContext(Function<? super ApplicationContext, T> function) {
+        return function.apply(applicationContext);
+    }
+
+    /**
+     * Returns the list of environment names, as found by analyzing the application context.
+     * @return the list of active environment names
+     */
     public Set<String> getEnvironmentNames() {
         return applicationContext.getEnvironment().getActiveNames();
     }
@@ -75,6 +92,11 @@ public final class ApplicationContextAnalyzer {
      */
     public Predicate<AnnotationMetadataProvider> getAnnotationMetadataPredicate() {
         return new AnnotationMetadataProviderPredicate();
+    }
+
+    @Override
+    public void close() {
+        applicationContext.close();
     }
 
     private final class ShallowConditionContext<T extends AnnotationMetadataProvider> implements ConditionContext<T> {

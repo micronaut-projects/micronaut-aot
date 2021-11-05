@@ -290,23 +290,24 @@ public final class MicronautAotOptimizer implements ConfigKeys {
 
         @SuppressWarnings("unchecked")
         public Runner execute() {
-            MicronautAotOptimizer optimizer = new MicronautAotOptimizer(
-                    classpath,
-                    outputSourcesDirectory,
-                    outputClassesDirectory,
-                    logsDirectory);
-            ApplicationContextAnalyzer analyzer = ApplicationContextAnalyzer.create();
-            Set<String> environmentNames = analyzer.getEnvironmentNames();
-            LOGGER.info("Detected environments: {}", environmentNames);
-            SourceGenerationContext context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config);
-            List<AOTSourceGenerator> sourceGenerators = SourceGeneratorLoader.load(config.getRuntime(), context);
-            ApplicationContextConfigurerGenerator generator = new ApplicationContextConfigurerGenerator(
-                    sourceGenerators
-            );
-            generator.init(context);
-            optimizer.compileGeneratedSources(context.getExtraClasspath(), generator.generateSourceFiles());
-            generator.generateResourceFiles(outputClassesDirectory);
-            optimizer.writeLogs(context);
+            try (ApplicationContextAnalyzer analyzer = ApplicationContextAnalyzer.create()) {
+                MicronautAotOptimizer optimizer = new MicronautAotOptimizer(
+                        classpath,
+                        outputSourcesDirectory,
+                        outputClassesDirectory,
+                        logsDirectory);
+                Set<String> environmentNames = analyzer.getEnvironmentNames();
+                LOGGER.info("Detected environments: {}", environmentNames);
+                SourceGenerationContext context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config);
+                List<AOTSourceGenerator> sourceGenerators = SourceGeneratorLoader.load(config.getRuntime(), context);
+                ApplicationContextConfigurerGenerator generator = new ApplicationContextConfigurerGenerator(
+                        sourceGenerators
+                );
+                generator.init(context);
+                optimizer.compileGeneratedSources(context.getExtraClasspath(), generator.generateSourceFiles());
+                generator.generateResourceFiles(outputClassesDirectory);
+                optimizer.writeLogs(context);
+            }
             return this;
         }
     }
