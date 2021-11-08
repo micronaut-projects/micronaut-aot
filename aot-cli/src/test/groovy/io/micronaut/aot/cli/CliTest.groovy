@@ -28,7 +28,7 @@ class CliTest extends Specification {
 
         when:
         isolate {
-            Main.main(
+            Main.execute(
                     '--classpath', classpath,
                     '--optimizer-classpath', classpath,
                     '--runtime', runtime,
