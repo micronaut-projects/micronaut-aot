@@ -81,7 +81,7 @@ public class Main implements Runnable, ConfigKeys {
             } catch (URISyntaxException e) {
                 return null;
             }
-        }).collect(Collectors.joining(":")));
+        }).collect(Collectors.joining(",")));
         props.put(GENERATED_PACKAGE, packageName);
         if (outputDirectory != null) {
             props.put(OUTPUT_DIRECTORY, outputDirectory.getAbsolutePath());

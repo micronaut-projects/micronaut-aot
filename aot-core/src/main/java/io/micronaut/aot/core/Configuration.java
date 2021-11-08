@@ -67,14 +67,14 @@ public interface Configuration {
     /**
      * Returns a list of strings from a configuration entry.
      * The value is assumed to be of type String and will be splitted
-     * using the "," and ":" separators
+     * using the "," and ";" separators
      *
      * @param key the configuration key
      * @return a list of strings, or an empty list when missing
      */
     @NonNull
     default List<String> stringList(@NonNull String key) {
-        return stringList(key, "[,:]\\s*");
+        return stringList(key, "[,;]\\s*");
     }
 
     /**
