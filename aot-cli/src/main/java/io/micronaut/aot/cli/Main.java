@@ -132,7 +132,11 @@ public class Main implements Runnable, ConfigKeys {
                 .collect(Collectors.toList());
     }
 
+    public static int execute(String[] args) {
+        return new CommandLine(new Main()).execute(args);
+    }
+
     public static void main(String[] args) {
-        new CommandLine(new Main()).execute(args);
+        System.exit(execute(args));
     }
 }
