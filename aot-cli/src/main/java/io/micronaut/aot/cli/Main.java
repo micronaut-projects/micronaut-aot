@@ -31,6 +31,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -44,11 +45,11 @@ import java.util.stream.Collectors;
         versionProvider = VersionProvider.class,
         description = "Generates classes for Micronaut AOT (build time optimizations)")
 public class Main implements Runnable, ConfigKeys {
-    @Option(names = {"--optimizer-classpath", "-ocp"}, description = "The Micronaut AOT classpath", required = true, split = "[:,;]")
-    private List<File> aotClasspath;
+    @Option(names = {"--optimizer-classpath", "-ocp"}, description = "The Micronaut AOT classpath", required = true)
+    private String aotClasspathString;
 
-    @Option(names = {"--classpath", "-cp"}, description = "The Micronaut application classpath", required = true, split = "[:,;]")
-    private List<File> classpath;
+    @Option(names = {"--classpath", "-cp"}, description = "The Micronaut application classpath", required = true)
+    private String classpathString;
 
     @Option(names = {"--package", "-p"}, description = "The target package for generated classes", required = true)
     private String packageName;
@@ -65,8 +66,8 @@ public class Main implements Runnable, ConfigKeys {
     @Override
     public void run() {
         List<URL> classpath = new ArrayList<>();
-        classpath.addAll(toURLs(aotClasspath));
-        classpath.addAll(toURLs(this.classpath));
+        classpath.addAll(toURLs(aotClasspathString));
+        classpath.addAll(toURLs(classpathString));
         Properties props = new Properties();
         if (config.exists()) {
             try (InputStreamReader reader = new InputStreamReader(new FileInputStream(config))) {
@@ -120,8 +121,10 @@ public class Main implements Runnable, ConfigKeys {
         }
     }
 
-    private static List<URL> toURLs(List<File> classpath) {
-        return classpath.stream().map(File::toURI).map(uri -> {
+    private static List<URL> toURLs(String classpathString ) {
+        return Arrays.stream(classpathString.split("[,;" + File.pathSeparator + "]"))
+                .map(File::new)
+                .map(File::toURI).map(uri -> {
                     try {
                         return uri.toURL();
                     } catch (MalformedURLException e) {
