@@ -6,7 +6,7 @@ import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
 class GraalVMOptimizationFeatureSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
     AOTSourceGenerator newGenerator() {
-        props.put(GraalVMOptimizationFeatureSourceGenerator.OPTION.key, ['A', 'B', 'C'].join(','))
+        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES, ['A', 'B', 'C'].join(','))
         new GraalVMOptimizationFeatureSourceGenerator()
     }
 

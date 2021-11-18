@@ -20,8 +20,9 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
+import io.micronaut.aot.core.AOTModule;
+import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
-import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.io.service.SoftServiceLoader;
 
 import java.util.ArrayList;
@@ -36,19 +37,26 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * A specialized version of service loader generation which is aimed at
  * executing in native images, where classloading is basically free.
  */
+@AOTModule(
+        id = NativeStaticServiceLoaderSourceGenerator.ID,
+        description = AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION,
+        options = {
+                @Option(
+                        key = "service.types",
+                        description = "The list of service types to be scanned (comma separated)",
+                        sampleValue = "io.micronaut.Service1,io.micronaut.Service2"
+                ),
+                @Option(
+                        key = "serviceloading.rejected.impls",
+                        description = "A list of implementation types which shouldn't be included in the final application (comma separated)",
+                        sampleValue = "com.Misc,org.Bar"
+                )
+        },
+        enabledOn = Runtime.NATIVE,
+        subgenerators = { YamlPropertySourceGenerator.class }
+)
 public class NativeStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
     public static final String ID = "serviceloading.native";
-
-    @Override
-    @NonNull
-    public String getId() {
-        return ID;
-    }
-
-    @Override
-    public boolean isEnabledOn(@NonNull Runtime runtime) {
-        return runtime == Runtime.NATIVE;
-    }
 
     protected final void generateFindAllMethod(Predicate<String> rejectedClasses,
                                                String serviceName,

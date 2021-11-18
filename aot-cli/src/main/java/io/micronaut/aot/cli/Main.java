@@ -121,7 +121,7 @@ public class Main implements Runnable, ConfigKeys {
         }
     }
 
-    private static List<URL> toURLs(String classpathString ) {
+    private static List<URL> toURLs(String classpathString) {
         return Arrays.stream(classpathString.split("[,;" + File.pathSeparator + "]"))
                 .map(File::new)
                 .map(File::toURI).map(uri -> {

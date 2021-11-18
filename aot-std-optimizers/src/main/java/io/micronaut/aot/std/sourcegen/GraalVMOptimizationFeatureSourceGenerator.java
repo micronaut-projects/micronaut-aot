@@ -15,8 +15,10 @@
  */
 package io.micronaut.aot.std.sourcegen;
 
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
+import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
 import io.micronaut.aot.core.sourcegen.ApplicationContextConfigurerGenerator;
 import io.micronaut.core.annotation.NonNull;
@@ -25,48 +27,35 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 /**
  * Generates the GraalVM configuration file which is going to configure
  * the native image code generation, typically asking to initialize
  * the optimized entry point at build time.
  */
+@AOTModule(
+        id = GraalVMOptimizationFeatureSourceGenerator.ID,
+        description = GraalVMOptimizationFeatureSourceGenerator.DESCRIPTION,
+        options = {
+                @Option(
+                        key = "service.types",
+                        description = "The list of service types to be scanned (comma separated)",
+                        sampleValue = "io.micronaut.Service1,io.micronaut.Service2"
+                )
+        },
+        enabledOn = Runtime.NATIVE
+)
 public class GraalVMOptimizationFeatureSourceGenerator extends AbstractSourceGenerator {
     public static final String ID = "graalvm.config";
-    public static final Option OPTION = AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES;
     public static final String DESCRIPTION = "Generates GraalVM configuration files required to load the AOT optimizations";
     private static final String NEXT_LINE = " \\";
 
-    @Override
-    @NonNull
-    public Set<Option> getConfigurationOptions() {
-        return Collections.singleton(OPTION);
-    }
-
-    @Override
-    @NonNull
-    public String getId() {
-        return ID;
-    }
-
-    @Override
-    @NonNull
-    public Optional<String> getDescription() {
-        return Optional.of(DESCRIPTION);
-    }
-
-    @Override
-    public boolean isEnabledOn(@NonNull Runtime runtime) {
-        return runtime == Runtime.NATIVE;
-    }
+    private static final Option OPTION = MetadataUtils.findOption(GraalVMOptimizationFeatureSourceGenerator.class, "service.types");
 
     @Override
     public void generateResourceFiles(@NonNull File targetDirectory) {
-        List<String> serviceTypes = context.getConfiguration().stringList(OPTION.getKey());
+        List<String> serviceTypes = context.getConfiguration().stringList(OPTION.key());
         File nativeImageDir = new File(targetDirectory, "META-INF/native-image/" + getContext().getPackageName());
         if (nativeImageDir.isDirectory() || nativeImageDir.mkdirs()) {
             File propertiesFile = new File(nativeImageDir, "native-image.properties");

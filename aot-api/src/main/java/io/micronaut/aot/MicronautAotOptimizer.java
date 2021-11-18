@@ -16,12 +16,14 @@
 package io.micronaut.aot;
 
 import com.squareup.javapoet.JavaFile;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.AOTSourceGenerator;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
 import io.micronaut.aot.core.SourceGenerationContext;
 import io.micronaut.aot.core.config.DefaultConfiguration;
+import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.config.SourceGeneratorLoader;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
 import io.micronaut.aot.core.context.DefaultSourceGenerationContext;
@@ -57,9 +59,12 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static io.micronaut.aot.core.config.MetadataUtils.toPropertiesSample;
 
 /**
  * The Micronaut AOT optimizer is the main entry point for code
@@ -139,24 +144,24 @@ public final class MicronautAotOptimizer implements ConfigKeys {
      * @param propertiesFile the generated properties file
      */
     public static void exportConfiguration(String runtime, File propertiesFile) {
-        List<AOTSourceGenerator> list = SourceGeneratorLoader.list(Runtime.valueOf(runtime.toUpperCase(Locale.ENGLISH)));
+        List<AOTModule> list = SourceGeneratorLoader.list(Runtime.valueOf(runtime.toUpperCase(Locale.ENGLISH)));
         try (PrintWriter wrt = new PrintWriter(new FileOutputStream(propertiesFile))) {
-            Deque<AOTSourceGenerator> queue = new ArrayDeque<>(list);
+            Deque<AOTModule> queue = new ArrayDeque<>(list);
             while (!queue.isEmpty()) {
-            AOTSourceGenerator generator = queue.pop();
-                generator.getDescription().ifPresent(desc ->
-                        Arrays.stream(desc.split("\r?\n")).forEach(line ->
-                                wrt.println("# " + line)));
-                wrt.println(generator.getId() + ".enabled = true");
-                generator.getSubGenerators().stream()
+                AOTModule generator = queue.pop();
+                if (!generator.description().isEmpty()) {
+                    Arrays.stream(generator.description().split("\r?\n")).forEach(line ->
+                            wrt.println("# " + line));
+                }
+                wrt.println(generator.id() + ".enabled = true");
+                Arrays.stream(generator.subgenerators())
+                        .map(MetadataUtils::findMetadata)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
                         .sorted(Collections.reverseOrder())
                         .forEachOrdered(queue::addFirst);
-                for (Option option : generator.getConfigurationOptions()) {
-                    if (option.getDescription().isPresent()) {
-                        wrt.println("# " + option.getDescription().get());
-                    }
-                    String sample = option.getSampleValue().orElse("");
-                    wrt.println(option.getKey() + " = " + sample);
+                for (Option option : generator.options()) {
+                    wrt.println(toPropertiesSample(option));
                 }
                 wrt.println();
             }

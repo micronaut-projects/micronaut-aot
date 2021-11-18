@@ -21,7 +21,7 @@ import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
 class KnownMissingTypesSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
     AOTSourceGenerator newGenerator() {
-        props.put(KnownMissingTypesSourceGenerator.OPTION.key,
+        props.put(KnownMissingTypesSourceGenerator.OPTION.key(),
                 [
                         'non.existing.ClassName',
                         AOTSourceGenerator.class.name,

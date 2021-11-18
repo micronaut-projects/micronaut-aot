@@ -16,6 +16,7 @@
 package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.JavaFile;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.context.env.PropertySource;
@@ -37,6 +38,10 @@ import java.util.Optional;
  * with a static configuration.
  *
  */
+@AOTModule(
+        id = YamlPropertySourceGenerator.ID,
+        description = YamlPropertySourceGenerator.DESCRIPTION
+)
 public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
     public static final String ID = "yaml.to.java.config";
     public static final String DESCRIPTION = "Converts YAML configuration files to Java configuration";
@@ -46,17 +51,6 @@ public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
 
     public YamlPropertySourceGenerator(Collection<String> resources) {
         this.resources = resources;
-    }
-
-    @Override
-    @NonNull
-    public String getId() {
-        return ID;
-    }
-
-    @Override
-    public Optional<String> getDescription() {
-        return Optional.of(DESCRIPTION);
     }
 
     @Override

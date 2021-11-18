@@ -15,14 +15,17 @@
  */
 package io.micronaut.aot.core.config;
 
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.AOTSourceGenerator;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Runtime;
 import io.micronaut.aot.core.SourceGenerationContext;
 import io.micronaut.core.annotation.NonNull;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,31 +38,43 @@ import static java.util.stream.StreamSupport.stream;
  * order according to their dependencies.
  */
 public class SourceGeneratorLoader {
-    private static final Comparator<AOTSourceGenerator> EXECUTION_ORDER = (first, second) -> {
-        if (first.getDependencies().contains(second.getId())) {
+    private static final Comparator<AOTModule> EXECUTION_ORDER = (first, second) -> {
+        if (Arrays.asList(first.dependencies()).contains(second.id())) {
             return 1;
         }
-        if (second.getDependencies().contains(first.getId())) {
+        if (Arrays.asList(second.dependencies()).contains(first.id())) {
             return -1;
         }
-        return first.getId().compareTo(second.getId());
+        return first.id().compareTo(second.id());
     };
 
     @NonNull
     public static List<AOTSourceGenerator> load(Runtime runtime, SourceGenerationContext context) {
         Configuration configuration = context.getConfiguration();
         return sourceGeneratorStream()
-                .filter(sg -> sg.isEnabledOn(runtime))
-                .filter(sg -> configuration.isFeatureEnabled(sg.getId()))
-                .sorted(EXECUTION_ORDER)
-                .peek(sg -> sg.init(context))
+                .map(sg -> new Object() {
+                    final AOTSourceGenerator generator = sg;
+                    final AOTModule module = MetadataUtils.findMetadata(sg.getClass()).orElse(null);
+                })
+                .filter(sg -> sg.module != null
+                        && MetadataUtils.isEnabledOn(runtime, sg.module)
+                        && configuration.isFeatureEnabled(sg.module.id()))
+                .sorted(Comparator.comparing(f -> f.module, EXECUTION_ORDER))
+                .map(sg -> {
+                    sg.generator.init(context);
+                    return sg.generator;
+                })
                 .collect(Collectors.toList());
     }
 
     @NonNull
-    public static List<AOTSourceGenerator> list(Runtime runtime) {
+    public static List<AOTModule> list(Runtime runtime) {
         return sourceGeneratorStream()
-                .filter(sg -> sg.isEnabledOn(runtime))
+                .map(Object::getClass)
+                .map(MetadataUtils::findMetadata)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .filter(aotModule -> MetadataUtils.isEnabledOn(runtime, aotModule))
                 .sorted(EXECUTION_ORDER)
                 .collect(Collectors.toList());
     }

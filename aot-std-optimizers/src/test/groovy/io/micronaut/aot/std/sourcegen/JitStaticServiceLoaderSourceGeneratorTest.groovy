@@ -25,7 +25,7 @@ class JitStaticServiceLoaderSourceGeneratorTest extends AbstractSourceGeneratorS
     }
 
     def "generates a service loader for a single service"() {
-        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES.key, TestService.name)
+        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES, TestService.name)
 
         when:
         generate()
@@ -91,7 +91,7 @@ public class TestServiceFactory implements SoftServiceLoader.StaticServiceLoader
     }
 
     def "generates a service loader for a multiple implementations of a service"() {
-        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES.key, TestServiceWithMoreThanOneImpl.name)
+        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES, TestServiceWithMoreThanOneImpl.name)
 
         when:
         generate()

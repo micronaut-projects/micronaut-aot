@@ -17,11 +17,12 @@ package io.micronaut.aot.std.sourcegen
 
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeSpec
+import io.micronaut.aot.core.AOTModule
 import io.micronaut.aot.core.AOTSourceGenerator
-import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
+import io.micronaut.aot.core.Option
 import io.micronaut.aot.core.sourcegen.AbstractSingleClassFileGenerator
+import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
 import io.micronaut.core.annotation.NonNull
-import org.jetbrains.annotations.NotNull
 
 import java.util.function.Predicate
 
@@ -51,6 +52,14 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
         }
     }
 
+    @AOTModule(id = "loader", options = [
+            @Option(
+                    key = "service.types"
+            ),
+            @Option(
+                    key = "serviceloading.rejected.impls"
+            )
+    ])
     static class TestServiceLoaderGenerator extends AbstractStaticServiceLoaderSourceGenerator {
 
         @Override
@@ -60,14 +69,9 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
                     (clazz, provider) -> clazz.getName()
             )
         }
-
-        @NotNull
-        @Override
-        String getId() {
-            "loader"
-        }
     }
 
+    @AOTModule(id = SubstituteGenerator.ID)
     class SubstituteGenerator extends AbstractSingleClassFileGenerator {
         private static final String ID = "internal.substitute.generator";
 
@@ -76,13 +80,6 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
         protected JavaFile generate() {
             TypeSpec typeSpec = TypeSpec.classBuilder("Substitute").build()
             JavaFile.builder(packageName, typeSpec).build()
-        }
-
-        @NotNull
-        @Override
-        @NonNull
-        String getId() {
-            return ID;
         }
     }
 }

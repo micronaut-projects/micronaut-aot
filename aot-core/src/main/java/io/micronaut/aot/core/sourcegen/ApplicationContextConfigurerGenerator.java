@@ -52,12 +52,6 @@ public class ApplicationContextConfigurerGenerator extends AbstractSourceGenerat
 
     @Override
     @NonNull
-    public String getId() {
-        return ID;
-    }
-
-    @Override
-    @NonNull
     public List<JavaFile> generateSourceFiles() {
         List<JavaFile> allFiles = new ArrayList<>();
         for (AOTSourceGenerator sourceGenerator : sourceGenerators) {
