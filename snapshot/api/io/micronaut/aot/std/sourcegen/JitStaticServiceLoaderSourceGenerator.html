@@ -17,7 +17,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":10,"i1":10,"i2":10};
+var methods = {"i0":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -200,26 +200,13 @@ extends <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticSer
                      java.lang.Class&lt;?&gt;&nbsp;serviceType,
                      com.squareup.javapoet.TypeSpec.Builder&nbsp;factory)</code>&nbsp;</td>
 </tr>
-<tr id="i1" class="rowColor">
-<td class="colFirst"><code>java.lang.String</code></td>
-<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/JitStaticServiceLoaderSourceGenerator.html#getId--">getId</a></span>()</code>
-<div class="block">A unique identifier for this source generator.</div>
-</td>
-</tr>
-<tr id="i2" class="altColor">
-<td class="colFirst"><code>boolean</code></td>
-<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/JitStaticServiceLoaderSourceGenerator.html#isEnabledOn-io.micronaut.aot.core.Runtime-">isEnabledOn</a></span>(<a href="../../../../../io/micronaut/aot/core/Runtime.html" title="enum in io.micronaut.aot.core">Runtime</a>&nbsp;runtime)</code>
-<div class="block">Determines if this source generator should be enabled
- when targetting a particular runtime.</div>
-</td>
-</tr>
 </table>
 <ul class="blockList">
 <li class="blockList"><a name="methods.inherited.from.class.io.micronaut.aot.std.sourcegen.AbstractStaticServiceLoaderSourceGenerator">
 <!--   -->
 </a>
 <h3>Methods inherited from class&nbsp;io.micronaut.aot.std.sourcegen.<a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></h3>
-<code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#collectServiceImplementations-java.lang.String-java.util.function.BiFunction-">collectServiceImplementations</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#doInit--">doInit</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateSourceFiles--">generateSourceFiles</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateStaticInit--">generateStaticInit</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#getConfigurationOptions--">getConfigurationOptions</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#getDescription--">getDescription</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#getSubGenerators--">getSubGenerators</a></code></li>
+<code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#collectServiceImplementations-java.lang.String-java.util.function.BiFunction-">collectServiceImplementations</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#doInit--">doInit</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateSourceFiles--">generateSourceFiles</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateStaticInit--">generateStaticInit</a></code></li>
 </ul>
 <ul class="blockList">
 <li class="blockList"><a name="methods.inherited.from.class.io.micronaut.aot.core.sourcegen.AbstractSourceGenerator">
@@ -240,7 +227,7 @@ extends <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticSer
 <!--   -->
 </a>
 <h3>Methods inherited from interface&nbsp;io.micronaut.aot.core.<a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></h3>
-<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles</a>, <a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#getDependencies--">getDependencies</a></code></li>
+<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles</a></code></li>
 </ul>
 </li>
 </ul>
@@ -294,29 +281,10 @@ extends <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticSer
 <!--   -->
 </a>
 <h3>Method Detail</h3>
-<a name="isEnabledOn-io.micronaut.aot.core.Runtime-">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>isEnabledOn</h4>
-<pre>public&nbsp;boolean&nbsp;isEnabledOn(@NonNull
-                           <a href="../../../../../io/micronaut/aot/core/Runtime.html" title="enum in io.micronaut.aot.core">Runtime</a>&nbsp;runtime)</pre>
-<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#isEnabledOn-io.micronaut.aot.core.Runtime-">AOTSourceGenerator</a></code></span></div>
-<div class="block">Determines if this source generator should be enabled
- when targetting a particular runtime.</div>
-<dl>
-<dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>runtime</code> - the target runtime</dd>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>true if the source generator should be enabled</dd>
-</dl>
-</li>
-</ul>
 <a name="generateFindAllMethod-java.util.function.Predicate-java.lang.String-java.lang.Class-com.squareup.javapoet.TypeSpec.Builder-">
 <!--   -->
 </a>
-<ul class="blockList">
+<ul class="blockListLast">
 <li class="blockList">
 <h4>generateFindAllMethod</h4>
 <pre>protected final&nbsp;void&nbsp;generateFindAllMethod(java.util.function.Predicate&lt;java.lang.String&gt;&nbsp;rejectedClasses,
@@ -326,22 +294,6 @@ extends <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticSer
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateFindAllMethod-java.util.function.Predicate-java.lang.String-java.lang.Class-com.squareup.javapoet.TypeSpec.Builder-">generateFindAllMethod</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></code></dd>
-</dl>
-</li>
-</ul>
-<a name="getId--">
-<!--   -->
-</a>
-<ul class="blockListLast">
-<li class="blockList">
-<h4>getId</h4>
-<pre>@NonNull
-public&nbsp;java.lang.String&nbsp;getId()</pre>
-<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#getId--">AOTSourceGenerator</a></code></span></div>
-<div class="block">A unique identifier for this source generator.</div>
-<dl>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>the id</dd>
 </dl>
 </li>
 </ul>

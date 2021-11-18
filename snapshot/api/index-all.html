@@ -67,7 +67,7 @@
 <!--   -->
 </a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-<div class="contentContainer"><a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a name="I:A">
+<div class="contentContainer"><a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a name="I:A">
 <!--   -->
 </a>
 <h2 class="title">A</h2>
@@ -102,6 +102,10 @@
 <dd>
 <div class="block">Adds a diagnostic message, which is going to be written
  in a log file.</div>
+</dd>
+<dt><a href="io/micronaut/aot/core/AOTModule.html" title="annotation in io.micronaut.aot.core"><span class="typeNameLink">AOTModule</span></a> - Annotation Type in <a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a></dt>
+<dd>
+<div class="block">Annotation which must be present on AOT optimizers.</div>
 </dd>
 <dt><a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">AOTSourceGenerator</span></a> - Interface in <a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a></dt>
 <dd>
@@ -230,8 +234,6 @@
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html#EnvironmentPropertiesSourceGenerator--">EnvironmentPropertiesSourceGenerator()</a></span> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Option.html#equals-java.lang.Object-">equals(Object)</a></span> - Method in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></dt>
-<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/cli/Main.html#execute-java.lang.String:A-">execute(String[])</a></span> - Static method in class io.micronaut.aot.cli.<a href="io/micronaut/aot/cli/Main.html" title="class in io.micronaut.aot.cli">Main</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/MicronautAotOptimizer.html#execute-java.util.Properties-">execute(Properties)</a></span> - Static method in class io.micronaut.aot.<a href="io/micronaut/aot/MicronautAotOptimizer.html" title="class in io.micronaut.aot">MicronautAotOptimizer</a></dt>
@@ -244,6 +246,20 @@
 <dd>
 <div class="block">Scans the list of available optimization services and generates
  a configuration file which includes all entries.</div>
+</dd>
+</dl>
+<a name="I:F">
+<!--   -->
+</a>
+<h2 class="title">F</h2>
+<dl>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/MetadataUtils.html#findMetadata-java.lang.Class-">findMetadata(Class&lt;?&gt;)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
+<dd>
+<div class="block">Returns the AOT module annotation for a class, if present.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/MetadataUtils.html#findOption-java.lang.Class-java.lang.String-">findOption(Class&lt;?&gt;, String)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
+<dd>
+<div class="block">Returns the option with the corresponding name.</div>
 </dd>
 </dl>
 <a name="I:G">
@@ -329,54 +345,10 @@
 <dd>
 <div class="block">Returns the source generators configuration.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#getConfigurationOptions--">getConfigurationOptions()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">Returns the set of configuration keys which affect
- the configuration of this source generator.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#getConfigurationOptions--">getConfigurationOptions()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#getConfigurationOptions--">getConfigurationOptions()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#getConfigurationOptions--">getConfigurationOptions()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">KnownMissingTypesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#getContext--">getContext()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
 <dd>
 <div class="block">Returns the source generation context.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#getDependencies--">getDependencies()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">Returns the identifiers of source generators which must
- be executed before this generator is called.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#getDependencies--">getDependencies()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#getDescription--">getDescription()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">Returns a description for this source generator.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Option.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></dt>
-<dd>
-<div class="block">Returns a description of this configuration option.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">KnownMissingTypesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">LogbackConfigurationSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">SealedEnvironmentSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html#getDescription--">getDescription()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">YamlPropertySourceGenerator</a></dt>
-<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getDiagnostics--">getDiagnostics()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getDiagnostics--">getDiagnostics()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
@@ -396,38 +368,6 @@
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getExtraClasspath--">getExtraClasspath()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#getId--">getId()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">A unique identifier for this source generator.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/JitStaticServiceLoaderSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/JitStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">JitStaticServiceLoaderSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">KnownMissingTypesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">LogbackConfigurationSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">MapPropertySourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/NativeStaticServiceLoaderSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/NativeStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NativeStaticServiceLoaderSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">SealedEnvironmentSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html#getId--">getId()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">YamlPropertySourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Option.html#getKey--">getKey()</a></span> - Method in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></dt>
-<dd>
-<div class="block">Returns the key used to configure this option.</div>
-</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getPackageName--">getPackageName()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getPackageName--">getPackageName()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
@@ -446,17 +386,6 @@
 <dd>
 <div class="block">Returns the target runtime environment.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Option.html#getSampleValue--">getSampleValue()</a></span> - Method in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></dt>
-<dd>
-<div class="block">Returns a sample value for this option, if any.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#getSubGenerators--">getSubGenerators()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">Returns a list of generators which are directly managed (or instantiated_
- by this source generator.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#getSubGenerators--">getSubGenerators()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/cli/VersionProvider.html#getVersion--">getVersion()</a></span> - Method in class io.micronaut.aot.cli.<a href="io/micronaut/aot/cli/VersionProvider.html" title="class in io.micronaut.aot.cli">VersionProvider</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">GraalVMOptimizationFeatureSourceGenerator</span></a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
@@ -466,14 +395,6 @@
  the optimized entry point at build time.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#GraalVMOptimizationFeatureSourceGenerator--">GraalVMOptimizationFeatureSourceGenerator()</a></span> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-</dl>
-<a name="I:H">
-<!--   -->
-</a>
-<h2 class="title">H</h2>
-<dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Option.html#hashCode--">hashCode()</a></span> - Method in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <a name="I:I">
@@ -525,16 +446,9 @@
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a> - package io.micronaut.aot.std.sourcegen</dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#isEnabledOn-io.micronaut.aot.core.Runtime-">isEnabledOn(Runtime)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">Determines if this source generator should be enabled
- when targetting a particular runtime.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#isEnabledOn-io.micronaut.aot.core.Runtime-">isEnabledOn(Runtime)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/MetadataUtils.html#isEnabledOn-io.micronaut.aot.core.Runtime-io.micronaut.aot.core.AOTSourceGenerator-">isEnabledOn(Runtime, AOTSourceGenerator)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/JitStaticServiceLoaderSourceGenerator.html#isEnabledOn-io.micronaut.aot.core.Runtime-">isEnabledOn(Runtime)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/JitStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">JitStaticServiceLoaderSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/NativeStaticServiceLoaderSourceGenerator.html#isEnabledOn-io.micronaut.aot.core.Runtime-">isEnabledOn(Runtime)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/NativeStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NativeStaticServiceLoaderSourceGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/MetadataUtils.html#isEnabledOn-io.micronaut.aot.core.Runtime-io.micronaut.aot.core.AOTModule-">isEnabledOn(Runtime, AOTModule)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Configuration.html#isFeatureEnabled-java.lang.String-">isFeatureEnabled(String)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/Configuration.html" title="interface in io.micronaut.aot.core">Configuration</a></dt>
 <dd>
@@ -618,6 +532,12 @@
 </dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html#MapPropertySourceGenerator-java.lang.String-java.util.Map-">MapPropertySourceGenerator(String, Map&lt;String, Object&gt;)</a></span> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">MapPropertySourceGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config"><span class="typeNameLink">MetadataUtils</span></a> - Class in <a href="io/micronaut/aot/core/config/package-summary.html">io.micronaut.aot.core.config</a></dt>
+<dd>
+<div class="block">Runtime reflection utils for analyzing AOT modules.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/MetadataUtils.html#MetadataUtils--">MetadataUtils()</a></span> - Constructor for class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/MicronautAotOptimizer.html" title="class in io.micronaut.aot"><span class="typeNameLink">MicronautAotOptimizer</span></a> - Class in <a href="io/micronaut/aot/package-summary.html">io.micronaut.aot</a></dt>
 <dd>
 <div class="block">The Micronaut AOT optimizer is the main entry point for code
@@ -646,24 +566,10 @@
 </a>
 <h2 class="title">O</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Option.html#of-java.lang.String-">of(String)</a></span> - Static method in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></dt>
-<dd>
-<div class="block">A simple option without description nor sample.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Option.html#of-java.lang.String-java.lang.String-">of(String, String)</a></span> - Static method in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></dt>
-<dd>
-<div class="block">A simple option without sample.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Option.html#of-java.lang.String-java.lang.String-java.lang.String-">of(String, String, String)</a></span> - Static method in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></dt>
-<dd>
-<div class="block">Builds an option descriptor.</div>
-</dd>
-<dt><a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core"><span class="typeNameLink">Option</span></a> - Class in <a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a></dt>
+<dt><a href="io/micronaut/aot/core/Option.html" title="annotation in io.micronaut.aot.core"><span class="typeNameLink">Option</span></a> - Annotation Type in <a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a></dt>
 <dd>
 <div class="block">Describes a configuration option of a source generator.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#OPTION">OPTION</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#OPTION">OPTION</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">KnownMissingTypesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Configuration.html#optionalString-java.lang.String-java.lang.String-">optionalString(String, String)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/Configuration.html" title="interface in io.micronaut.aot.core">Configuration</a></dt>
@@ -802,7 +708,7 @@
 </a>
 <h2 class="title">T</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Option.html#toPropertiesSample--">toPropertiesSample()</a></span> - Method in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/MetadataUtils.html#toPropertiesSample-io.micronaut.aot.core.Option-">toPropertiesSample(Option)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
 <dd>
 <div class="block">Returns a string representation of the option, for
  use in properties files.</div>
@@ -855,7 +761,7 @@ the order they are declared.</div>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html#YamlPropertySourceGenerator-java.util.Collection-">YamlPropertySourceGenerator(Collection&lt;String&gt;)</a></span> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">YamlPropertySourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
-<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;</div>
+<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;</div>
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
 <div class="bottomNav"><a name="navbar.bottom">
 <!--   -->

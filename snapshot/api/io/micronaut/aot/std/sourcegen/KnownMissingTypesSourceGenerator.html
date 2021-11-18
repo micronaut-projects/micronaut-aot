@@ -17,7 +17,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":10,"i1":10,"i2":10,"i3":10};
+var methods = {"i0":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -148,7 +148,7 @@ extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGe
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#ID">ID</a></span></code>&nbsp;</td>
 </tr>
 <tr class="altColor">
-<td class="colFirst"><code>static <a href="../../../../../io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a></code></td>
+<td class="colFirst"><code>static <a href="../../../../../io/micronaut/aot/core/Option.html" title="annotation in io.micronaut.aot.core">Option</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#OPTION">OPTION</a></span></code>&nbsp;</td>
 </tr>
 </table>
@@ -197,25 +197,6 @@ extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGe
  at initialization time of the optimized entry point.</div>
 </td>
 </tr>
-<tr id="i1" class="rowColor">
-<td class="colFirst"><code>java.util.Set&lt;<a href="../../../../../io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a>&gt;</code></td>
-<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#getConfigurationOptions--">getConfigurationOptions</a></span>()</code>
-<div class="block">Returns the set of configuration keys which affect
- the configuration of this source generator.</div>
-</td>
-</tr>
-<tr id="i2" class="altColor">
-<td class="colFirst"><code>java.util.Optional&lt;java.lang.String&gt;</code></td>
-<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#getDescription--">getDescription</a></span>()</code>
-<div class="block">Returns a description for this source generator.</div>
-</td>
-</tr>
-<tr id="i3" class="rowColor">
-<td class="colFirst"><code>java.lang.String</code></td>
-<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#getId--">getId</a></span>()</code>
-<div class="block">A unique identifier for this source generator.</div>
-</td>
-</tr>
 </table>
 <ul class="blockList">
 <li class="blockList"><a name="methods.inherited.from.class.io.micronaut.aot.core.sourcegen.AbstractSourceGenerator">
@@ -236,7 +217,7 @@ extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGe
 <!--   -->
 </a>
 <h3>Methods inherited from interface&nbsp;io.micronaut.aot.core.<a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></h3>
-<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles</a>, <a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#generateSourceFiles--">generateSourceFiles</a>, <a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#getDependencies--">getDependencies</a>, <a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#getSubGenerators--">getSubGenerators</a>, <a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#isEnabledOn-io.micronaut.aot.core.Runtime-">isEnabledOn</a></code></li>
+<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles</a>, <a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#generateSourceFiles--">generateSourceFiles</a></code></li>
 </ul>
 </li>
 </ul>
@@ -271,7 +252,7 @@ extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGe
 <ul class="blockList">
 <li class="blockList">
 <h4>OPTION</h4>
-<pre>public static final&nbsp;<a href="../../../../../io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a> OPTION</pre>
+<pre>public static final&nbsp;<a href="../../../../../io/micronaut/aot/core/Option.html" title="annotation in io.micronaut.aot.core">Option</a> OPTION</pre>
 </li>
 </ul>
 <a name="DESCRIPTION">
@@ -312,57 +293,6 @@ extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGe
 <!--   -->
 </a>
 <h3>Method Detail</h3>
-<a name="getId--">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>getId</h4>
-<pre>@NonNull
-public&nbsp;java.lang.String&nbsp;getId()</pre>
-<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#getId--">AOTSourceGenerator</a></code></span></div>
-<div class="block">A unique identifier for this source generator.</div>
-<dl>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>the id</dd>
-</dl>
-</li>
-</ul>
-<a name="getDescription--">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>getDescription</h4>
-<pre>@NonNull
-public&nbsp;java.util.Optional&lt;java.lang.String&gt;&nbsp;getDescription()</pre>
-<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#getDescription--">AOTSourceGenerator</a></code></span></div>
-<div class="block">Returns a description for this source generator.
- Description is optional because some code generators
- are purely internal and not exposed to users.</div>
-<dl>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>a description or an empty options</dd>
-</dl>
-</li>
-</ul>
-<a name="getConfigurationOptions--">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>getConfigurationOptions</h4>
-<pre>@NonNull
-public&nbsp;java.util.Set&lt;<a href="../../../../../io/micronaut/aot/core/Option.html" title="class in io.micronaut.aot.core">Option</a>&gt;&nbsp;getConfigurationOptions()</pre>
-<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#getConfigurationOptions--">AOTSourceGenerator</a></code></span></div>
-<div class="block">Returns the set of configuration keys which affect
- the configuration of this source generator.</div>
-<dl>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>a set of configuration keys</dd>
-</dl>
-</li>
-</ul>
 <a name="generateStaticInit--">
 <!--   -->
 </a>
