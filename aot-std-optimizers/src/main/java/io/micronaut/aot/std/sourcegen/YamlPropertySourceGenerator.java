@@ -76,6 +76,8 @@ public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
         Optional<PropertySource> optionalSource = loader.load(resource, new DefaultClassPathResourceLoader(this.getClass().getClassLoader()));
         if (optionalSource.isPresent()) {
             LOGGER.info("Converting {} into Java based configuration", resource + ".yml");
+            context.registerExcludedResource(resource + ".yml");
+            context.registerExcludedResource(resource + ".yaml");
             PropertySource ps = optionalSource.get();
             if (ps instanceof MapPropertySource) {
                 MapPropertySource mps = (MapPropertySource) ps;
