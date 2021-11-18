@@ -21,9 +21,8 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.WildcardTypeName;
-import io.micronaut.aot.core.AOTSourceGenerator;
-import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.SourceGenerationContext;
+import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
 import io.micronaut.core.annotation.AnnotationMetadataProvider;
@@ -51,6 +50,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.micronaut.aot.core.config.MetadataUtils.findOption;
 import static javax.lang.model.element.Modifier.PUBLIC;
 
 /**
@@ -61,8 +61,8 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 public abstract class AbstractStaticServiceLoaderSourceGenerator extends AbstractSourceGenerator {
     public static final String SERVICE_LOADING_CATEGORY = "serviceloading";
     public static final String DESCRIPTION = "Scans for service types ahead-of-time, avoiding classpath scanning at startup";
-    public static final Option SERVICE_TYPES = Option.of("service.types", "The list of service types to be scanned (comma separated)", "io.micronaut.Service1,io.micronaut.Service2");
-    public static final Option REJECTED_CLASSES = Option.of("serviceloading.rejected.impls", "A list of implementation types which shouldn't be included in the final application (comma separated)", "com.Misc,org.Bar");
+    public static final String SERVICE_TYPES = "service.types";
+    public static final String REJECTED_CLASSES = "serviceloading.rejected.impls";
 
     private Predicate<AnnotationMetadataProvider> metadataProviderPredicate;
     private List<String> serviceNames;
@@ -71,30 +71,9 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     private final Substitutes substitutes = new Substitutes();
     private Map<String, TypeSpec> staticServiceClasses;
 
-    @NonNull
-    @Override
-    public Optional<String> getDescription() {
-        return Optional.of(DESCRIPTION);
-    }
-
-    @NonNull
-    @Override
-    public Set<Option> getConfigurationOptions() {
-        return new LinkedHashSet<Option>() {{
-            add(SERVICE_TYPES);
-            add(REJECTED_CLASSES);
-        }};
-    }
-
-    @Override
-    @NonNull
-    public List<AOTSourceGenerator> getSubGenerators() {
-        return Collections.singletonList(new YamlPropertySourceGenerator(Collections.emptyList()));
-    }
-
     protected final void doInit() throws ClassNotFoundException {
         if (serviceNames == null) {
-            serviceNames = context.getConfiguration().stringList(SERVICE_TYPES.getKey());
+            serviceNames = context.getConfiguration().stringList(findOption(this.getClass(), SERVICE_TYPES).key());
         }
         if (substitutions == null) {
             Set<String> resourceNames = new LinkedHashSet<>();
@@ -107,7 +86,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
             if (context.getConfiguration().isFeatureEnabled(YamlPropertySourceGenerator.ID)) {
                 YamlPropertySourceGenerator yaml = new YamlPropertySourceGenerator(resourceNames);
                 yaml.init(context);
-                if (yaml.isEnabledOn(context.getRuntime())) {
+                if (MetadataUtils.isEnabledOn(context.getRuntime(), yaml)) {
                     substitutions.put(YamlPropertySourceLoader.class.getName(), yaml);
                 }
             }
@@ -116,7 +95,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
             metadataProviderPredicate = context.getAnalyzer().getAnnotationMetadataPredicate();
         }
         if (rejectedClasses == null) {
-            List<String> strings = context.getConfiguration().stringList(REJECTED_CLASSES.getKey());
+            List<String> strings = context.getConfiguration().stringList(findOption(this.getClass(), REJECTED_CLASSES).key());
             Set<String> rejected = strings.isEmpty() ? Collections.emptySet() : new HashSet<>(strings);
             rejectedClasses = rejected::contains;
         }

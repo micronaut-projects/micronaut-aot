@@ -17,14 +17,15 @@ package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.Option;
+import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.reflect.ClassUtils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -35,28 +36,21 @@ import java.util.Set;
  * at build time.
  * Missing classes will be recorded and injected at runtime as optimizations.
  */
+@AOTModule(
+        id = KnownMissingTypesSourceGenerator.ID,
+        description = KnownMissingTypesSourceGenerator.DESCRIPTION,
+        options = {
+                @Option(
+                        key = "known.missing.types.list",
+                        description = "A list of types that the AOT analyzer needs to check for existence (comma separated)",
+                        sampleValue = "javax.inject.Inject,io.micronaut.SomeType"
+                )
+        }
+)
 public class KnownMissingTypesSourceGenerator extends AbstractSourceGenerator {
     public static final String ID = "known.missing.types";
-    public static final Option OPTION = Option.of("known.missing.types.list", "A list of types that the AOT analyzer needs to check for existence (comma separated)", "javax.inject.Inject,io.micronaut.SomeType");
+    public static final Option OPTION = MetadataUtils.findMetadata(KnownMissingTypesSourceGenerator.class).get().options()[0];
     public static final String DESCRIPTION = "Checks of existence of some types at build time instead of runtime";
-
-    @Override
-    @NonNull
-    public String getId() {
-        return ID;
-    }
-
-    @Override
-    @NonNull
-    public Optional<String> getDescription() {
-        return Optional.of(DESCRIPTION);
-    }
-
-    @Override
-    @NonNull
-    public Set<Option> getConfigurationOptions() {
-        return Collections.singleton(OPTION);
-    }
 
     private List<String> findMissingClasses(List<String> classNames) {
         List<String> knownMissingClasses = new ArrayList<>();
@@ -74,7 +68,7 @@ public class KnownMissingTypesSourceGenerator extends AbstractSourceGenerator {
     @Override
     @NonNull
     public Optional<MethodSpec> generateStaticInit() {
-        List<String> classNames = getContext().getConfiguration().stringList(OPTION.getKey());
+        List<String> classNames = getContext().getConfiguration().stringList(OPTION.key());
         return staticMethod("prepareKnownMissingTypes", body -> {
             body.addStatement("$T knownMissingTypes = new $T()", ParameterizedTypeName.get(Set.class, String.class), ParameterizedTypeName.get(HashSet.class, String.class));
             for (String knownMissingClass : findMissingClasses(classNames)) {

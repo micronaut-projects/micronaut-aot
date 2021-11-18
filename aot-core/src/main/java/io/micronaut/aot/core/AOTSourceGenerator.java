@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * A source generator is the main entity of the AOT project.
@@ -39,70 +38,10 @@ import java.util.Set;
  *     <li>one or more source files</li>
  *     <li>one or more resource files</li>
  * </ul>
+ *
+ * Source generators must be annotated with {@link AOTModule}.
  */
 public interface AOTSourceGenerator {
-    /**
-     * A unique identifier for this source generator.
-     * @return the id
-     */
-    @NonNull
-    String getId();
-
-    /**
-     * Returns a description for this source generator.
-     * Description is optional because some code generators
-     * are purely internal and not exposed to users.
-     * @return a description or an empty options
-     */
-    @NonNull
-    default Optional<String> getDescription() {
-        return Optional.empty();
-    }
-
-    /**
-     * Determines if this source generator should be enabled
-     * when targetting a particular runtime.
-     * @param runtime the target runtime
-     * @return true if the source generator should be enabled
-     */
-    @NonNull
-    default boolean isEnabledOn(@NonNull Runtime runtime) {
-        return true;
-    }
-
-    /**
-     * Returns the identifiers of source generators which must
-     * be executed before this generator is called.
-     * @return the list of ids
-     */
-    @NonNull
-    default Set<String> getDependencies() {
-        return Collections.emptySet();
-    }
-
-    /**
-     * Returns a list of generators which are directly managed (or instantiated_
-     * by this source generator. Such optimizers are typically not registered as
-     * services because they make no sense in isolation.
-     * This method should be used for introspection only.
-     *
-     * @return the list of sub features
-     */
-    @NonNull
-    default List<AOTSourceGenerator> getSubGenerators() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * Returns the set of configuration keys which affect
-     * the configuration of this source generator.
-     * @return a set of configuration keys
-     */
-    @NonNull
-    default Set<Option> getConfigurationOptions() {
-        return Collections.emptySet();
-    }
-
     /**
      * Initializes the source generator.
      * @param context the context to be injected

@@ -19,6 +19,7 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
 import io.micronaut.context.env.CachedEnvironment;
 import io.micronaut.core.annotation.NonNull;
@@ -36,6 +37,10 @@ import java.util.stream.Collectors;
  * A code generator which is responsible for precomputing the Micronaut property
  * names from environment variable names at build time.
  */
+@AOTModule(
+        id = EnvironmentPropertiesSourceGenerator.ID,
+        description = EnvironmentPropertiesSourceGenerator.DESCRIPTION
+)
 public class EnvironmentPropertiesSourceGenerator extends AbstractSourceGenerator {
     public static final String ID = "precompute.environment.properties";
     public static final String DESCRIPTION = "Precomputes Micronaut configuration property keys from the current environment variables";
@@ -48,18 +53,6 @@ public class EnvironmentPropertiesSourceGenerator extends AbstractSourceGenerato
 
     public EnvironmentPropertiesSourceGenerator() {
         this(CachedEnvironment.getenv());
-    }
-
-    @Override
-    @NonNull
-    public String getId() {
-        return ID;
-    }
-
-    @Override
-    @NonNull
-    public Optional<String> getDescription() {
-        return Optional.of(DESCRIPTION);
     }
 
     @Override

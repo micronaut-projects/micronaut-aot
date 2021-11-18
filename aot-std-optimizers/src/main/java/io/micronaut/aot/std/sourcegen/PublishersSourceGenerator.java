@@ -18,6 +18,7 @@ package io.micronaut.aot.std.sourcegen;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.async.publisher.Publishers;
@@ -34,6 +35,10 @@ import java.util.stream.Collectors;
  * An optimizer which is responsible for determining what reactive
  * types are found at build time.
  */
+@AOTModule(
+        id = PublishersSourceGenerator.ID,
+        description = PublishersSourceGenerator.DESCRIPTION
+)
 public class PublishersSourceGenerator extends AbstractSourceGenerator {
     public static final String ID = "scan.reactive.types";
     public static final String DESCRIPTION = "Scans reactive types at build time instead of runtime";
@@ -42,22 +47,10 @@ public class PublishersSourceGenerator extends AbstractSourceGenerator {
     private List<String> knownSingleTypes;
     private List<String> knownCompletableTypes;
 
-    @Override
-    @NonNull
-    public Optional<String> getDescription() {
-        return Optional.of(DESCRIPTION);
-    }
-
     protected final void doInit() {
         knownReactiveTypes = typeNamesOf(Publishers.getKnownReactiveTypes());
         knownSingleTypes = typeNamesOf(Publishers.getKnownSingleTypes());
         knownCompletableTypes = typeNamesOf(Publishers.getKnownCompletableTypes());
-    }
-
-    @Override
-    @NonNull
-    public String getId() {
-        return ID;
     }
 
     @Override

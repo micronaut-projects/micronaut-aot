@@ -18,6 +18,7 @@ package io.micronaut.aot.core.sourcegen
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.TypeSpec
+import io.micronaut.aot.core.AOTModule
 import io.micronaut.aot.core.AOTSourceGenerator
 import io.micronaut.context.ApplicationContextConfigurer
 import io.micronaut.core.annotation.NonNull
@@ -107,17 +108,12 @@ class SomeClass {
         }
     }
 
+    @AOTModule(id = "static-init")
     private static class GeneratorWithStaticInit extends AbstractSourceGenerator {
         private final String name
 
         protected GeneratorWithStaticInit(String name) {
             this.name = name
-        }
-
-        @NotNull
-        @Override
-        String getId() {
-            "static-init"
         }
 
         @NonNull
@@ -130,18 +126,12 @@ class SomeClass {
         }
     }
 
+    @AOTModule(id = "class-generating")
     private class ClassGenerating extends AbstractSingleClassFileGenerator {
         @Override
         protected JavaFile generate() {
             JavaFile.builder(packageName, TypeSpec.classBuilder("SomeClass").build())
                     .build()
-        }
-
-        @NotNull
-        @Override
-        @NonNull
-        String getId() {
-            "class-generating"
         }
     }
 }

@@ -1,10 +1,13 @@
 package io.micronaut.aot.cli
 
 import groovy.transform.CompileStatic
+import io.micronaut.aot.core.AOTSourceGenerator
+import io.micronaut.aot.core.config.MetadataUtils
 import io.micronaut.aot.std.sourcegen.AbstractStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
 import io.micronaut.aot.std.sourcegen.EnvironmentPropertiesSourceGenerator
 import io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
+import io.micronaut.aot.std.sourcegen.JitStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
 import io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
 import io.micronaut.aot.std.sourcegen.PublishersSourceGenerator
@@ -41,16 +44,16 @@ class CliTest extends Specification {
         Files.exists(configFile)
         def config = normalize(configFile.toFile().text)
         String expected = normalize([
-                runtime == 'native' ? [GraalVMOptimizationFeatureSourceGenerator.DESCRIPTION, "graalvm.config.enabled = true\n${GraalVMOptimizationFeatureSourceGenerator.OPTION.toPropertiesSample()}"] : null,
+                runtime == 'native' ? [GraalVMOptimizationFeatureSourceGenerator.DESCRIPTION, "graalvm.config.enabled = true\n${toPropertiesSample(GraalVMOptimizationFeatureSourceGenerator)}"] : null,
                 [KnownMissingTypesSourceGenerator.DESCRIPTION, """known.missing.types.enabled = true
-${KnownMissingTypesSourceGenerator.OPTION.toPropertiesSample()}"""],
+${toPropertiesSample(KnownMissingTypesSourceGenerator)}"""],
                 [LogbackConfigurationSourceGenerator.DESCRIPTION, 'logback.xml.to.java.enabled = true'],
                 [EnvironmentPropertiesSourceGenerator.DESCRIPTION, 'precompute.environment.properties.enabled = true'],
                 [PublishersSourceGenerator.DESCRIPTION, 'scan.reactive.types.enabled = true'],
                 [SealedEnvironmentSourceGenerator.DESCRIPTION, 'sealed.environment.enabled = true'],
                 [AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION, """serviceloading.${runtime}.enabled = true
-${AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES.toPropertiesSample()}
-${AbstractStaticServiceLoaderSourceGenerator.REJECTED_CLASSES.toPropertiesSample()}"""],
+${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES)}
+${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.REJECTED_CLASSES)}"""],
                 [YamlPropertySourceGenerator.DESCRIPTION, 'yaml.to.java.config.enabled = true'],
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
         ].findAll().collect { desc, c -> """# $desc
@@ -66,6 +69,20 @@ $c
 
     static String normalize(Object input) {
         input.toString().trim().replaceAll("\\r", "")
+    }
+
+    static String toPropertiesSample(Class<? extends AOTSourceGenerator> clazz) {
+        return MetadataUtils.toPropertiesSample(
+                MetadataUtils.findMetadata(clazz)
+                    .get()
+                    .options()[0]
+        )
+    }
+
+    static String toPropertiesSample(Class<? extends AOTSourceGenerator> clazz, String name) {
+        return MetadataUtils.toPropertiesSample(
+                MetadataUtils.findOption(clazz, name)
+        )
     }
 
     @CompileStatic

@@ -19,6 +19,7 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
 import io.micronaut.context.env.CachedEnvironment;
 import io.micronaut.context.env.ConstantPropertySources;
@@ -29,10 +30,8 @@ import io.micronaut.core.util.EnvironmentProperties;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -40,32 +39,17 @@ import java.util.stream.Collectors;
  * {@link PropertySource} which properties are known at build time
  * (and constant).
  */
+@AOTModule(
+        id = ConstantPropertySourcesSourceGenerator.ID,
+        description = ConstantPropertySourcesSourceGenerator.DESCRIPTION,
+        dependencies = {
+                JitStaticServiceLoaderSourceGenerator.ID,
+                NativeStaticServiceLoaderSourceGenerator.ID
+        }
+)
 public class ConstantPropertySourcesSourceGenerator extends AbstractSourceGenerator {
     public static final String ID = "sealed.property.source";
     public static final String DESCRIPTION = "Precomputes property sources at build time";
-
-    @Override
-    @NonNull
-    public String getId() {
-        return ID;
-    }
-
-    @Override
-    @NonNull
-    public Optional<String> getDescription() {
-        return Optional.of(DESCRIPTION);
-    }
-
-    @Override
-    @NonNull
-    public Set<String> getDependencies() {
-        return new HashSet<String>() {
-            {
-                add(JitStaticServiceLoaderSourceGenerator.ID);
-                add(NativeStaticServiceLoaderSourceGenerator.ID);
-            }
-        };
-    }
 
     @Override
     @NonNull

@@ -19,6 +19,7 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.sourcegen.AbstractSingleClassFileGenerator;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.core.annotation.Generated;
@@ -34,8 +35,11 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * A source generator which generates a map property source with a fixed
  * set of values at build time.
  */
+@AOTModule(
+        id = MapPropertySourceGenerator.BASE_ID
+)
 public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator {
-    public static final String BASE_ID = "map.property.";
+    public static final String BASE_ID = "map.property";
 
     private final String resourceName;
     private final Map<String, Object> values;
@@ -45,12 +49,6 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
             Map<String, Object> values) {
         this.resourceName = resourceName;
         this.values = values;
-    }
-
-    @Override
-    @NonNull
-    public String getId() {
-        return BASE_ID + resourceName;
     }
 
     private CodeBlock generateMap() {

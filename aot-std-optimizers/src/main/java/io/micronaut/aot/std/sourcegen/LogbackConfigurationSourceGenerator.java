@@ -28,6 +28,7 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.sourcegen.AbstractSingleClassFileGenerator;
 import io.micronaut.core.annotation.NonNull;
 import org.slf4j.Logger;
@@ -36,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.util.Locale;
-import java.util.Optional;
 
 /**
  * A source generator responsible for converting a logback.xml configuration into
@@ -44,22 +44,14 @@ import java.util.Optional;
  *
  * Note: for now the implementation does NOT do that, it's hardcoded!
  */
+@AOTModule(
+        id = LogbackConfigurationSourceGenerator.ID,
+        description = LogbackConfigurationSourceGenerator.DESCRIPTION
+)
 public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFileGenerator {
     public static final String ID = "logback.xml.to.java";
     public static final String DESCRIPTION = "Replaces logback.xml with a pure Java configuration (NOT YET IMPLEMENTED!)";
     private static final Logger LOGGER = LoggerFactory.getLogger(LogbackConfigurationSourceGenerator.class);
-
-    @Override
-    @NonNull
-    public String getId() {
-        return ID;
-    }
-
-    @Override
-    @NonNull
-    public Optional<String> getDescription() {
-        return Optional.of(DESCRIPTION);
-    }
 
     @Override
     @NonNull
