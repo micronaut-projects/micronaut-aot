@@ -20,7 +20,7 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.sourcegen.AbstractSingleClassFileGenerator;
+import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.core.annotation.Generated;
 import io.micronaut.core.annotation.NonNull;
@@ -85,7 +85,7 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
                         .build())
                 .addAnnotation(Generated.class)
                 .build();
-        return context.javaFile(type);
+        return javaFile(type);
     }
 
     private String computeTypeName() {

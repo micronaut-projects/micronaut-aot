@@ -17,10 +17,10 @@ package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
+import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.env.CachedEnvironment;
 import io.micronaut.context.env.ConstantPropertySources;
 import io.micronaut.context.env.PropertySource;
@@ -47,13 +47,12 @@ import java.util.stream.Collectors;
                 NativeStaticServiceLoaderSourceGenerator.ID
         }
 )
-public class ConstantPropertySourcesSourceGenerator extends AbstractSourceGenerator {
+public class ConstantPropertySourcesSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "sealed.property.source";
     public static final String DESCRIPTION = "Precomputes property sources at build time";
 
     @Override
-    @NonNull
-    public Optional<MethodSpec> generateStaticInit() {
+    public void generate(@NonNull AOTContext context) {
         Optional<AbstractStaticServiceLoaderSourceGenerator.Substitutes> maybeSubstitutes = context.get(AbstractStaticServiceLoaderSourceGenerator.Substitutes.class);
         List<String> substitutes = maybeSubstitutes.map(s -> s.findSubstitutesFor("io.micronaut.context.env.PropertySourceLoader")).orElse(Collections.emptyList())
                 .stream()
@@ -71,8 +70,8 @@ public class ConstantPropertySourcesSourceGenerator extends AbstractSourceGenera
             initializer.addStatement("propertySources.add(new $T())", ClassName.bestGuess(substitute));
         }
         initializer.addStatement("$T.set(new $T(propertySources))", StaticOptimizations.class, ConstantPropertySources.class);
-        return staticMethodBuilder("preparePropertySources", m ->
+        context.registerStaticInitializer(staticMethodBuilder("preparePropertySources", m ->
                 m.addComment("Generates pre-computed Micronaut property sources from known configuration files")
-                        .addCode(initializer.build()));
+                        .addCode(initializer.build())));
     }
 }

@@ -16,16 +16,19 @@
 package io.micronaut.aot.core.context;
 
 import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Runtime;
-import io.micronaut.aot.core.SourceGenerationContext;
+import io.micronaut.aot.core.AOTContext;
 import io.micronaut.core.annotation.NonNull;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -50,7 +54,7 @@ import java.util.stream.Collectors;
  * Last but not least, this context can be used to send diagnostic messages
  * which are written to log files during code generation.
  */
-public class DefaultSourceGenerationContext implements SourceGenerationContext {
+public final class DefaultSourceGenerationContext implements AOTContext {
     private final String packageName;
     private final ApplicationContextAnalyzer analyzer;
     private final Set<String> excludedResources = new TreeSet<>();
@@ -58,13 +62,18 @@ public class DefaultSourceGenerationContext implements SourceGenerationContext {
     private final Set<Class<?>> classesRequiredAtCompilation = new HashSet<>();
     private final Configuration configuration;
     private final Map<Class<?>, Object> context = new HashMap<>();
+    private final List<JavaFile> generatedJavaFiles = new ArrayList<>();
+    private final List<MethodSpec> initializers = new ArrayList<>();
+    private final Path generatedResourcesDirectory;
 
     public DefaultSourceGenerationContext(String packageName,
                                           ApplicationContextAnalyzer analyzer,
-                                          Configuration configuration) {
+                                          Configuration configuration,
+                                          Path generatedResourcesDirectory) {
         this.packageName = packageName;
         this.analyzer = analyzer;
         this.configuration = configuration;
+        this.generatedResourcesDirectory = generatedResourcesDirectory;
     }
 
     @NonNull
@@ -101,9 +110,38 @@ public class DefaultSourceGenerationContext implements SourceGenerationContext {
         classesRequiredAtCompilation.add(clazz);
     }
 
-    @NonNull
     @Override
-    public final List<File> getExtraClasspath() {
+    public void registerGeneratedSourceFile(@NonNull JavaFile javaFile) {
+        generatedJavaFiles.add(javaFile);
+    }
+
+    public List<JavaFile> getGeneratedJavaFiles() {
+        return Collections.unmodifiableList(generatedJavaFiles);
+    }
+
+    @Override
+    public void registerStaticInitializer(MethodSpec staticInitializer) {
+        initializers.add(staticInitializer);
+    }
+
+    public List<MethodSpec> getGeneratedStaticInitializers() {
+        return initializers;
+    }
+
+    @Override
+    public void registerGeneratedResource(@NonNull String path, Consumer<? super File> consumer) {
+        Path relative = generatedResourcesDirectory.resolve(path);
+        File resourceFile = relative.toFile();
+        File parent = resourceFile.getParentFile();
+        if (parent.exists() || parent.mkdirs()) {
+            consumer.accept(resourceFile);
+        } else {
+            throw new RuntimeException("Unable to create parent file " + parent + " for resource " + path);
+        }
+    }
+
+    @NonNull
+    public List<File> getExtraClasspath() {
         return classesRequiredAtCompilation.stream()
                 .map(Class::getProtectionDomain)
                 .map(ProtectionDomain::getCodeSource)
@@ -119,15 +157,21 @@ public class DefaultSourceGenerationContext implements SourceGenerationContext {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Returns the list of resources to be excluded from
+     * the binary.
+     *
+     * @return the list of resources registered to be excluded.
+     * @see AOTContext#registerExcludedResource
+     */
     @NonNull
-    @Override
     public Set<String> getExcludedResources() {
         return excludedResources;
     }
 
     @NonNull
     @Override
-    public final JavaFile javaFile(TypeSpec typeSpec) {
+    public JavaFile javaFile(TypeSpec typeSpec) {
         return JavaFile.builder(packageName, typeSpec).build();
     }
 
@@ -151,7 +195,7 @@ public class DefaultSourceGenerationContext implements SourceGenerationContext {
 
     @NonNull
     @Override
-    public final Map<String, List<String>> getDiagnostics() {
+    public Map<String, List<String>> getDiagnostics() {
         return diagnostics;
     }
 }

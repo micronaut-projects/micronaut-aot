@@ -17,9 +17,9 @@ package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.MethodSpec;
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
+import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.core.async.publisher.PublishersOptimizations;
@@ -28,7 +28,6 @@ import io.micronaut.core.optim.StaticOptimizations;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -39,31 +38,23 @@ import java.util.stream.Collectors;
         id = PublishersSourceGenerator.ID,
         description = PublishersSourceGenerator.DESCRIPTION
 )
-public class PublishersSourceGenerator extends AbstractSourceGenerator {
+public class PublishersSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "scan.reactive.types";
     public static final String DESCRIPTION = "Scans reactive types at build time instead of runtime";
 
-    private List<String> knownReactiveTypes;
-    private List<String> knownSingleTypes;
-    private List<String> knownCompletableTypes;
-
-    protected final void doInit() {
-        knownReactiveTypes = typeNamesOf(Publishers.getKnownReactiveTypes());
-        knownSingleTypes = typeNamesOf(Publishers.getKnownSingleTypes());
-        knownCompletableTypes = typeNamesOf(Publishers.getKnownCompletableTypes());
-    }
-
     @Override
-    @NonNull
-    public Optional<MethodSpec> generateStaticInit() {
-        return staticMethod("preparePublishers", body -> body.addStatement(
+    public void generate(@NonNull AOTContext context) {
+        List<String> knownReactiveTypes = typeNamesOf(Publishers.getKnownReactiveTypes());
+        List<String> knownSingleTypes = typeNamesOf(Publishers.getKnownSingleTypes());
+        List<String> knownCompletableTypes = typeNamesOf(Publishers.getKnownCompletableTypes());
+        context.registerStaticInitializer(staticMethod("preparePublishers", body -> body.addStatement(
                 "$T.set(new $T($L, $L, $L))",
                 StaticOptimizations.class,
                 PublishersOptimizations.class,
                 asClassList(knownReactiveTypes),
                 asClassList(knownSingleTypes),
                 asClassList(knownCompletableTypes)
-        ));
+        )));
     }
 
     private static CodeBlock asClassList(List<String> types) {

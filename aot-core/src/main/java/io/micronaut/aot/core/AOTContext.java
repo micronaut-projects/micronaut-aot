@@ -16,6 +16,7 @@
 package io.micronaut.aot.core;
 
 import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
 import io.micronaut.core.annotation.NonNull;
@@ -24,14 +25,14 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * The source generation context is used by source generators
  * to get configuration details. It is also used as the communication
  * medium between source generators when one depends on the other.
  */
-public interface SourceGenerationContext {
+public interface AOTContext {
     /**
      * The package which should be used for generated classes.
      *
@@ -55,6 +56,26 @@ public interface SourceGenerationContext {
     ApplicationContextAnalyzer getAnalyzer();
 
     /**
+     * Registers a generated source file.
+     * @param javaFile the file to be added.
+     */
+    void registerGeneratedSourceFile(@NonNull JavaFile javaFile);
+
+    /**
+     * Registers a code block to be executed statically when
+     * the optimized binary is loaded.
+     * @param staticInitializer the static initializer method
+     */
+    void registerStaticInitializer(MethodSpec staticInitializer);
+
+    /**
+     * Registers a new generated resource.
+     * @param path the relative path to the resource (including file name)
+     * @param consumer the consumer to be called when the resource is generated.
+     */
+    void registerGeneratedResource(@NonNull String path, Consumer<? super File> consumer);
+
+    /**
      * Registers a resource path as excluded.
      * Excluded resources should be removed, as much as possible,
      * from the final binary/deliverable since they are either
@@ -73,19 +94,6 @@ public interface SourceGenerationContext {
      * @param clazz a class
      */
     void registerClassNeededAtCompileTime(@NonNull Class<?> clazz);
-
-    @NonNull
-    List<File> getExtraClasspath();
-
-    /**
-     * Returns the list of resources to be excluded from
-     * the binary.
-     *
-     * @return the list of resources registered to be excluded.
-     * @see SourceGenerationContext#registerExcludedResource
-     */
-    @NonNull
-    Set<String> getExcludedResources();
 
     /**
      * Generates a java file spec.

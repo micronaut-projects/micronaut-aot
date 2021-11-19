@@ -17,17 +17,16 @@ package io.micronaut.aot;
 
 import com.squareup.javapoet.JavaFile;
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.AOTSourceGenerator;
+import io.micronaut.aot.core.AOTCodeGenerator;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
-import io.micronaut.aot.core.SourceGenerationContext;
 import io.micronaut.aot.core.config.DefaultConfiguration;
 import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.config.SourceGeneratorLoader;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
 import io.micronaut.aot.core.context.DefaultSourceGenerationContext;
-import io.micronaut.aot.core.sourcegen.ApplicationContextConfigurerGenerator;
+import io.micronaut.aot.core.codegen.ApplicationContextConfigurerGenerator;
 import io.micronaut.aot.internal.StreamHelper;
 import io.micronaut.core.annotation.Experimental;
 import org.slf4j.Logger;
@@ -245,7 +244,7 @@ public final class MicronautAotOptimizer implements ConfigKeys {
         return options;
     }
 
-    private void writeLogs(SourceGenerationContext context) {
+    private void writeLogs(DefaultSourceGenerationContext context) {
         if (logsDirectory.isDirectory() || logsDirectory.mkdirs()) {
             writeLines(new File(logsDirectory, OUTPUT_RESOURCES_FILE_NAME), context.getExcludedResources());
             context.getDiagnostics().forEach((key, messages) -> {
@@ -311,14 +310,13 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             ApplicationContextAnalyzer analyzer = ApplicationContextAnalyzer.create();
             Set<String> environmentNames = analyzer.getEnvironmentNames();
             LOGGER.info("Detected environments: {}", environmentNames);
-            SourceGenerationContext context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config);
-            List<AOTSourceGenerator> sourceGenerators = SourceGeneratorLoader.load(config.getRuntime(), context);
+            DefaultSourceGenerationContext context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config, outputClassesDirectory.toPath());
+            List<AOTCodeGenerator> sourceGenerators = SourceGeneratorLoader.load(config.getRuntime(), context);
             ApplicationContextConfigurerGenerator generator = new ApplicationContextConfigurerGenerator(
                     sourceGenerators
             );
-            generator.init(context);
-            optimizer.compileGeneratedSources(context.getExtraClasspath(), generator.generateSourceFiles());
-            generator.generateResourceFiles(outputClassesDirectory);
+            generator.generate(context);
+            optimizer.compileGeneratedSources(context.getExtraClasspath(), context.getGeneratedJavaFiles());
             optimizer.writeLogs(context);
             return this;
         }

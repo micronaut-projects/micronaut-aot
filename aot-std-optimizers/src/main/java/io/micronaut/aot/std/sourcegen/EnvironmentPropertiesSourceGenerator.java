@@ -17,10 +17,10 @@ package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
+import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.env.CachedEnvironment;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -41,7 +40,7 @@ import java.util.stream.Collectors;
         id = EnvironmentPropertiesSourceGenerator.ID,
         description = EnvironmentPropertiesSourceGenerator.DESCRIPTION
 )
-public class EnvironmentPropertiesSourceGenerator extends AbstractSourceGenerator {
+public class EnvironmentPropertiesSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "precompute.environment.properties";
     public static final String DESCRIPTION = "Precomputes Micronaut configuration property keys from the current environment variables";
 
@@ -56,8 +55,7 @@ public class EnvironmentPropertiesSourceGenerator extends AbstractSourceGenerato
     }
 
     @Override
-    @NonNull
-    public Optional<MethodSpec> generateStaticInit() {
+    public void generate(@NonNull AOTContext context) {
         CodeBlock.Builder initializer = CodeBlock.builder();
         EnvironmentProperties props = EnvironmentProperties.empty();
         env.keySet().forEach(props::findPropertyNamesForEnvironmentVariable);
@@ -70,8 +68,9 @@ public class EnvironmentPropertiesSourceGenerator extends AbstractSourceGenerato
             initializer.addStatement("env.put($S, $T.asList($L))", entry.getKey(), Arrays.class, values);
         }
         initializer.addStatement("$T.set($T.of(env))", StaticOptimizations.class, EnvironmentProperties.class);
-        return staticMethodBuilder("prepareEnvironment", m ->
+        context.registerStaticInitializer(staticMethodBuilder("prepareEnvironment", m ->
                 m.addComment("Generates pre-computed Micronaut property names from environment variables")
-                        .addCode(initializer.build()));
+                        .addCode(initializer.build())));
     }
+
 }

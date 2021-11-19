@@ -55,7 +55,7 @@ public @interface AOTModule {
      *
      * @return the list of sub features
      */
-    Class<? extends AOTSourceGenerator>[] subgenerators() default {};
+    Class<? extends AOTCodeGenerator>[] subgenerators() default {};
 
     /**
      * Returns the set of configuration keys which affect

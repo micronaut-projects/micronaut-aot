@@ -15,13 +15,13 @@
  */
 package io.micronaut.aot.std.sourcegen
 
-import io.micronaut.aot.core.AOTSourceGenerator
-import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
+import io.micronaut.aot.core.AOTCodeGenerator
+import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
 
 class PublishersSourceGeneratorTest extends AbstractSourceGeneratorSpec {
 
     @Override
-    AOTSourceGenerator newGenerator() {
+    AOTCodeGenerator newGenerator() {
         new PublishersSourceGenerator()
     }
 

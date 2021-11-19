@@ -16,7 +16,7 @@
 package io.micronaut.aot.core.config;
 
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.AOTSourceGenerator;
+import io.micronaut.aot.core.AOTCodeGenerator;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
 
@@ -67,7 +67,7 @@ public class MetadataUtils {
         return sb.toString();
     }
 
-    public static boolean isEnabledOn(Runtime runtime, AOTSourceGenerator module) {
+    public static boolean isEnabledOn(Runtime runtime, AOTCodeGenerator module) {
         return findMetadata(module.getClass())
                 .map(aotModule -> isEnabledOn(runtime, aotModule))
                 .orElse(false);

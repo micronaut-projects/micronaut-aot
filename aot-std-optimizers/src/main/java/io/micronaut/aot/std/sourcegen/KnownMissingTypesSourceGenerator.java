@@ -15,12 +15,12 @@
  */
 package io.micronaut.aot.std.sourcegen;
 
-import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.Option;
+import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.config.MetadataUtils;
-import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
+import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.reflect.ClassUtils;
@@ -28,7 +28,6 @@ import io.micronaut.core.reflect.ClassUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -47,7 +46,7 @@ import java.util.Set;
                 )
         }
 )
-public class KnownMissingTypesSourceGenerator extends AbstractSourceGenerator {
+public class KnownMissingTypesSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "known.missing.types";
     public static final Option OPTION = MetadataUtils.findMetadata(KnownMissingTypesSourceGenerator.class).get().options()[0];
     public static final String DESCRIPTION = "Checks of existence of some types at build time instead of runtime";
@@ -66,10 +65,9 @@ public class KnownMissingTypesSourceGenerator extends AbstractSourceGenerator {
     }
 
     @Override
-    @NonNull
-    public Optional<MethodSpec> generateStaticInit() {
-        List<String> classNames = getContext().getConfiguration().stringList(OPTION.key());
-        return staticMethod("prepareKnownMissingTypes", body -> {
+    public void generate(@NonNull AOTContext context) {
+        List<String> classNames = context.getConfiguration().stringList(OPTION.key());
+        context.registerStaticInitializer(staticMethod("prepareKnownMissingTypes", body -> {
             body.addStatement("$T knownMissingTypes = new $T()", ParameterizedTypeName.get(Set.class, String.class), ParameterizedTypeName.get(HashSet.class, String.class));
             for (String knownMissingClass : findMissingClasses(classNames)) {
                 body.addStatement("knownMissingTypes.add($S)", knownMissingClass);
@@ -77,6 +75,6 @@ public class KnownMissingTypesSourceGenerator extends AbstractSourceGenerator {
             body.addStatement("$T.set(new $T(knownMissingTypes))",
                     StaticOptimizations.class,
                     ClassUtils.Optimizations.class);
-        });
+        }));
     }
 }

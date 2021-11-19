@@ -1,11 +1,11 @@
 package io.micronaut.aot.std.sourcegen
 
-import io.micronaut.aot.core.AOTSourceGenerator
-import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
+import io.micronaut.aot.core.AOTCodeGenerator
+import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
 
 class GraalVMOptimizationFeatureSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
-    AOTSourceGenerator newGenerator() {
+    AOTCodeGenerator newGenerator() {
         props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES, ['A', 'B', 'C'].join(','))
         new GraalVMOptimizationFeatureSourceGenerator()
     }
