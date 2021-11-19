@@ -72,19 +72,19 @@
 </a>
 <h2 class="title">A</h2>
 <dl>
-<dt><a href="io/micronaut/aot/core/sourcegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.sourcegen"><span class="typeNameLink">AbstractSingleClassFileGenerator</span></a> - Class in <a href="io/micronaut/aot/core/sourcegen/package-summary.html">io.micronaut.aot.core.sourcegen</a></dt>
+<dt><a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen"><span class="typeNameLink">AbstractCodeGenerator</span></a> - Class in <a href="io/micronaut/aot/core/codegen/package-summary.html">io.micronaut.aot.core.codegen</a></dt>
 <dd>
-<div class="block">Base class for source generators which generate a single class file.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSingleClassFileGenerator.html#AbstractSingleClassFileGenerator--">AbstractSingleClassFileGenerator()</a></span> - Constructor for class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSingleClassFileGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen"><span class="typeNameLink">AbstractSourceGenerator</span></a> - Class in <a href="io/micronaut/aot/core/sourcegen/package-summary.html">io.micronaut.aot.core.sourcegen</a></dt>
-<dd>
-<div class="block">Base class for source generators which need access to the generation
+<div class="block">Base class for code generators which need access to the generation
  context (for example to get a handle on the analyzed application classloader,
  or to register resources to be excluded from the final binary).</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#AbstractSourceGenerator--">AbstractSourceGenerator()</a></span> - Constructor for class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#AbstractCodeGenerator--">AbstractCodeGenerator()</a></span> - Constructor for class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.codegen"><span class="typeNameLink">AbstractSingleClassFileGenerator</span></a> - Class in <a href="io/micronaut/aot/core/codegen/package-summary.html">io.micronaut.aot.core.codegen</a></dt>
+<dd>
+<div class="block">Base class for source generators which generate a single class file.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html#AbstractSingleClassFileGenerator--">AbstractSingleClassFileGenerator()</a></span> - Constructor for class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractSingleClassFileGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">AbstractStaticServiceLoaderSourceGenerator</span></a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
 <dd>
@@ -96,20 +96,27 @@
 <dd>
 <div class="block">Adds elements to the application classpath.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#addDiagnostics-java.lang.String-java.lang.String-">addDiagnostics(String, String)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#addDiagnostics-java.lang.String-java.lang.String-">addDiagnostics(String, String)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#addDiagnostics-java.lang.String-java.lang.String-">addDiagnostics(String, String)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Adds a diagnostic message, which is going to be written
  in a log file.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#addDiagnostics-java.lang.String-java.lang.String-">addDiagnostics(String, String)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#addDiagnostics-java.lang.String-java.lang.String-">addDiagnostics(String, String)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/core/AOTCodeGenerator.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">AOTCodeGenerator</span></a> - Interface in <a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a></dt>
+<dd>
+<div class="block">A source generator is the main entity of the AOT project.</div>
+</dd>
+<dt><a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">AOTContext</span></a> - Interface in <a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a></dt>
+<dd>
+<div class="block">The source generation context is used by source generators
+ to get configuration details.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/AOTModule.html" title="annotation in io.micronaut.aot.core"><span class="typeNameLink">AOTModule</span></a> - Annotation Type in <a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a></dt>
 <dd>
 <div class="block">Annotation which must be present on AOT optimizers.</div>
-</dd>
-<dt><a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">AOTSourceGenerator</span></a> - Interface in <a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a></dt>
-<dd>
-<div class="block">A source generator is the main entity of the AOT project.</div>
 </dd>
 <dt><a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context"><span class="typeNameLink">ApplicationContextAnalyzer</span></a> - Class in <a href="io/micronaut/aot/core/context/package-summary.html">io.micronaut.aot.core.context</a></dt>
 <dd>
@@ -117,14 +124,14 @@
  an application context and inferring whether a bean should be
  included in the application binaries.</div>
 </dd>
-<dt><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen"><span class="typeNameLink">ApplicationContextConfigurerGenerator</span></a> - Class in <a href="io/micronaut/aot/core/sourcegen/package-summary.html">io.micronaut.aot.core.sourcegen</a></dt>
+<dt><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen"><span class="typeNameLink">ApplicationContextConfigurerGenerator</span></a> - Class in <a href="io/micronaut/aot/core/codegen/package-summary.html">io.micronaut.aot.core.codegen</a></dt>
 <dd>
 <div class="block">The "optimized" entry point generator is the main source generator:
  it is responsible for generating a new entry point, which delegates
  to the original entry point of the application, and injects a number
  of optimizations before starting the application.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#ApplicationContextConfigurerGenerator-java.util.List-">ApplicationContextConfigurerGenerator(List&lt;AOTSourceGenerator&gt;)</a></span> - Constructor for class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html#ApplicationContextConfigurerGenerator-java.util.List-">ApplicationContextConfigurerGenerator(List&lt;AOTCodeGenerator&gt;)</a></span> - Constructor for class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <a name="I:B">
@@ -166,13 +173,13 @@
 </dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#ConstantPropertySourcesSourceGenerator--">ConstantPropertySourcesSourceGenerator()</a></span> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#context">context</a></span> - Variable in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#context">context</a></span> - Variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#create--">create()</a></span> - Static method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a></dt>
 <dd>
 <div class="block">Instantiates an application context analyzer.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#CUSTOMIZER_CLASS_NAME">CUSTOMIZER_CLASS_NAME</a></span> - Static variable in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html#CUSTOMIZER_CLASS_NAME">CUSTOMIZER_CLASS_NAME</a></span> - Static variable in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <a name="I:D">
@@ -191,7 +198,14 @@
 <dd>
 <div class="block">The source generation context.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#DefaultSourceGenerationContext-java.lang.String-io.micronaut.aot.core.context.ApplicationContextAnalyzer-io.micronaut.aot.core.Configuration-">DefaultSourceGenerationContext(String, ApplicationContextAnalyzer, Configuration)</a></span> - Constructor for class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#DefaultSourceGenerationContext-java.lang.String-io.micronaut.aot.core.context.ApplicationContextAnalyzer-io.micronaut.aot.core.Configuration-java.nio.file.Path-">DefaultSourceGenerationContext(String, ApplicationContextAnalyzer, Configuration, Path)</a></span> - Constructor for class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen"><span class="typeNameLink">DelegatingSourceGenerationContext</span></a> - Class in <a href="io/micronaut/aot/core/codegen/package-summary.html">io.micronaut.aot.core.codegen</a></dt>
+<dd>
+<div class="block">Base class for source generation context which need to delegate
+ to another one.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#DelegatingSourceGenerationContext-io.micronaut.aot.core.AOTContext-">DelegatingSourceGenerationContext(AOTContext)</a></span> - Constructor for class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#DESCRIPTION">DESCRIPTION</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
@@ -210,14 +224,6 @@
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html#DESCRIPTION">DESCRIPTION</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">SealedEnvironmentSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html#DESCRIPTION">DESCRIPTION</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">YamlPropertySourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#doInit--">doInit()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#doInit--">doInit()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html#doInit--">doInit()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">LogbackConfigurationSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html#doInit--">doInit()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <a name="I:E">
@@ -267,11 +273,35 @@
 </a>
 <h2 class="title">G</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSingleClassFileGenerator.html#generate--">generate()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSingleClassFileGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTCodeGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTCodeGenerator.html" title="interface in io.micronaut.aot.core">AOTCodeGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html#generate--">generate()</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractSingleClassFileGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractSingleClassFileGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">KnownMissingTypesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html#generate--">generate()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">LogbackConfigurationSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">LogbackConfigurationSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html#generate--">generate()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">MapPropertySourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">SealedEnvironmentSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">YamlPropertySourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/ConfigKeys.html#GENERATED_PACKAGE">GENERATED_PACKAGE</a></span> - Static variable in interface io.micronaut.aot.<a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a></dt>
 <dd>&nbsp;</dd>
@@ -281,99 +311,72 @@
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/NativeStaticServiceLoaderSourceGenerator.html#generateFindAllMethod-java.util.function.Predicate-java.lang.String-java.lang.Class-com.squareup.javapoet.TypeSpec.Builder-">generateFindAllMethod(Predicate&lt;String&gt;, String, Class&lt;?&gt;, TypeSpec.Builder)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/NativeStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NativeStaticServiceLoaderSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles(File)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">Generates resource files in the target directory.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles(File)</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles(File)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles(File)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">LogbackConfigurationSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#generateSourceFiles--">generateSourceFiles()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">Generates source files.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSingleClassFileGenerator.html#generateSourceFiles--">generateSourceFiles()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSingleClassFileGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#generateSourceFiles--">generateSourceFiles()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateSourceFiles--">generateSourceFiles()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html#generateSourceFiles--">generateSourceFiles()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">YamlPropertySourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#generateStaticInit--">generateStaticInit()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">Registers a static method which would have to be called
- at initialization time of the optimized entry point.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateStaticInit--">generateStaticInit()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#generateStaticInit--">generateStaticInit()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html#generateStaticInit--">generateStaticInit()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html#generateStaticInit--">generateStaticInit()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">KnownMissingTypesSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html#generateStaticInit--">generateStaticInit()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html#generateStaticInit--">generateStaticInit()</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/SealedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">SealedEnvironmentSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#get-java.lang.Class-">get(Class&lt;T&gt;)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#get-java.lang.Class-">get(Class&lt;T&gt;)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#get-java.lang.Class-">get(Class&lt;T&gt;)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Reads an entry from the context.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#get-java.lang.Class-">get(Class&lt;T&gt;)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#get-java.lang.Class-">get(Class&lt;T&gt;)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/internal/StreamHelper.ThrowingSupplier.html#get--">get()</a></span> - Method in interface io.micronaut.aot.internal.<a href="io/micronaut/aot/internal/StreamHelper.ThrowingSupplier.html" title="interface in io.micronaut.aot.internal">StreamHelper.ThrowingSupplier</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getAnalyzer--">getAnalyzer()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getAnalyzer--">getAnalyzer()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#getAnalyzer--">getAnalyzer()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Returns the application context analyzer.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#getAnalyzer--">getAnalyzer()</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getAnalyzer--">getAnalyzer()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#getAnnotationMetadataPredicate--">getAnnotationMetadataPredicate()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a></dt>
 <dd>
 <div class="block">Returns a predicate which can be used to determine, from annotation metadata,
  if a bean matches requirements.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getConfiguration--">getConfiguration()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getConfiguration--">getConfiguration()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#getConfiguration--">getConfiguration()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Returns the source generators configuration.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#getContext--">getContext()</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
-<dd>
-<div class="block">Returns the source generation context.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getDiagnostics--">getDiagnostics()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#getConfiguration--">getConfiguration()</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getDiagnostics--">getDiagnostics()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getConfiguration--">getConfiguration()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#getDiagnostics--">getDiagnostics()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Returns the diagnostics map.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#getDiagnostics--">getDiagnostics()</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getDiagnostics--">getDiagnostics()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#getEnvironmentNames--">getEnvironmentNames()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getExcludedResources--">getExcludedResources()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getExcludedResources--">getExcludedResources()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
 <dd>
 <div class="block">Returns the list of resources to be excluded from
  the binary.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getExtraClasspath--">getExtraClasspath()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getExtraClasspath--">getExtraClasspath()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getGeneratedJavaFiles--">getGeneratedJavaFiles()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getPackageName--">getPackageName()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getGeneratedStaticInitializers--">getGeneratedStaticInitializers()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getPackageName--">getPackageName()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#getPackageName--">getPackageName()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">The package which should be used for generated classes.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#getPackageName--">getPackageName()</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getPackageName--">getPackageName()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#getRuntime--">getRuntime()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
+<dd>
+<div class="block">Returns the target runtime environment.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#getRuntime--">getRuntime()</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/DefaultConfiguration.html#getRuntime--">getRuntime()</a></span> - Method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/DefaultConfiguration.html" title="class in io.micronaut.aot.core.config">DefaultConfiguration</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/Configuration.html#getRuntime--">getRuntime()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/Configuration.html" title="interface in io.micronaut.aot.core">Configuration</a></dt>
@@ -382,10 +385,6 @@
 </dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getRuntime--">getRuntime()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#getRuntime--">getRuntime()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
-<dd>
-<div class="block">Returns the target runtime environment.</div>
-</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/cli/VersionProvider.html#getVersion--">getVersion()</a></span> - Method in class io.micronaut.aot.cli.<a href="io/micronaut/aot/cli/VersionProvider.html" title="class in io.micronaut.aot.cli">VersionProvider</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">GraalVMOptimizationFeatureSourceGenerator</span></a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
@@ -402,7 +401,7 @@
 </a>
 <h2 class="title">I</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen">ApplicationContextConfigurerGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
@@ -424,29 +423,23 @@
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">YamlPropertySourceGenerator</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTSourceGenerator.html#init-io.micronaut.aot.core.SourceGenerationContext-">init(SourceGenerationContext)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dt>
-<dd>
-<div class="block">Initializes the source generator.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#init-io.micronaut.aot.core.SourceGenerationContext-">init(SourceGenerationContext)</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/package-summary.html">io.micronaut.aot</a> - package io.micronaut.aot</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/cli/package-summary.html">io.micronaut.aot.cli</a> - package io.micronaut.aot.cli</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a> - package io.micronaut.aot.core</dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/core/codegen/package-summary.html">io.micronaut.aot.core.codegen</a> - package io.micronaut.aot.core.codegen</dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/config/package-summary.html">io.micronaut.aot.core.config</a> - package io.micronaut.aot.core.config</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/context/package-summary.html">io.micronaut.aot.core.context</a> - package io.micronaut.aot.core.context</dt>
-<dd>&nbsp;</dd>
-<dt><a href="io/micronaut/aot/core/sourcegen/package-summary.html">io.micronaut.aot.core.sourcegen</a> - package io.micronaut.aot.core.sourcegen</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/internal/package-summary.html">io.micronaut.aot.internal</a> - package io.micronaut.aot.internal</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a> - package io.micronaut.aot.std.sourcegen</dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/MetadataUtils.html#isEnabledOn-io.micronaut.aot.core.Runtime-io.micronaut.aot.core.AOTSourceGenerator-">isEnabledOn(Runtime, AOTSourceGenerator)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/MetadataUtils.html#isEnabledOn-io.micronaut.aot.core.Runtime-io.micronaut.aot.core.AOTCodeGenerator-">isEnabledOn(Runtime, AOTCodeGenerator)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/MetadataUtils.html#isEnabledOn-io.micronaut.aot.core.Runtime-io.micronaut.aot.core.AOTModule-">isEnabledOn(Runtime, AOTModule)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
 <dd>&nbsp;</dd>
@@ -461,12 +454,16 @@
 </a>
 <h2 class="title">J</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#javaFile-com.squareup.javapoet.TypeSpec-">javaFile(TypeSpec)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#javaFile-com.squareup.javapoet.TypeSpec-">javaFile(TypeSpec)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#javaFile-com.squareup.javapoet.TypeSpec-">javaFile(TypeSpec)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Generates a java file spec.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html#javaFile-com.squareup.javapoet.TypeSpec-">javaFile(TypeSpec)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractSingleClassFileGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#javaFile-com.squareup.javapoet.TypeSpec-">javaFile(TypeSpec)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#javaFile-com.squareup.javapoet.TypeSpec-">javaFile(TypeSpec)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/JitStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">JitStaticServiceLoaderSourceGenerator</span></a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
 <dd>
 <div class="block">A specialized version of static service loader generator aimed
@@ -495,7 +492,7 @@
 <dl>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html#list-io.micronaut.aot.core.Runtime-">list(Runtime)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html" title="class in io.micronaut.aot.core.config">SourceGeneratorLoader</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html#load-io.micronaut.aot.core.Runtime-io.micronaut.aot.core.SourceGenerationContext-">load(Runtime, SourceGenerationContext)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html" title="class in io.micronaut.aot.core.config">SourceGeneratorLoader</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html#load-io.micronaut.aot.core.Runtime-io.micronaut.aot.core.AOTContext-">load(Runtime, AOTContext)</a></span> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html" title="class in io.micronaut.aot.core.config">SourceGeneratorLoader</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">LogbackConfigurationSourceGenerator</span></a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
 <dd>
@@ -600,31 +597,62 @@
 </dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html#PublishersSourceGenerator--">PublishersSourceGenerator()</a></span> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#put-java.lang.Class-T-">put(Class&lt;T&gt;, T)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#put-java.lang.Class-T-">put(Class&lt;T&gt;, T)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#put-java.lang.Class-T-">put(Class&lt;T&gt;, T)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Stores an entry in the context.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#put-java.lang.Class-T-">put(Class&lt;T&gt;, T)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#put-java.lang.Class-T-">put(Class&lt;T&gt;, T)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
 </dl>
 <a name="I:R">
 <!--   -->
 </a>
 <h2 class="title">R</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerClassNeededAtCompileTime-java.lang.Class-">registerClassNeededAtCompileTime(Class&lt;?&gt;)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#registerClassNeededAtCompileTime-java.lang.Class-">registerClassNeededAtCompileTime(Class&lt;?&gt;)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#registerClassNeededAtCompileTime-java.lang.Class-">registerClassNeededAtCompileTime(Class&lt;?&gt;)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Registers a class as needed at compile time (where compile time
  is the compile time of generated classes).</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerExcludedResource-java.lang.String-">registerExcludedResource(String)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerClassNeededAtCompileTime-java.lang.Class-">registerClassNeededAtCompileTime(Class&lt;?&gt;)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/SourceGenerationContext.html#registerExcludedResource-java.lang.String-">registerExcludedResource(String)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerClassNeededAtCompileTime-java.lang.Class-">registerClassNeededAtCompileTime(Class&lt;?&gt;)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#registerExcludedResource-java.lang.String-">registerExcludedResource(String)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Registers a resource path as excluded.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerExcludedResource-java.lang.String-">registerExcludedResource(String)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerExcludedResource-java.lang.String-">registerExcludedResource(String)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#registerGeneratedResource-java.lang.String-java.util.function.Consumer-">registerGeneratedResource(String, Consumer&lt;? super File&gt;)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
+<dd>
+<div class="block">Registers a new generated resource.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerGeneratedResource-java.lang.String-java.util.function.Consumer-">registerGeneratedResource(String, Consumer&lt;? super File&gt;)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerGeneratedResource-java.lang.String-java.util.function.Consumer-">registerGeneratedResource(String, Consumer&lt;? super File&gt;)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#registerGeneratedSourceFile-com.squareup.javapoet.JavaFile-">registerGeneratedSourceFile(JavaFile)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
+<dd>
+<div class="block">Registers a generated source file.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerGeneratedSourceFile-com.squareup.javapoet.JavaFile-">registerGeneratedSourceFile(JavaFile)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerGeneratedSourceFile-com.squareup.javapoet.JavaFile-">registerGeneratedSourceFile(JavaFile)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#registerStaticInitializer-com.squareup.javapoet.MethodSpec-">registerStaticInitializer(MethodSpec)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
+<dd>
+<div class="block">Registers a code block to be executed statically when
+ the optimized binary is loaded.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerStaticInitializer-com.squareup.javapoet.MethodSpec-">registerStaticInitializer(MethodSpec)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerStaticInitializer-com.squareup.javapoet.MethodSpec-">registerStaticInitializer(MethodSpec)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#REJECTED_CLASSES">REJECTED_CLASSES</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/cli/Main.html#run--">run()</a></span> - Method in class io.micronaut.aot.cli.<a href="io/micronaut/aot/cli/Main.html" title="class in io.micronaut.aot.cli">Main</a></dt>
@@ -658,13 +686,8 @@
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#SERVICE_TYPES">SERVICE_TYPES</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#simpleNameOf-java.lang.String-">simpleNameOf(String)</a></span> - Static method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#simpleNameOf-java.lang.String-">simpleNameOf(String)</a></span> - Static method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">SourceGenerationContext</span></a> - Interface in <a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a></dt>
-<dd>
-<div class="block">The source generation context is used by source generators
- to get configuration details.</div>
-</dd>
 <dt><a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html" title="class in io.micronaut.aot.core.config"><span class="typeNameLink">SourceGeneratorLoader</span></a> - Class in <a href="io/micronaut/aot/core/config/package-summary.html">io.micronaut.aot.core.config</a></dt>
 <dd>
 <div class="block">This class is responsible for loading the source generators
@@ -673,9 +696,9 @@
 </dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html#SourceGeneratorLoader--">SourceGeneratorLoader()</a></span> - Constructor for class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html" title="class in io.micronaut.aot.core.config">SourceGeneratorLoader</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#staticMethod-java.lang.String-java.util.function.Consumer-">staticMethod(String, Consumer&lt;? super CodeBlock.Builder&gt;)</a></span> - Static method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#staticMethod-java.lang.String-java.util.function.Consumer-">staticMethod(String, Consumer&lt;? super CodeBlock.Builder&gt;)</a></span> - Static method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#staticMethodBuilder-java.lang.String-java.util.function.Consumer-">staticMethodBuilder(String, Consumer&lt;? super MethodSpec.Builder&gt;)</a></span> - Static method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#staticMethodBuilder-java.lang.String-java.util.function.Consumer-">staticMethodBuilder(String, Consumer&lt;? super MethodSpec.Builder&gt;)</a></span> - Static method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/internal/StreamHelper.html" title="class in io.micronaut.aot.internal"><span class="typeNameLink">StreamHelper</span></a> - Class in <a href="io/micronaut/aot/internal/package-summary.html">io.micronaut.aot.internal</a></dt>
 <dd>
@@ -744,7 +767,7 @@ the order they are declared.</div>
 </a>
 <h2 class="title">W</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#writeServiceFile-java.io.File-java.lang.Class-java.lang.String-">writeServiceFile(File, Class&lt;?&gt;, String)</a></span> - Method in class io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></dt>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#writeServiceFile-io.micronaut.aot.core.AOTContext-java.lang.Class-java.lang.String-">writeServiceFile(AOTContext, Class&lt;?&gt;, String)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <a name="I:Y">

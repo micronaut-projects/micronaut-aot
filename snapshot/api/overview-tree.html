@@ -74,9 +74,9 @@
 <li><a href="io/micronaut/aot/package-tree.html">io.micronaut.aot</a>, </li>
 <li><a href="io/micronaut/aot/cli/package-tree.html">io.micronaut.aot.cli</a>, </li>
 <li><a href="io/micronaut/aot/core/package-tree.html">io.micronaut.aot.core</a>, </li>
+<li><a href="io/micronaut/aot/core/codegen/package-tree.html">io.micronaut.aot.core.codegen</a>, </li>
 <li><a href="io/micronaut/aot/core/config/package-tree.html">io.micronaut.aot.core.config</a>, </li>
 <li><a href="io/micronaut/aot/core/context/package-tree.html">io.micronaut.aot.core.context</a>, </li>
-<li><a href="io/micronaut/aot/core/sourcegen/package-tree.html">io.micronaut.aot.core.sourcegen</a>, </li>
 <li><a href="io/micronaut/aot/internal/package-tree.html">io.micronaut.aot.internal</a>, </li>
 <li><a href="io/micronaut/aot/std/sourcegen/package-tree.html">io.micronaut.aot.std.sourcegen</a></li>
 </ul>
@@ -86,9 +86,9 @@
 <ul>
 <li type="circle">java.lang.Object
 <ul>
-<li type="circle">io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen"><span class="typeNameLink">AbstractSourceGenerator</span></a> (implements io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a>)
+<li type="circle">io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen"><span class="typeNameLink">AbstractCodeGenerator</span></a> (implements io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTCodeGenerator.html" title="interface in io.micronaut.aot.core">AOTCodeGenerator</a>)
 <ul>
-<li type="circle">io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.sourcegen"><span class="typeNameLink">AbstractSingleClassFileGenerator</span></a>
+<li type="circle">io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.codegen"><span class="typeNameLink">AbstractSingleClassFileGenerator</span></a>
 <ul>
 <li type="circle">io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">LogbackConfigurationSourceGenerator</span></a></li>
 <li type="circle">io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">MapPropertySourceGenerator</span></a></li>
@@ -100,7 +100,7 @@
 <li type="circle">io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/NativeStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">NativeStaticServiceLoaderSourceGenerator</span></a></li>
 </ul>
 </li>
-<li type="circle">io.micronaut.aot.core.sourcegen.<a href="io/micronaut/aot/core/sourcegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.sourcegen"><span class="typeNameLink">ApplicationContextConfigurerGenerator</span></a></li>
+<li type="circle">io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen"><span class="typeNameLink">ApplicationContextConfigurerGenerator</span></a></li>
 <li type="circle">io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">ConstantPropertySourcesSourceGenerator</span></a></li>
 <li type="circle">io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">EnvironmentPropertiesSourceGenerator</span></a></li>
 <li type="circle">io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">GraalVMOptimizationFeatureSourceGenerator</span></a></li>
@@ -112,7 +112,8 @@
 </li>
 <li type="circle">io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context"><span class="typeNameLink">ApplicationContextAnalyzer</span></a></li>
 <li type="circle">io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/DefaultConfiguration.html" title="class in io.micronaut.aot.core.config"><span class="typeNameLink">DefaultConfiguration</span></a> (implements io.micronaut.aot.core.<a href="io/micronaut/aot/core/Configuration.html" title="interface in io.micronaut.aot.core">Configuration</a>)</li>
-<li type="circle">io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context"><span class="typeNameLink">DefaultSourceGenerationContext</span></a> (implements io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core">SourceGenerationContext</a>)</li>
+<li type="circle">io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context"><span class="typeNameLink">DefaultSourceGenerationContext</span></a> (implements io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a>)</li>
+<li type="circle">io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen"><span class="typeNameLink">DelegatingSourceGenerationContext</span></a> (implements io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a>)</li>
 <li type="circle">io.micronaut.aot.cli.<a href="io/micronaut/aot/cli/Main.html" title="class in io.micronaut.aot.cli"><span class="typeNameLink">Main</span></a> (implements io.micronaut.aot.<a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a>, java.lang.Runnable)</li>
 <li type="circle">io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config"><span class="typeNameLink">MetadataUtils</span></a></li>
 <li type="circle">io.micronaut.aot.<a href="io/micronaut/aot/MicronautAotOptimizer.html" title="class in io.micronaut.aot"><span class="typeNameLink">MicronautAotOptimizer</span></a> (implements io.micronaut.aot.<a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a>)</li>
@@ -125,10 +126,10 @@
 </ul>
 <h2 title="Interface Hierarchy">Interface Hierarchy</h2>
 <ul>
-<li type="circle">io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">AOTSourceGenerator</span></a></li>
+<li type="circle">io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTCodeGenerator.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">AOTCodeGenerator</span></a></li>
+<li type="circle">io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">AOTContext</span></a></li>
 <li type="circle">io.micronaut.aot.<a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot"><span class="typeNameLink">ConfigKeys</span></a></li>
 <li type="circle">io.micronaut.aot.core.<a href="io/micronaut/aot/core/Configuration.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">Configuration</span></a></li>
-<li type="circle">io.micronaut.aot.core.<a href="io/micronaut/aot/core/SourceGenerationContext.html" title="interface in io.micronaut.aot.core"><span class="typeNameLink">SourceGenerationContext</span></a></li>
 <li type="circle">io.micronaut.aot.internal.<a href="io/micronaut/aot/internal/StreamHelper.ThrowingRunner.html" title="interface in io.micronaut.aot.internal"><span class="typeNameLink">StreamHelper.ThrowingRunner</span></a></li>
 <li type="circle">io.micronaut.aot.internal.<a href="io/micronaut/aot/internal/StreamHelper.ThrowingSupplier.html" title="interface in io.micronaut.aot.internal"><span class="typeNameLink">StreamHelper.ThrowingSupplier</span></a>&lt;T&gt;</li>
 </ul>

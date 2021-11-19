@@ -98,7 +98,7 @@ var activeTableTab = "activeTableTab";
 <li>java.lang.Object</li>
 <li>
 <ul class="inheritance">
-<li><a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">io.micronaut.aot.core.sourcegen.AbstractSourceGenerator</a></li>
+<li><a href="../../../../../io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">io.micronaut.aot.core.codegen.AbstractCodeGenerator</a></li>
 <li>
 <ul class="inheritance">
 <li>io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator</li>
@@ -112,12 +112,12 @@ var activeTableTab = "activeTableTab";
 <li class="blockList">
 <dl>
 <dt>All Implemented Interfaces:</dt>
-<dd><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></dd>
+<dd><a href="../../../../../io/micronaut/aot/core/AOTCodeGenerator.html" title="interface in io.micronaut.aot.core">AOTCodeGenerator</a></dd>
 </dl>
 <hr>
 <br>
 <pre>public class <span class="typeNameLabel">ConstantPropertySourcesSourceGenerator</span>
-extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></pre>
+extends <a href="../../../../../io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></pre>
 <div class="block">Generates a "constant" property source, that is to say a
  <code>PropertySource</code> which properties are known at build time
  (and constant).</div>
@@ -148,13 +148,6 @@ extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGe
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#ID">ID</a></span></code>&nbsp;</td>
 </tr>
 </table>
-<ul class="blockList">
-<li class="blockList"><a name="fields.inherited.from.class.io.micronaut.aot.core.sourcegen.AbstractSourceGenerator">
-<!--   -->
-</a>
-<h3>Fields inherited from class&nbsp;io.micronaut.aot.core.sourcegen.<a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></h3>
-<code><a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#context">context</a></code></li>
-</ul>
 </li>
 </ul>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
@@ -187,19 +180,16 @@ extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGe
 <th class="colLast" scope="col">Method and Description</th>
 </tr>
 <tr id="i0" class="altColor">
-<td class="colFirst"><code>java.util.Optional&lt;com.squareup.javapoet.MethodSpec&gt;</code></td>
-<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#generateStaticInit--">generateStaticInit</a></span>()</code>
-<div class="block">Registers a static method which would have to be called
- at initialization time of the optimized entry point.</div>
-</td>
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate</a></span>(<a href="../../../../../io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a>&nbsp;context)</code>&nbsp;</td>
 </tr>
 </table>
 <ul class="blockList">
-<li class="blockList"><a name="methods.inherited.from.class.io.micronaut.aot.core.sourcegen.AbstractSourceGenerator">
+<li class="blockList"><a name="methods.inherited.from.class.io.micronaut.aot.core.codegen.AbstractCodeGenerator">
 <!--   -->
 </a>
-<h3>Methods inherited from class&nbsp;io.micronaut.aot.core.sourcegen.<a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html" title="class in io.micronaut.aot.core.sourcegen">AbstractSourceGenerator</a></h3>
-<code><a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#doInit--">doInit</a>, <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#getContext--">getContext</a>, <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#init-io.micronaut.aot.core.SourceGenerationContext-">init</a>, <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#simpleNameOf-java.lang.String-">simpleNameOf</a>, <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#staticMethod-java.lang.String-java.util.function.Consumer-">staticMethod</a>, <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#staticMethodBuilder-java.lang.String-java.util.function.Consumer-">staticMethodBuilder</a>, <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGenerator.html#writeServiceFile-java.io.File-java.lang.Class-java.lang.String-">writeServiceFile</a></code></li>
+<h3>Methods inherited from class&nbsp;io.micronaut.aot.core.codegen.<a href="../../../../../io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></h3>
+<code><a href="../../../../../io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#simpleNameOf-java.lang.String-">simpleNameOf</a>, <a href="../../../../../io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#staticMethod-java.lang.String-java.util.function.Consumer-">staticMethod</a>, <a href="../../../../../io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#staticMethodBuilder-java.lang.String-java.util.function.Consumer-">staticMethodBuilder</a>, <a href="../../../../../io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#writeServiceFile-io.micronaut.aot.core.AOTContext-java.lang.Class-java.lang.String-">writeServiceFile</a></code></li>
 </ul>
 <ul class="blockList">
 <li class="blockList"><a name="methods.inherited.from.class.java.lang.Object">
@@ -207,13 +197,6 @@ extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGe
 </a>
 <h3>Methods inherited from class&nbsp;java.lang.Object</h3>
 <code>clone, equals, finalize, getClass, hashCode, notify, notifyAll, toString, wait, wait, wait</code></li>
-</ul>
-<ul class="blockList">
-<li class="blockList"><a name="methods.inherited.from.class.io.micronaut.aot.core.AOTSourceGenerator">
-<!--   -->
-</a>
-<h3>Methods inherited from interface&nbsp;io.micronaut.aot.core.<a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html" title="interface in io.micronaut.aot.core">AOTSourceGenerator</a></h3>
-<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#generateResourceFiles-java.io.File-">generateResourceFiles</a>, <a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#generateSourceFiles--">generateSourceFiles</a></code></li>
 </ul>
 </li>
 </ul>
@@ -280,21 +263,14 @@ extends <a href="../../../../../io/micronaut/aot/core/sourcegen/AbstractSourceGe
 <!--   -->
 </a>
 <h3>Method Detail</h3>
-<a name="generateStaticInit--">
+<a name="generate-io.micronaut.aot.core.AOTContext-">
 <!--   -->
 </a>
 <ul class="blockListLast">
 <li class="blockList">
-<h4>generateStaticInit</h4>
-<pre>@NonNull
-public&nbsp;java.util.Optional&lt;com.squareup.javapoet.MethodSpec&gt;&nbsp;generateStaticInit()</pre>
-<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../../../../io/micronaut/aot/core/AOTSourceGenerator.html#generateStaticInit--">AOTSourceGenerator</a></code></span></div>
-<div class="block">Registers a static method which would have to be called
- at initialization time of the optimized entry point.</div>
-<dl>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>a method spec, if any</dd>
-</dl>
+<h4>generate</h4>
+<pre>public&nbsp;void&nbsp;generate(@NonNull
+                     <a href="../../../../../io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a>&nbsp;context)</pre>
 </li>
 </ul>
 </li>
