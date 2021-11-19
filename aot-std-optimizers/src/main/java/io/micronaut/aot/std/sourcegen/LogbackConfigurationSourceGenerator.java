@@ -29,13 +29,13 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.sourcegen.AbstractSingleClassFileGenerator;
+import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator;
 import io.micronaut.core.annotation.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.lang.model.element.Modifier;
-import java.io.File;
 import java.util.Locale;
 
 /**
@@ -72,17 +72,14 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
                 .addMethod(addLogMethod("Error"))
                 .addMethod(addLog2Method("Error"))
                 .build();
-        return getContext().javaFile(typeSpec);
+        return javaFile(typeSpec);
     }
 
     @Override
-    public void doInit() {
-        getContext().registerExcludedResource("logback.xml");
-    }
-
-    @Override
-    public void generateResourceFiles(@NonNull File targetDirectory) {
-        writeServiceFile(targetDirectory, Configurator.class, "StaticLogbackConfiguration");
+    public void generate(@NonNull AOTContext context) {
+        super.generate(context);
+        context.registerExcludedResource("logback.xml");
+        writeServiceFile(context, Configurator.class, "StaticLogbackConfiguration");
     }
 
     private static MethodSpec addStatusMethod() {

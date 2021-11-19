@@ -15,14 +15,7 @@
  */
 package io.micronaut.aot.core;
 
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
 import io.micronaut.core.annotation.NonNull;
-
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * A source generator is the main entity of the AOT project.
@@ -39,41 +32,8 @@ import java.util.Optional;
  *     <li>one or more resource files</li>
  * </ul>
  *
- * Source generators must be annotated with {@link AOTModule}.
+ * Code generators must be annotated with {@link AOTModule}.
  */
-public interface AOTSourceGenerator {
-    /**
-     * Initializes the source generator.
-     * @param context the context to be injected
-     */
-    default void init(@NonNull SourceGenerationContext context) {
-    }
-
-    /**
-     * Registers a static method which would have to be called
-     * at initialization time of the optimized entry point.
-     *
-     * @return a method spec, if any
-     */
-    @NonNull
-    default Optional<MethodSpec> generateStaticInit() {
-        return Optional.empty();
-    }
-
-    /**
-     * Generates source files.
-     *
-     * @return the list of generated source files, never null.
-     */
-    @NonNull
-    default List<JavaFile> generateSourceFiles() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * Generates resource files in the target directory.
-     * @param targetDirectory the directory where to generate resources
-     */
-    default void generateResourceFiles(@NonNull File targetDirectory) {
-    }
+public interface AOTCodeGenerator {
+    void generate(@NonNull AOTContext context);
 }

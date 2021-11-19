@@ -13,22 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.aot.core.sourcegen
+package io.micronaut.aot.core.codegen
 
 import com.squareup.javapoet.JavaFile
-import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.TypeSpec
 import io.micronaut.aot.core.AOTModule
-import io.micronaut.aot.core.AOTSourceGenerator
+import io.micronaut.aot.core.AOTCodeGenerator
+import io.micronaut.aot.core.AOTContext
 import io.micronaut.context.ApplicationContextConfigurer
 import io.micronaut.core.annotation.NonNull
-import org.jetbrains.annotations.NotNull
 
 class ApplicationContextConfigurerGeneratorTest extends AbstractSourceGeneratorSpec {
-    private List<AOTSourceGenerator> generators = []
+    private List<AOTCodeGenerator> generators = []
 
     @Override
-    AOTSourceGenerator newGenerator() {
+    AOTCodeGenerator newGenerator() {
         new ApplicationContextConfigurerGenerator(generators)
     }
 
@@ -62,7 +61,7 @@ public class AOTApplicationContextConfigurer implements ApplicationContextConfig
 
         then:
         assertThatGeneratedSources {
-            doesNotCreateInitializer()
+            hasInitializers(2)
             hasClass('AOTApplicationContextConfigurer') {
                 withSources '''package io.micronaut.test;
 
@@ -109,20 +108,20 @@ class SomeClass {
     }
 
     @AOTModule(id = "static-init")
-    private static class GeneratorWithStaticInit extends AbstractSourceGenerator {
+    private static class GeneratorWithStaticInit extends AbstractCodeGenerator {
         private final String name
 
         protected GeneratorWithStaticInit(String name) {
             this.name = name
         }
 
-        @NonNull
-        @NotNull
         @Override
-        Optional<MethodSpec> generateStaticInit() {
-            staticMethod(name) {
+        void generate(@NonNull AOTContext context) {
+            context.registerStaticInitializer(
+                staticMethod(name) {
 
-            }
+                }
+            )
         }
     }
 

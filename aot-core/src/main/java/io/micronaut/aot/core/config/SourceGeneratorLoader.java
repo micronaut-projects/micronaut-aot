@@ -16,10 +16,10 @@
 package io.micronaut.aot.core.config;
 
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.AOTSourceGenerator;
+import io.micronaut.aot.core.AOTCodeGenerator;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Runtime;
-import io.micronaut.aot.core.SourceGenerationContext;
+import io.micronaut.aot.core.AOTContext;
 import io.micronaut.core.annotation.NonNull;
 
 import java.util.Arrays;
@@ -49,21 +49,18 @@ public class SourceGeneratorLoader {
     };
 
     @NonNull
-    public static List<AOTSourceGenerator> load(Runtime runtime, SourceGenerationContext context) {
+    public static List<AOTCodeGenerator> load(Runtime runtime, AOTContext context) {
         Configuration configuration = context.getConfiguration();
         return sourceGeneratorStream()
                 .map(sg -> new Object() {
-                    final AOTSourceGenerator generator = sg;
+                    final AOTCodeGenerator generator = sg;
                     final AOTModule module = MetadataUtils.findMetadata(sg.getClass()).orElse(null);
                 })
                 .filter(sg -> sg.module != null
                         && MetadataUtils.isEnabledOn(runtime, sg.module)
                         && configuration.isFeatureEnabled(sg.module.id()))
                 .sorted(Comparator.comparing(f -> f.module, EXECUTION_ORDER))
-                .map(sg -> {
-                    sg.generator.init(context);
-                    return sg.generator;
-                })
+                .map(sg -> sg.generator)
                 .collect(Collectors.toList());
     }
 
@@ -79,8 +76,8 @@ public class SourceGeneratorLoader {
                 .collect(Collectors.toList());
     }
 
-    private static Stream<AOTSourceGenerator> sourceGeneratorStream() {
-        return stream(ServiceLoader.load(AOTSourceGenerator.class).spliterator(), false);
+    private static Stream<AOTCodeGenerator> sourceGeneratorStream() {
+        return stream(ServiceLoader.load(AOTCodeGenerator.class).spliterator(), false);
     }
 
 }

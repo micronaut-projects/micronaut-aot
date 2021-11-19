@@ -15,16 +15,16 @@
  */
 package io.micronaut.aot.std.sourcegen
 
-import io.micronaut.aot.core.AOTSourceGenerator
-import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
+import io.micronaut.aot.core.AOTCodeGenerator
+import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
 
 class KnownMissingTypesSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
-    AOTSourceGenerator newGenerator() {
+    AOTCodeGenerator newGenerator() {
         props.put(KnownMissingTypesSourceGenerator.OPTION.key(),
                 [
                         'non.existing.ClassName',
-                        AOTSourceGenerator.class.name,
+                        AOTCodeGenerator.class.name,
                         'another.missing.Clazz'
                 ].join(",")
         )

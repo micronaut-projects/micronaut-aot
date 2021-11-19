@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.aot.core.sourcegen
+package io.micronaut.aot.core.codegen
 
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.MethodSpec
 import groovy.transform.CompileStatic
-import io.micronaut.aot.core.AOTSourceGenerator
+import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.Configuration
 import io.micronaut.aot.core.config.DefaultConfiguration
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer
@@ -38,23 +38,26 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
     final Properties props = new Properties()
     final Configuration config = new DefaultConfiguration(props)
     private GeneratedSources generatedSources
+    Path resourcesDir
 
-    DefaultSourceGenerationContext context = new DefaultSourceGenerationContext(packageName, ApplicationContextAnalyzer.create(), config)
+    DefaultSourceGenerationContext context
 
-    abstract AOTSourceGenerator newGenerator()
+    def setup() {
+        resourcesDir = testDirectory.resolve("resources")
+        context = new DefaultSourceGenerationContext(packageName, ApplicationContextAnalyzer.create(), config, resourcesDir)
+    }
+    abstract AOTCodeGenerator newGenerator()
 
     void generate() {
         def sourceGenerator = newGenerator()
-        sourceGenerator.init(context)
-        def sources = sourceGenerator.generateSourceFiles().collectEntries([:]) {
+        sourceGenerator.generate(context)
+        def sources = context.getGeneratedJavaFiles().collectEntries([:]) {
             def writer = new StringWriter()
             it.writeTo(writer)
             [it, writer.toString()]
         }
-        def init = sourceGenerator.generateStaticInit()
-        def resourcesDir = testDirectory.resolve("resources").toFile()
-        sourceGenerator.generateResourceFiles(resourcesDir)
-        this.generatedSources = new GeneratedSources(sources, init, resourcesDir)
+
+        this.generatedSources = new GeneratedSources(sources, context.getGeneratedStaticInitializers(), resourcesDir.toFile())
     }
 
     void assertThatGeneratedSources(@DelegatesTo(value=GeneratedSources, strategy = Closure.DELEGATE_FIRST) Closure<?> spec) {
@@ -83,12 +86,12 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
 
     class GeneratedSources {
         private final Map<JavaFile, String> sources
-        private final Optional<MethodSpec> init
+        private final List<MethodSpec> init
         private final Set<String> verifiedClasses = []
         private final File resourcesDir
         private boolean checkedForInitializer
 
-        GeneratedSources(Map<JavaFile, String> sources, Optional<MethodSpec> init, File resourcesDir) {
+        GeneratedSources(Map<JavaFile, String> sources, List<MethodSpec> init, File resourcesDir) {
             this.sources = sources
             this.init = init
             this.resourcesDir = resourcesDir
@@ -100,17 +103,26 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
 
         void hasInitializer() {
             checkedForInitializer = true
-            assert init.present
+            assert !init.isEmpty()
+        }
+
+        void hasInitializers(int count) {
+            checkedForInitializer = true
+            assert init.size() == count
         }
 
         void doesNotCreateInitializer() {
             checkedForInitializer = true
-            assert !init.present
+            assert init.isEmpty()
         }
 
         void createsInitializer(String expectedContents) {
+            createsInitializer(0, expectedContents)
+        }
+
+        void createsInitializer(int index, String expectedContents) {
             hasInitializer()
-            init.ifPresent { spec ->
+            init[index].with { spec ->
                 String actualCode = normalize(spec)
                 expectedContents = normalize(expectedContents)
                 assert actualCode == expectedContents

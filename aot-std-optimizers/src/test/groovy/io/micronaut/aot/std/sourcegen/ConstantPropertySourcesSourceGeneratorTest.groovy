@@ -18,10 +18,10 @@ package io.micronaut.aot.std.sourcegen
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeSpec
 import io.micronaut.aot.core.AOTModule
-import io.micronaut.aot.core.AOTSourceGenerator
+import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.Option
-import io.micronaut.aot.core.sourcegen.AbstractSingleClassFileGenerator
-import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
+import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator
+import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
 import io.micronaut.core.annotation.NonNull
 
 import java.util.function.Predicate
@@ -30,10 +30,10 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
     private final Map<String, AbstractSingleClassFileGenerator> substitutions = [:]
 
     @Override
-    AOTSourceGenerator newGenerator() {
+    AOTCodeGenerator newGenerator() {
         substitutions[TestServiceImpl.name] = new SubstituteGenerator()
         AbstractStaticServiceLoaderSourceGenerator generator = new TestServiceLoaderGenerator()
-        generator.init(context)
+        generator.generate(context)
         new ConstantPropertySourcesSourceGenerator()
     }
 
@@ -43,7 +43,7 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
 
         then:
         assertThatGeneratedSources {
-            createsInitializer("""private static void preparePropertySources() {
+            createsInitializer(1,"""private static void preparePropertySources() {
   // Generates pre-computed Micronaut property sources from known configuration files
   java.util.List<io.micronaut.context.env.PropertySource> propertySources = new java.util.ArrayList<io.micronaut.context.env.PropertySource>();
   io.micronaut.core.optim.StaticOptimizations.set(new io.micronaut.context.env.ConstantPropertySources(propertySources));

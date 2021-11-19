@@ -1,7 +1,7 @@
 package io.micronaut.aot.cli
 
 import groovy.transform.CompileStatic
-import io.micronaut.aot.core.AOTSourceGenerator
+import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.config.MetadataUtils
 import io.micronaut.aot.std.sourcegen.AbstractStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
@@ -71,7 +71,7 @@ $c
         input.toString().trim().replaceAll("\\r", "")
     }
 
-    static String toPropertiesSample(Class<? extends AOTSourceGenerator> clazz) {
+    static String toPropertiesSample(Class<? extends AOTCodeGenerator> clazz) {
         return MetadataUtils.toPropertiesSample(
                 MetadataUtils.findMetadata(clazz)
                     .get()
@@ -79,7 +79,7 @@ $c
         )
     }
 
-    static String toPropertiesSample(Class<? extends AOTSourceGenerator> clazz, String name) {
+    static String toPropertiesSample(Class<? extends AOTCodeGenerator> clazz, String name) {
         return MetadataUtils.toPropertiesSample(
                 MetadataUtils.findOption(clazz, name)
         )

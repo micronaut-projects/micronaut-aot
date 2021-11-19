@@ -1,1 +1,164 @@
-TODO
+== Applicability
+
+NOTE: Micronaut AOT is an experimental project. Use at your own risk.
+
+The goal of Micronaut AOT is to create an optimized "binary" for a particular deployment environment.
+It is **not** to make development experience faster: because build time optimizations require deep analysis of the application, it will actually make the local development slower if you use optimized binaries.
+
+You should consider Micronaut AOT similarly to what GraalVM's `native-image` tool is: a "compiler" which generates a _different_ application, aimed at a particular _runtime_. That is, depending on the optimizations which are enabled, a binary optimized by AOT may, or may not, work in a specific deployment environment.
+
+== Micronaut AOT projects
+
+The Micronaut AOT project consists of 4 main modules:
+
+- `micronaut-aot-core` provides the APIs for implementing "AOT optimizers", or code generators.
+- `micronaut-aot-api` exposes the public API for interacting with the AOT compiler. It mostly consists of the `MicronautAotOptimizer` class which is responsible for loading the different AOT modules via _service loading_, then driving the AOT process.
+- `micronaut-aot-std-optimizers` implements a number of standard Micronaut AOT optimizers.
+- `micronaut-cli` is the command line tool responsible for calling the AOT compiler. It is recommended to integrate with Micronaut AOT via the CLI tool, so that the process is properly isolated.
+
+== How it works
+
+=== Optimization process
+
+Micronaut AOT is a _post-processing_ tool.
+By that, we mean that it takes the output of regular Micronaut application compilation, then performs an analysis of this and generates new classes, resources, etc. which are then used to create a _new binary_ (jar, native binary, ...).
+
+In a nutshell, the inputs of Micronaut AOT are:
+
+- the application runtime classpath
+- the Micronaut AOT runtime (including the AOT optimizers)
+- the AOT optimizer configuration (including the target runtime, e.g JIT vs native)
+
+And its outputs are:
+
+- generated of source files and their compiled (`.class`) versions
+- generated resource files
+- a list of resources which should be removed from the final binary (for example, if a YAML file is replaced with Java configuration, a class would be generated, but then we know we don't need the YAML file anymore in the final binary)
+- log files (to diagnose what happened during the AOT process)
+
+The `MicronautAotOptimizer` class is a special case of code generator which integrates the dynamically loaded AOT optimizers, and generates an `ApplicationContextConfigurer` which will initialize the optimizations.
+
+It's then the responsibility of integrators to take those outputs to generate different binaries.
+
+=== User-code loading
+
+In order to perform optimizations, so called _optimizers_ (or AOT modules) are used.
+Those modules need access to the _application context_, so that they can, for example, determine if a bean is going to be needed in a particular deployment environment.
+Or, they may need access to the configuration which is dynamically loaded from an external source (think of distributed configuration) to generate _static_ configuration instead.
+
+Therefore, the AOT compiler needs to be executed in the _same classloader_ as the application code itself.
+This is why there are 2 different classpaths for the AOT compiler:
+
+- the _application_ classpath corresponds to the application runtime classpath. It is, technically speaking, the result of previous compilation plus all transitive dependencies needed by the application (or library).
+- the _AOT_ classpath, which is the classpath of the AOT compiler and the AOT optimizers.
+
+==== The role of the application context configurers
+
+Given the application classpath, the AOT compiler will instantiate an `ApplicationContext`, which will have all the __context configurers__ (classes implementing the `ApplicationContextConfigurer` interface and annotated with `@ContextConfigurer`) applied automatically.
+This is how the AOT compiler will "know" about particular application context customizations which can be done by a user.
+
+Therefore, it is critical to understand that the AOT compiler cannot figure out arbitrary application context customizations.
+For example, in the following code:
+
+```java
+class Application {
+    public static void main(String...args) {
+        Micronaut.build()
+            .deduceEnvironment(false)
+            .mainClass(Application.class)
+            .start();
+    }
+}
+```
+
+there's a `deduceEnvironment()` call which is _opaque_ to the AOT compiler: it cannot know that the application is configured that way (for this it would actually have to _start_ the application and perform runtime interception which would be too expensive or impossible).
+
+Therefore, all customizations need to be done using a different pattern:
+
+```java
+class Application {
+    @ContextConfigurer
+    public static class MyConfigurer implements ApplicationContextConfigurer {
+        @Override
+        public void configure(ApplicationContextBuilder context) {
+            context.deduceEnvironment(false);
+        }
+    }
+
+    public static void main(String... args) {
+        Micronaut.run(Application.class, args);
+    }
+}
+```
+
+Because `@ContextConfigurer` makes sure that _any_ application context created will see the customizer applied, the application context created by the AOT compiler for its internal use _will_ see the customizations.
+
+== Implementing an AOT optimizer
+
+=== Current capabilities
+
+Now that we understand how the AOT optimization environment is bootstrapped, we can start implementing an AOT optimizer.
+
+An optimizer can do one or more of the following:
+
+- generate static initializers which will automatically be loaded thanks to the `ApplicationContextConfigurer` mechanism
+- generate new source files
+- generate new resource files
+- perform substitutions of one class with another
+- filter out resources
+
+New capabilities will be included as part of AOT development.
+
+=== Code generators
+
+At the core of AOT optimizations is a _code generator_.
+A code generator needs to implement the `AOTCodeGenerator` interface and be annotated with `@AOTModule`.
+
+The `AOTModule` annotation is responsible for giving metadata about the code generators, including:
+
+- an `id` is used to identify the code generator, and enable/disable it via configuration
+- a number of options (`@Option`) which are used to describe the parameters that the code generator takes (those are provided via configuration)
+- possibly dependencies to other code generators (for example, some code generators may only work properly if they execute _after_ another one)
+- the target runtimes it applies to
+
+Code generators contribute code via the `AOTContext` interface, which allows:
+
+- getting the name of the package of generated classes
+- registering generated code (source files, ...)
+- getting access to the `ApplicationContext`
+- sharing state
+- getting access to target runtime
+
+For example, a simple code generator which generates a resource file may be declared as:
+
+```java
+@AOTModule(
+    id = MyResourceGenerator.ID,
+    options = {
+        @Option(name = "greeter.message", sampleValue = "Hello, world!", description = "The message to write")
+    }
+)
+public class MyResourceGenerator implements AOTCodeGenerator {
+    public static final String ID = "my.resource.generator";
+
+    @Override
+    public void generate(AOTContext context) {
+        context.registerResource("/hello.txt", file -> {
+            try (PrintWriter writer = new PrintWriter(file)) {
+                String message = context.getConfiguration()
+                    .mandatoryValue("greeter.message");
+                writer.println(context.getOption("greeter.message"));
+            }
+        });
+    }
+}
+```
+
+Then in a configuration file, the code generator would be configured this way:
+
+```
+my.resource.generator.enabled=true
+greeter.message=Hello, world!
+```
+
+NOTE: Different code generators may share the same option values: it is legal, but often simply required (for example if there's a different implementation of a specific optimization based on the target runtime).

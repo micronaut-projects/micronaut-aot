@@ -15,14 +15,14 @@
  */
 package io.micronaut.aot.std.sourcegen
 
-import io.micronaut.aot.core.AOTSourceGenerator
-import io.micronaut.aot.core.sourcegen.AbstractSourceGeneratorSpec
+import io.micronaut.aot.core.AOTCodeGenerator
+import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
 
 class MapPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
     private final Map<String, Object> values = [:]
 
     @Override
-    AOTSourceGenerator newGenerator() {
+    AOTCodeGenerator newGenerator() {
         new MapPropertySourceGenerator("test", values)
     }
 

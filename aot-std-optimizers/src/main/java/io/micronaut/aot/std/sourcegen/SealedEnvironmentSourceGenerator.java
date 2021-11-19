@@ -15,13 +15,11 @@
  */
 package io.micronaut.aot.std.sourcegen;
 
-import com.squareup.javapoet.MethodSpec;
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
+import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
-
-import java.util.Optional;
 
 /**
  * Generates the code used to enable environment variables and system
@@ -31,14 +29,14 @@ import java.util.Optional;
         id = SealedEnvironmentSourceGenerator.ID,
         description = SealedEnvironmentSourceGenerator.DESCRIPTION
 )
-public class SealedEnvironmentSourceGenerator extends AbstractSourceGenerator {
+public class SealedEnvironmentSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "sealed.environment";
     public static final String DESCRIPTION = "Seals environment property values: environment properties will be deemed immutable after application startup.";
 
     @Override
-    @NonNull
-    public Optional<MethodSpec> generateStaticInit() {
-        return staticMethod("enableEnvironmentCaching", body ->
-                body.addStatement("$T.cacheEnvironment()", StaticOptimizations.class));
+    public void generate(@NonNull AOTContext context) {
+        context.registerStaticInitializer(staticMethod("enableEnvironmentCaching", body ->
+                body.addStatement("$T.cacheEnvironment()", StaticOptimizations.class)));
     }
+
 }

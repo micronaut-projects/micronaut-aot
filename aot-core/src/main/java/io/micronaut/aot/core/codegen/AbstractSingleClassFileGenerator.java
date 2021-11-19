@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.aot.core.sourcegen;
+package io.micronaut.aot.core.codegen;
 
 import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.TypeSpec;
+import io.micronaut.aot.core.AOTContext;
 import io.micronaut.core.annotation.NonNull;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Base class for source generators which generate a single class file.
  */
-public abstract class AbstractSingleClassFileGenerator extends AbstractSourceGenerator {
+public abstract class AbstractSingleClassFileGenerator extends AbstractCodeGenerator {
+
+    private AOTContext context;
 
     protected abstract JavaFile generate();
 
-    @NonNull
     @Override
-    public final List<JavaFile> generateSourceFiles() {
-        JavaFile file = generate();
-        if (file == null) {
-            return Collections.emptyList();
-        }
-        return Collections.singletonList(file);
+    public void generate(@NonNull AOTContext context) {
+        this.context = context;
+        JavaFile javaFile = generate();
+        context.registerGeneratedSourceFile(javaFile);
+    }
+
+    @NonNull
+    public final JavaFile javaFile(TypeSpec typeSpec) {
+        return context.javaFile(typeSpec);
     }
 }

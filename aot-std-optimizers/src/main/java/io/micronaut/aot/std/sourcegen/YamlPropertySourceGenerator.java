@@ -15,9 +15,9 @@
  */
 package io.micronaut.aot.std.sourcegen;
 
-import com.squareup.javapoet.JavaFile;
 import io.micronaut.aot.core.AOTModule;
-import io.micronaut.aot.core.sourcegen.AbstractSourceGenerator;
+import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
@@ -26,9 +26,7 @@ import io.micronaut.core.io.scan.DefaultClassPathResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,7 +40,7 @@ import java.util.Optional;
         id = YamlPropertySourceGenerator.ID,
         description = YamlPropertySourceGenerator.DESCRIPTION
 )
-public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
+public class YamlPropertySourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "yaml.to.java.config";
     public static final String DESCRIPTION = "Converts YAML configuration files to Java configuration";
     private static final Logger LOGGER = LoggerFactory.getLogger(YamlPropertySourceGenerator.class);
@@ -54,19 +52,14 @@ public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
     }
 
     @Override
-    @NonNull
-    public List<JavaFile> generateSourceFiles() {
+    public void generate(@NonNull AOTContext context) {
         YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
-        List<JavaFile> files = new ArrayList<>();
-
         for (String resource : resources) {
-            createMapProperty(loader, files, resource);
+            createMapProperty(loader, context, resource);
         }
-
-        return files;
     }
 
-    private void createMapProperty(YamlPropertySourceLoader loader, List<JavaFile> files, String resource) {
+    private void createMapProperty(YamlPropertySourceLoader loader, AOTContext context, String resource) {
         Optional<PropertySource> optionalSource = loader.load(resource, new DefaultClassPathResourceLoader(this.getClass().getClassLoader()));
         if (optionalSource.isPresent()) {
             LOGGER.info("Converting {} into Java based configuration", resource + ".yml");
@@ -79,8 +72,7 @@ public class YamlPropertySourceGenerator extends AbstractSourceGenerator {
                 MapPropertySourceGenerator generator = new MapPropertySourceGenerator(
                         resource,
                         values);
-                generator.init(context);
-                files.add(generator.generate());
+                generator.generate(context);
             } else {
                 throw new UnsupportedOperationException("Unknown property source type:" + ps.getClass());
             }
