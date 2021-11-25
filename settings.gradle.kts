@@ -9,7 +9,7 @@ pluginManagement {
 }
 
 plugins {
-    id("io.micronaut.build.shared.settings") version "4.2.4"
+    id("io.micronaut.build.shared.settings") version "4.2.6"
 }
 
 enableFeaturePreview("VERSION_CATALOGS")
@@ -28,13 +28,6 @@ val micronautVersion = providers.gradleProperty("micronautVersion")
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-//        mavenLocal()
-        maven {
-            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-            content {
-                includeGroup("io.micronaut")
-            }
-        }
     }
 
     versionCatalogs {
