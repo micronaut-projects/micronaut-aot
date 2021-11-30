@@ -5,6 +5,7 @@ import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.config.MetadataUtils
 import io.micronaut.aot.std.sourcegen.AbstractStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
+import io.micronaut.aot.std.sourcegen.DeduceEnvironmentSourceGenerator
 import io.micronaut.aot.std.sourcegen.EnvironmentPropertiesSourceGenerator
 import io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
 import io.micronaut.aot.std.sourcegen.JitStaticServiceLoaderSourceGenerator
@@ -44,6 +45,7 @@ class CliTest extends Specification {
         Files.exists(configFile)
         def config = normalize(configFile.toFile().text)
         String expected = normalize([
+                [DeduceEnvironmentSourceGenerator.DESCRIPTION, "deduce.environment.enabled = true"],
                 runtime == 'native' ? [GraalVMOptimizationFeatureSourceGenerator.DESCRIPTION, "graalvm.config.enabled = true\n${toPropertiesSample(GraalVMOptimizationFeatureSourceGenerator)}"] : null,
                 [KnownMissingTypesSourceGenerator.DESCRIPTION, """known.missing.types.enabled = true
 ${toPropertiesSample(KnownMissingTypesSourceGenerator)}"""],

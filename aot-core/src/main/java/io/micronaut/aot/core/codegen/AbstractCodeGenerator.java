@@ -51,7 +51,7 @@ public abstract class AbstractCodeGenerator implements AOTCodeGenerator {
 
     protected final void writeServiceFile(AOTContext context, Class<?> serviceType, String simpleServiceName) {
         context.registerGeneratedResource("META-INF/services/" + serviceType.getName(), serviceFile -> {
-            try (PrintWriter wrt = new PrintWriter(new FileWriter(serviceFile))) {
+            try (PrintWriter wrt = new PrintWriter(new FileWriter(serviceFile, true))) {
                 wrt.println(context.getPackageName() + "." + simpleServiceName);
             } catch (IOException e) {
                 throw new RuntimeException(e);

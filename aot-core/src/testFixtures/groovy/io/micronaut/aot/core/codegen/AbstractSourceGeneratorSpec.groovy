@@ -23,6 +23,7 @@ import io.micronaut.aot.core.Configuration
 import io.micronaut.aot.core.config.DefaultConfiguration
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer
 import io.micronaut.aot.core.context.DefaultSourceGenerationContext
+import io.micronaut.context.ApplicationContextBuilder
 import spock.lang.Specification
 import spock.lang.TempDir
 
@@ -44,8 +45,13 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
 
     def setup() {
         resourcesDir = testDirectory.resolve("resources")
-        context = new DefaultSourceGenerationContext(packageName, ApplicationContextAnalyzer.create(), config, resourcesDir)
+        context = new DefaultSourceGenerationContext(packageName, ApplicationContextAnalyzer.create { customizeContext(it) }, config, resourcesDir)
     }
+
+    protected void customizeContext(ApplicationContextBuilder builder) {
+
+    }
+
     abstract AOTCodeGenerator newGenerator()
 
     void generate() {
