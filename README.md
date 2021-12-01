@@ -1,6 +1,6 @@
 # Micronaut AOT
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.micronaut.aot/micronaut-aot.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22io.micronaut.aot%22%20AND%20a:%22micronaut-aot%22)
+[![Maven Central](https://img.shields.io/maven-central/v/io.micronaut.aot/micronaut-aot-core.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22io.micronaut.aot%22%20AND%20a:%22micronaut-aot-core%22)
 [![Build Status](https://github.com/micronaut-projects/micronaut-aot/workflows/Java%20CI/badge.svg)](https://github.com/micronaut-projects/micronaut-aot/actions)
 
 Micronaut AOT is an ahead-of-time optimizer for Micronaut projects, typically used by build plugins to perform build time optimizations.
