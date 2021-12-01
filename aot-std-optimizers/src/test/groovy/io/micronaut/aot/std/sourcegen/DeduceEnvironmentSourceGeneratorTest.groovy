@@ -35,7 +35,7 @@ public class DeducedEnvironmentConfigurer implements ApplicationContextConfigure
   @Override
   public void configure(ApplicationContextBuilder builder) {
     builder.deduceEnvironment(false);
-    builder.defaultEnvironments("test");
+    builder.environments("test");
     builder.packages("jdk.internal.reflect");
   }
 
