@@ -26,7 +26,7 @@ dependencies {
     compileOnlyApi(mn.micronaut.context)
     compileOnlyApi(mn.micronaut.core.reactive)
 
-    implementation(projects.aotCore)
+    compileOnlyApi(projects.aotCore)
     compileOnly(mn.logback)
 
     testImplementation(testFixtures(projects.aotCore))
