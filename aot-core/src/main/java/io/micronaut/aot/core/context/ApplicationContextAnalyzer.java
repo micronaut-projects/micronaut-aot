@@ -16,6 +16,7 @@
 package io.micronaut.aot.core.context;
 
 import io.micronaut.context.ApplicationContext;
+import io.micronaut.context.ApplicationContextBuilder;
 import io.micronaut.context.BeanContext;
 import io.micronaut.context.BeanResolutionContext;
 import io.micronaut.context.DefaultBeanResolutionContext;
@@ -34,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -60,12 +62,28 @@ public final class ApplicationContextAnalyzer {
         return applicationContext.getEnvironment().getActiveNames();
     }
 
+    public ApplicationContext getApplicationContext() {
+        return applicationContext;
+    }
+
     /**
      * Instantiates an application context analyzer.
      * @return an analyzer
      */
     public static ApplicationContextAnalyzer create() {
         return new ApplicationContextAnalyzer(ApplicationContext.builder().build());
+    }
+
+    /**
+     * Instantiates an application context analyzer with the ability to
+     * customize the application context.
+     * @param spec the spec to configure the application context
+     * @return the analyzer
+     */
+    public static ApplicationContextAnalyzer create(Consumer<? super ApplicationContextBuilder> spec) {
+        ApplicationContextBuilder builder = ApplicationContext.builder();
+        spec.accept(builder);
+        return new ApplicationContextAnalyzer(builder.build());
     }
 
     /**

@@ -7,3 +7,4 @@ io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
 io.micronaut.aot.std.sourcegen.SealedEnvironmentSourceGenerator
 io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
 io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
+io.micronaut.aot.std.sourcegen.DeduceEnvironmentSourceGenerator
