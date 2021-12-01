@@ -28,3 +28,12 @@ micronautBuild {
     enableProcessing = false
     enableBom = false
 }
+
+pluginManager.withPlugin("java-test-fixtures") {
+    // Workaround for incorrect capabilities published because of the renaming
+    // of the modules at publication time
+    ["testFixturesApiElements", "testFixturesRuntimeElements"].each {
+        def outgoing = configurations.getByName(it).outgoing
+        outgoing.capability("$group:micronaut-${project.name}-test-fixtures:$projectVersion")
+    }
+}
