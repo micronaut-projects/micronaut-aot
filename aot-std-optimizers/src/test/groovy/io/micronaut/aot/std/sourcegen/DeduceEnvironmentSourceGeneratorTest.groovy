@@ -24,7 +24,8 @@ class DeduceEnvironmentSourceGeneratorTest extends AbstractSourceGeneratorSpec {
             doesNotCreateInitializer()
             generatesMetaInfResource("services/io.micronaut.context.ApplicationContextConfigurer", 'io.micronaut.test.DeducedEnvironmentConfigurer')
             hasClass(DeduceEnvironmentSourceGenerator.DEDUCED_ENVIRONMENT_CONFIGURER) {
-               withSources """
+                withNormalizer { it.replaceAll('(?m)"[a-z.]+reflect[a-z.]*"', "<snip>") }
+                withSources """
 package io.micronaut.test;
 
 import io.micronaut.context.ApplicationContextBuilder;
@@ -36,7 +37,7 @@ public class DeducedEnvironmentConfigurer implements ApplicationContextConfigure
   public void configure(ApplicationContextBuilder builder) {
     builder.deduceEnvironment(false);
     builder.environments("test");
-    builder.packages("jdk.internal.reflect");
+    builder.packages(<snip>);
   }
 
   @Override

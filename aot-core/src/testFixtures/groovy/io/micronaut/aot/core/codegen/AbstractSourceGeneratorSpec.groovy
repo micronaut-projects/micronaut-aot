@@ -28,6 +28,7 @@ import spock.lang.Specification
 import spock.lang.TempDir
 
 import java.nio.file.Path
+import java.util.function.Function
 
 @CompileStatic
 abstract class AbstractSourceGeneratorSpec extends Specification {
@@ -200,24 +201,30 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
         private final JavaFile javaFile
         private final String generatedSource
         private boolean checkedSources
+        private Function<String, String> normalizer = { it }
 
         JavaFileAssertions(JavaFile javaFile, String sources) {
             this.javaFile = javaFile
             this.generatedSource = normalize(sources)
         }
 
+        void withNormalizer(Function<String, String> normalizer) {
+            this.normalizer = normalizer
+        }
+
         void withSources(String expectedSource) {
             checkedSources = true
-            expectedSource = normalize(expectedSource)
-            if (generatedSource != expectedSource) {
+            expectedSource = normalizer.apply(normalize(expectedSource))
+            String actualSources = normalizer.apply(generatedSource)
+            if (actualSources != expectedSource) {
                 println("GENERATED")
                 println("=========")
-                println(generatedSource)
+                println(actualSources)
                 println("EXPECTED")
                 println("========")
                 println(expectedSource)
             }
-            assert generatedSource == expectedSource
+            assert actualSources == expectedSource
         }
 
         void containingSources(String expected) {
