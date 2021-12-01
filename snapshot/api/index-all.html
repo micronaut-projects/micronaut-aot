@@ -179,6 +179,11 @@
 <dd>
 <div class="block">Instantiates an application context analyzer.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#create-java.util.function.Consumer-">create(Consumer&lt;? super ApplicationContextBuilder&gt;)</a></span> - Static method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a></dt>
+<dd>
+<div class="block">Instantiates an application context analyzer with the ability to
+ customize the application context.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html#CUSTOMIZER_CLASS_NAME">CUSTOMIZER_CLASS_NAME</a></span> - Static variable in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
@@ -187,6 +192,17 @@
 </a>
 <h2 class="title">D</h2>
 <dl>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#DEDUCED_ENVIRONMENT_CONFIGURER">DEDUCED_ENVIRONMENT_CONFIGURER</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen"><span class="typeNameLink">DeduceEnvironmentSourceGenerator</span></a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
+<dd>
+<div class="block">This code generator is responsible for taking the result
+ of the environment deduction, which is the set of active
+ environment names and the package names, and inject is
+ via a custom application context configurer.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#DeduceEnvironmentSourceGenerator--">DeduceEnvironmentSourceGenerator()</a></span> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/config/DefaultConfiguration.html" title="class in io.micronaut.aot.core.config"><span class="typeNameLink">DefaultConfiguration</span></a> - Class in <a href="io/micronaut/aot/core/config/package-summary.html">io.micronaut.aot.core.config</a></dt>
 <dd>
 <div class="block">An implementation of configuration which uses properties
@@ -210,6 +226,8 @@
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#DESCRIPTION">DESCRIPTION</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#DESCRIPTION">DESCRIPTION</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#DESCRIPTION">DESCRIPTION</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html#DESCRIPTION">DESCRIPTION</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
@@ -285,6 +303,8 @@
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate(AOTContext)</a></span> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></dt>
@@ -334,6 +354,8 @@
 <div class="block">Returns a predicate which can be used to determine, from annotation metadata,
  if a bean matches requirements.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#getApplicationContext--">getApplicationContext()</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#getConfiguration--">getConfiguration()</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Returns the source generators configuration.</div>
@@ -404,6 +426,8 @@
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html#ID">ID</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>

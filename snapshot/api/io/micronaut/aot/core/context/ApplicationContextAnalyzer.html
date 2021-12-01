@@ -17,7 +17,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":9,"i1":10,"i2":10};
+var methods = {"i0":9,"i1":9,"i2":10,"i3":10,"i4":10};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -142,13 +142,24 @@ extends java.lang.Object</pre>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#create-java.util.function.Consumer-">create</a></span>(java.util.function.Consumer&lt;? super io.micronaut.context.ApplicationContextBuilder&gt;&nbsp;spec)</code>
+<div class="block">Instantiates an application context analyzer with the ability to
+ customize the application context.</div>
+</td>
+</tr>
+<tr id="i2" class="altColor">
 <td class="colFirst"><code>java.util.function.Predicate&lt;io.micronaut.core.annotation.AnnotationMetadataProvider&gt;</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#getAnnotationMetadataPredicate--">getAnnotationMetadataPredicate</a></span>()</code>
 <div class="block">Returns a predicate which can be used to determine, from annotation metadata,
  if a bean matches requirements.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i3" class="rowColor">
+<td class="colFirst"><code>io.micronaut.context.ApplicationContext</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#getApplicationContext--">getApplicationContext</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i4" class="altColor">
 <td class="colFirst"><code>java.util.Set&lt;java.lang.String&gt;</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#getEnvironmentNames--">getEnvironmentNames</a></span>()</code>&nbsp;</td>
 </tr>
@@ -183,6 +194,15 @@ extends java.lang.Object</pre>
 <pre>public&nbsp;java.util.Set&lt;java.lang.String&gt;&nbsp;getEnvironmentNames()</pre>
 </li>
 </ul>
+<a name="getApplicationContext--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getApplicationContext</h4>
+<pre>public&nbsp;io.micronaut.context.ApplicationContext&nbsp;getApplicationContext()</pre>
+</li>
+</ul>
 <a name="create--">
 <!--   -->
 </a>
@@ -194,6 +214,23 @@ extends java.lang.Object</pre>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>an analyzer</dd>
+</dl>
+</li>
+</ul>
+<a name="create-java.util.function.Consumer-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>create</h4>
+<pre>public static&nbsp;<a href="../../../../../io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a>&nbsp;create(java.util.function.Consumer&lt;? super io.micronaut.context.ApplicationContextBuilder&gt;&nbsp;spec)</pre>
+<div class="block">Instantiates an application context analyzer with the ability to
+ customize the application context.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>spec</code> - the spec to configure the application context</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>the analyzer</dd>
 </dl>
 </li>
 </ul>
