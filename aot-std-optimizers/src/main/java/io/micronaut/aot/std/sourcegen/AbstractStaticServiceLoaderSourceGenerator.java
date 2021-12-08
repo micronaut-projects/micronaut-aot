@@ -22,15 +22,18 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.WildcardTypeName;
 import io.micronaut.aot.core.AOTContext;
-import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.aot.core.codegen.DelegatingSourceGenerationContext;
+import io.micronaut.aot.core.config.MetadataUtils;
+import io.micronaut.context.env.PropertySourceLoader;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
 import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.annotation.Generated;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.io.service.SoftServiceLoader;
 import io.micronaut.core.optim.StaticOptimizations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -62,6 +65,8 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     public static final String SERVICE_TYPES = "service.types";
     public static final String REJECTED_CLASSES = "serviceloading.rejected.impls";
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStaticServiceLoaderSourceGenerator.class);
+
     protected AOTContext context;
 
     private Predicate<AnnotationMetadataProvider> metadataProviderPredicate;
@@ -89,6 +94,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                 YamlPropertySourceGenerator yaml = new YamlPropertySourceGenerator(resourceNames);
                 yaml.generate(context);
                 if (MetadataUtils.isEnabledOn(context.getRuntime(), yaml)) {
+                    LOGGER.debug("Substituting {} with {}", PropertySourceLoader.class.getName(), yaml.getClass().getName());
                     substitutions.put(YamlPropertySourceLoader.class.getName(), yaml);
                 }
             }
@@ -105,6 +111,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
             staticServiceClasses = new HashMap<>();
             try {
                 for (String serviceName : serviceNames) {
+                    LOGGER.debug("Processing service type {}", serviceName);
                     generateServiceLoader(rejectedClasses, serviceName);
                 }
             } catch (ClassNotFoundException e) {
@@ -112,6 +119,8 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
             }
         }
         context.put(Substitutes.class, substitutes);
+        LOGGER.debug("Generated static service loader classes: {}", staticServiceClasses.keySet());
+        LOGGER.debug("Generated static {} service loader substitutions", substitutes.values().size());
         staticServiceClasses.values()
                 .stream()
                 .map(context::javaFile)
