@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 plugins {
-    id("io.micronaut.build.internal.aot-module")
+    id("io.micronaut.build.internal.aot-project")
 }
 
 description = "Standard optimizers implemented directly as part of Micronaut AOT"

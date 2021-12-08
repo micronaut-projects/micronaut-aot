@@ -18,10 +18,12 @@ package io.micronaut.aot.core.context;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
+import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Runtime;
-import io.micronaut.aot.core.AOTContext;
 import io.micronaut.core.annotation.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -55,6 +57,8 @@ import java.util.stream.Collectors;
  * which are written to log files during code generation.
  */
 public final class DefaultSourceGenerationContext implements AOTContext {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSourceGenerationContext.class);
+
     private final String packageName;
     private final ApplicationContextAnalyzer analyzer;
     private final Set<String> excludedResources = new TreeSet<>();
@@ -102,6 +106,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
 
     @Override
     public void registerExcludedResource(@NonNull String path) {
+        LOGGER.debug("Registering excluded resource: {}", path);
         excludedResources.add(path);
     }
 
@@ -112,6 +117,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
 
     @Override
     public void registerGeneratedSourceFile(@NonNull JavaFile javaFile) {
+        LOGGER.debug("Registering generated source file: {}.{}", javaFile.packageName, javaFile.typeSpec.name);
         generatedJavaFiles.add(javaFile);
     }
 
@@ -130,6 +136,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
 
     @Override
     public void registerGeneratedResource(@NonNull String path, Consumer<? super File> consumer) {
+        LOGGER.debug("Registering generated resource file: {}", path);
         Path relative = generatedResourcesDirectory.resolve(path);
         File resourceFile = relative.toFile();
         File parent = resourceFile.getParentFile();
@@ -166,7 +173,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
      */
     @NonNull
     public Set<String> getExcludedResources() {
-        return excludedResources;
+        return Collections.unmodifiableSet(excludedResources);
     }
 
     @NonNull
