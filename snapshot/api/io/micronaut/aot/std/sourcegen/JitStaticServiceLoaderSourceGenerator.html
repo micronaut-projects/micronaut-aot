@@ -188,7 +188,7 @@ extends <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticSer
 </tr>
 <tr id="i0" class="altColor">
 <td class="colFirst"><code>protected void</code></td>
-<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/JitStaticServiceLoaderSourceGenerator.html#generateFindAllMethod-java.util.function.Predicate-java.lang.String-java.lang.Class-com.squareup.javapoet.TypeSpec.Builder-">generateFindAllMethod</a></span>(java.util.function.Predicate&lt;java.lang.String&gt;&nbsp;rejectedClasses,
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/JitStaticServiceLoaderSourceGenerator.html#generateFindAllMethod-java.util.stream.Stream-java.lang.String-java.lang.Class-com.squareup.javapoet.TypeSpec.Builder-">generateFindAllMethod</a></span>(java.util.stream.Stream&lt;java.lang.Class&lt;?&gt;&gt;&nbsp;serviceClasses,
                      java.lang.String&nbsp;serviceName,
                      java.lang.Class&lt;?&gt;&nbsp;serviceType,
                      com.squareup.javapoet.TypeSpec.Builder&nbsp;factory)</code>&nbsp;</td>
@@ -199,7 +199,7 @@ extends <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticSer
 <!--   -->
 </a>
 <h3>Methods inherited from class&nbsp;io.micronaut.aot.std.sourcegen.<a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></h3>
-<code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#collectServiceImplementations-java.lang.String-java.util.function.BiFunction-">collectServiceImplementations</a>, <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate</a></code></li>
+<code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate</a></code></li>
 </ul>
 <ul class="blockList">
 <li class="blockList"><a name="methods.inherited.from.class.io.micronaut.aot.core.codegen.AbstractCodeGenerator">
@@ -267,19 +267,19 @@ extends <a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticSer
 <!--   -->
 </a>
 <h3>Method Detail</h3>
-<a name="generateFindAllMethod-java.util.function.Predicate-java.lang.String-java.lang.Class-com.squareup.javapoet.TypeSpec.Builder-">
+<a name="generateFindAllMethod-java.util.stream.Stream-java.lang.String-java.lang.Class-com.squareup.javapoet.TypeSpec.Builder-">
 <!--   -->
 </a>
 <ul class="blockListLast">
 <li class="blockList">
 <h4>generateFindAllMethod</h4>
-<pre>protected final&nbsp;void&nbsp;generateFindAllMethod(java.util.function.Predicate&lt;java.lang.String&gt;&nbsp;rejectedClasses,
+<pre>protected final&nbsp;void&nbsp;generateFindAllMethod(java.util.stream.Stream&lt;java.lang.Class&lt;?&gt;&gt;&nbsp;serviceClasses,
                                            java.lang.String&nbsp;serviceName,
                                            java.lang.Class&lt;?&gt;&nbsp;serviceType,
                                            com.squareup.javapoet.TypeSpec.Builder&nbsp;factory)</pre>
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
-<dd><code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateFindAllMethod-java.util.function.Predicate-java.lang.String-java.lang.Class-com.squareup.javapoet.TypeSpec.Builder-">generateFindAllMethod</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></code></dd>
+<dd><code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#generateFindAllMethod-java.util.stream.Stream-java.lang.String-java.lang.Class-com.squareup.javapoet.TypeSpec.Builder-">generateFindAllMethod</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></code></dd>
 </dl>
 </li>
 </ul>
