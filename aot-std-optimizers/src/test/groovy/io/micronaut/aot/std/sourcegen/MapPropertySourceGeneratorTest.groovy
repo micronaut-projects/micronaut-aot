@@ -110,13 +110,17 @@ public class TestStaticPropertySource extends MapPropertySource {
         }
 
         where:
-        value      | literal
-        'a string' | '"a string"'
-        (int) 1    | '1'
-        (short) 1  | '1'
-        (byte) 1   | '1'
-        (long) 1   | '1'
-        2f         | '2.0'
-        2d         | '2.0'
+        value         | literal
+        'a string'    | '"a string"'
+        (int) 1       | '1'
+        (short) 1     | '1'
+        (byte) 1      | '1'
+        (long) 1      | '1'
+        2f            | '2.0'
+        2d            | '2.0'
+        true          | true
+        false         | false
+        Boolean.TRUE  | true
+        Boolean.FALSE | false
     }
 }

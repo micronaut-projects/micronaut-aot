@@ -46,6 +46,7 @@ public class Test_configStaticPropertySource extends MapPropertySource {
     super("test-config", new HashMap() {{
         put("micronaut.application.name", "demoApp");
         put("micronaut.server.port", 8181);
+        put("micronaut.server.cors.enabled", true);
         }});
   }
 }

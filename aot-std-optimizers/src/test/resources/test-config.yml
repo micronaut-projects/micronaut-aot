@@ -3,3 +3,5 @@ micronaut:
     name: demoApp
   server:
     port: 8181
+    cors:
+      enabled: true
