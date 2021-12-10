@@ -24,6 +24,7 @@ import io.micronaut.context.Qualifier;
 import io.micronaut.context.RequiresCondition;
 import io.micronaut.context.condition.ConditionContext;
 import io.micronaut.context.condition.Failure;
+import io.micronaut.context.env.Environment;
 import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.convert.ArgumentConversionContext;
 import io.micronaut.core.type.Argument;
@@ -56,6 +57,8 @@ public final class ApplicationContextAnalyzer {
 
     private ApplicationContextAnalyzer(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
+//        Environment environment = this.applicationContext.getEnvironment();
+//        environment.getPropertySourceLoaders().forEach(loader -> loader.load(environment));
     }
 
     public Set<String> getEnvironmentNames() {
@@ -71,7 +74,7 @@ public final class ApplicationContextAnalyzer {
      * @return an analyzer
      */
     public static ApplicationContextAnalyzer create() {
-        return new ApplicationContextAnalyzer(ApplicationContext.builder().build());
+        return create(spec -> { });
     }
 
     /**
@@ -83,7 +86,10 @@ public final class ApplicationContextAnalyzer {
     public static ApplicationContextAnalyzer create(Consumer<? super ApplicationContextBuilder> spec) {
         ApplicationContextBuilder builder = ApplicationContext.builder();
         spec.accept(builder);
-        return new ApplicationContextAnalyzer(builder.build());
+        ApplicationContext context = builder.build();
+        Environment environment = context.getEnvironment();
+        environment.start();
+        return new ApplicationContextAnalyzer(context);
     }
 
     /**
