@@ -62,7 +62,7 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
                 mapBuilder.add("null");
             } else if (CharSequence.class.isAssignableFrom(value.getClass())) {
                 mapBuilder.add("\"" + value + "\"");
-            } else if (Number.class.isAssignableFrom(value.getClass())) {
+            } else if (Number.class.isAssignableFrom(value.getClass()) || Boolean.class.isAssignableFrom(value.getClass())) {
                 mapBuilder.add(String.valueOf(value));
             } else {
                 throw new UnsupportedOperationException("Configuration map contains an entry of type " + value.getClass() + " which is not supported yet. Please file a bug report.");
