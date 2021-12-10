@@ -27,11 +27,11 @@ import io.micronaut.aot.core.Runtime;
 import io.micronaut.core.io.service.SoftServiceLoader;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static javax.lang.model.element.Modifier.FINAL;
@@ -64,15 +64,14 @@ import static javax.lang.model.element.Modifier.STATIC;
 public class JitStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
     public static final String ID = "serviceloading.jit";
 
-    protected final void generateFindAllMethod(Predicate<String> rejectedClasses,
+    protected final void generateFindAllMethod(Stream<Class<?>> serviceClasses,
                                                String serviceName,
                                                Class<?> serviceType,
                                                TypeSpec.Builder factory) {
-        List<String> initializers = collectServiceImplementations(
-                serviceName,
-                (clazz, provider) -> clazz.getName()
-        );
-        Collections.sort(initializers);
+        List<String> initializers = serviceClasses
+                .map(Class::getName)
+                .sorted()
+                .collect(Collectors.toList());
         ParameterizedTypeName staticDefinitionType = ParameterizedTypeName.get(SoftServiceLoader.StaticDefinition.class, serviceType);
         ParameterizedTypeName serviceTypeClassType = ParameterizedTypeName.get(Class.class, serviceType);
 

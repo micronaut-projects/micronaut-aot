@@ -32,12 +32,11 @@ import io.micronaut.core.annotation.Generated;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.io.service.SoftServiceLoader;
 import io.micronaut.core.optim.StaticOptimizations;
+import io.micronaut.inject.BeanConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,9 +46,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static io.micronaut.aot.core.config.MetadataUtils.findOption;
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -74,7 +73,10 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     private Predicate<String> rejectedClasses;
     private Map<String, AbstractCodeGenerator> substitutions;
     private final Substitutes substitutes = new Substitutes();
-    private Map<String, TypeSpec> staticServiceClasses;
+    private final Map<String, TypeSpec> staticServiceClasses = new HashMap<>();
+    private final Set<BeanConfiguration> disabledConfigurations = Collections.synchronizedSet(new HashSet<>());
+    private final Map<String, List<Class<?>>> serviceClasses = new HashMap<>();
+    private final Set<Class<?>> disabledServices = new HashSet<>();
 
     @Override
     public void generate(@NonNull AOTContext context) {
@@ -107,18 +109,23 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
             Set<String> rejected = strings.isEmpty() ? Collections.emptySet() : new HashSet<>(strings);
             rejectedClasses = rejected::contains;
         }
-        if (staticServiceClasses == null) {
-            staticServiceClasses = new HashMap<>();
-            try {
-                for (String serviceName : serviceNames) {
-                    LOGGER.debug("Processing service type {}", serviceName);
-                    generateServiceLoader(rejectedClasses, serviceName);
-                }
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+        for (String serviceName : serviceNames) {
+            LOGGER.debug("Processing service type {}", serviceName);
+            collectServiceImplementations(serviceName);
         }
         context.put(Substitutes.class, substitutes);
+
+        for (BeanConfiguration beanConfiguration : disabledConfigurations) {
+            for (List<Class<?>> classList : serviceClasses.values()) {
+                for (Class<?> clazz : classList) {
+                    if (beanConfiguration.isWithin(clazz)) {
+                        context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Disabling " + clazz.getName() + " because it belongs to " + beanConfiguration.getName() + " which is disabled (" + beanConfiguration.getClass() + ")");
+                        disabledServices.add(clazz);
+                    }
+                }
+            }
+        }
+        generateServiceLoader();
         LOGGER.debug("Generated static service loader classes: {}", staticServiceClasses.keySet());
         LOGGER.debug("Generated static {} service loader substitutions", substitutes.values().size());
         staticServiceClasses.values()
@@ -128,20 +135,32 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
         context.registerStaticInitializer(generateStaticInit());
     }
 
-    private void generateServiceLoader(Predicate<String> rejectedClasses, String serviceName) throws ClassNotFoundException {
-        Class<?> serviceType = this.getClass().getClassLoader().loadClass(serviceName);
-        TypeSpec.Builder factory = prepareServiceLoaderType(serviceName, serviceType);
-        generateFindAllMethod(rejectedClasses, serviceName, serviceType, factory);
-        staticServiceClasses.put(serviceName, factory.build());
+    private void generateServiceLoader() {
+        for (Map.Entry<String, List<Class<?>>> services : serviceClasses.entrySet()) {
+            String serviceName = services.getKey();
+            List<Class<?>> implementations = services.getValue();
+            Class<?> serviceType;
+            try {
+                serviceType = this.getClass().getClassLoader().loadClass(serviceName);
+            } catch (ClassNotFoundException e) {
+                // Shouldn't happen at this stage
+                throw new RuntimeException(e);
+            }
+            TypeSpec.Builder factory = prepareServiceLoaderType(serviceName, serviceType);
+            generateFindAllMethod(
+                    implementations.stream().filter(clazz -> !rejectedClasses.test(clazz.getName()) && !disabledServices.contains(clazz)),
+                    serviceName,
+                    serviceType,
+                    factory);
+            staticServiceClasses.put(serviceName, factory.build());
+        }
     }
 
-    protected final <T> List<T> collectServiceImplementations(
-            String serviceName,
-            BiFunction<Class<?>, Boolean, T> emitter) {
+    private void collectServiceImplementations(String serviceName) {
         context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Starting service discovery for type " + serviceName);
         ClassLoader cl = this.getClass().getClassLoader();
         Set<String> seen = Collections.synchronizedSet(new HashSet<>());
-        SoftServiceLoader.ServiceCollector<T> collector = SoftServiceLoader.newCollector(serviceName, s -> !s.isEmpty(), cl, className -> {
+        SoftServiceLoader.ServiceCollector<Class<?>> availableClasses = SoftServiceLoader.newCollector(serviceName, s -> !s.isEmpty(), cl, className -> {
             if (rejectedClasses.test(className) || !seen.add(className)) {
                 return null;
             }
@@ -161,35 +180,27 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                     return null;
                 }
             }
+            Class<?> clazz;
             try {
-                Class<?> clazz = cl.loadClass(className);
+                clazz = cl.loadClass(className);
                 DeepAnalyzer deepAnalyzer = deepAnalyzerFor(clazz, serviceName);
                 boolean available = deepAnalyzer.isAvailable(clazz);
                 if (!available) {
+                    if (BeanConfiguration.class.isAssignableFrom(clazz)) {
+                        disabledConfigurations.add((BeanConfiguration) clazz.getConstructor().newInstance());
+                    }
                     context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Skipping " + clazz + " because it doesn't match bean requirements");
                     return null;
                 }
-                for (Method method : clazz.getDeclaredMethods()) {
-                    if ("provider".equals(method.getName()) && Modifier.isStatic(method.getModifiers())) {
-                        return emitter.apply(clazz, true);
-                    }
-                }
-                for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
-                    if (constructor.getParameterCount() == 0 && Modifier.isPublic(constructor.getModifiers())) {
-                        return emitter.apply(clazz, false);
-                    }
-                }
-            } catch (ClassNotFoundException | NoClassDefFoundError e) {
+            } catch (ClassNotFoundException | NoClassDefFoundError | NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Skipping service " + serviceName + " implementation " + className + " because of missing dependencies: " + e.getMessage());
                 return null;
             }
-            context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Skipping service " + serviceName + " implementation " + className + " because it's not a service provider");
-            return null;
+            return clazz;
         });
-        List<T> result = new ArrayList<>();
-        collector.collect(result::add);
-        context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Found " + result.size() + " services of type " + serviceName);
-        return result;
+        List<Class<?>> serviceClasses = new ArrayList<>();
+        availableClasses.collect(serviceClasses::add);
+        this.serviceClasses.put(serviceName, serviceClasses);
     }
 
     private DeepAnalyzer deepAnalyzerFor(Class<?> clazz, String serviceName) throws ClassNotFoundException {
@@ -199,7 +210,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
         return DeepAnalyzer.DEFAULT;
     }
 
-    protected abstract void generateFindAllMethod(Predicate<String> rejectedClasses,
+    protected abstract void generateFindAllMethod(Stream<Class<?>> serviceClasses,
                                                   String serviceName,
                                                   Class<?> serviceType,
                                                   TypeSpec.Builder factory);

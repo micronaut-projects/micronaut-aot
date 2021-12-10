@@ -25,10 +25,15 @@ import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
 import io.micronaut.core.io.service.SoftServiceLoader;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -53,12 +58,12 @@ import static javax.lang.model.element.Modifier.PUBLIC;
                 )
         },
         enabledOn = Runtime.NATIVE,
-        subgenerators = { YamlPropertySourceGenerator.class }
+        subgenerators = {YamlPropertySourceGenerator.class}
 )
 public class NativeStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
     public static final String ID = "serviceloading.native";
 
-    protected final void generateFindAllMethod(Predicate<String> rejectedClasses,
+    protected final void generateFindAllMethod(Stream<Class<?>> serviceClasses,
                                                String serviceName,
                                                Class<?> serviceType,
                                                TypeSpec.Builder factory) {
@@ -71,11 +76,22 @@ public class NativeStaticServiceLoaderSourceGenerator extends AbstractStaticServ
                 this.codeBlock = codeBlock;
             }
         }
-        List<Service> initializers = collectServiceImplementations(
-                serviceName,
-                (clazz, provider) -> new Service(clazz.getName(), provider ? CodeBlock.of("$T::provider", clazz) : CodeBlock.of("$T::new", clazz))
-        );
-        initializers.sort(Comparator.comparing(s -> s.name));
+        List<Service> initializers = serviceClasses.map(clazz -> {
+                    for (Method method : clazz.getDeclaredMethods()) {
+                        if ("provider".equals(method.getName()) && Modifier.isStatic(method.getModifiers())) {
+                            return new Service(clazz.getName(), CodeBlock.of("$T::provider", clazz));
+                        }
+                    }
+                    for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
+                        if (constructor.getParameterCount() == 0 && Modifier.isPublic(constructor.getModifiers())) {
+                            return new Service(clazz.getName(), CodeBlock.of("$T::new", clazz));
+                        }
+                    }
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(s -> s.name))
+                .collect(Collectors.toList());
         ParameterizedTypeName staticDefinitionType = ParameterizedTypeName.get(SoftServiceLoader.StaticDefinition.class, serviceType);
 
         MethodSpec.Builder method = MethodSpec.methodBuilder("findAll")

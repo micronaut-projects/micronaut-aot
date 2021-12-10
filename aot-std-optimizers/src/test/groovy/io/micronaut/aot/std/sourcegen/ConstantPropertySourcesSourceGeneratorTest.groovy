@@ -24,7 +24,7 @@ import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
 import io.micronaut.core.annotation.NonNull
 
-import java.util.function.Predicate
+import java.util.stream.Stream
 
 class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     private final Map<String, AbstractSingleClassFileGenerator> substitutions = [:]
@@ -61,13 +61,12 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
             )
     ])
     static class TestServiceLoaderGenerator extends AbstractStaticServiceLoaderSourceGenerator {
-
         @Override
-        protected void generateFindAllMethod(Predicate<String> rejectedClasses, String serviceName, Class<?> serviceType, TypeSpec.Builder factory) {
-            collectServiceImplementations(
-                    serviceName,
-                    (clazz, provider) -> clazz.getName()
-            )
+        protected void generateFindAllMethod(Stream<Class<?>> serviceClasses,
+                                             String serviceName,
+                                             Class<?> serviceType,
+                                             TypeSpec.Builder factory) {
+
         }
     }
 
