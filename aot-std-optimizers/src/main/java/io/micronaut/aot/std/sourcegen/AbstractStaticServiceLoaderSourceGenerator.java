@@ -63,6 +63,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     public static final String DESCRIPTION = "Scans for service types ahead-of-time, avoiding classpath scanning at startup";
     public static final String SERVICE_TYPES = "service.types";
     public static final String REJECTED_CLASSES = "serviceloading.rejected.impls";
+    public static final String FORCE_INCLUDE = "serviceloading.force.include.impls";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStaticServiceLoaderSourceGenerator.class);
 
@@ -72,6 +73,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     private List<String> serviceNames;
     private Predicate<String> rejectedClasses;
     private Map<String, AbstractCodeGenerator> substitutions;
+    private Set<String> forceInclude;
     private final Substitutes substitutes = new Substitutes();
     private final Map<String, TypeSpec> staticServiceClasses = new HashMap<>();
     private final Set<BeanConfiguration> disabledConfigurations = Collections.synchronizedSet(new HashSet<>());
@@ -108,6 +110,9 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
             List<String> strings = context.getConfiguration().stringList(findOption(this.getClass(), REJECTED_CLASSES).key());
             Set<String> rejected = strings.isEmpty() ? Collections.emptySet() : new HashSet<>(strings);
             rejectedClasses = rejected::contains;
+        }
+        if (forceInclude == null) {
+            forceInclude = new HashSet<>(context.getConfiguration().stringList(findOption(this.getClass(), FORCE_INCLUDE).key()));
         }
         for (String serviceName : serviceNames) {
             LOGGER.debug("Processing service type {}", serviceName);
@@ -185,6 +190,10 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                 clazz = cl.loadClass(className);
                 DeepAnalyzer deepAnalyzer = deepAnalyzerFor(clazz, serviceName);
                 boolean available = deepAnalyzer.isAvailable(clazz);
+                if (!available && forceInclude.contains(className)) {
+                    context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Forcing inclusion of " + clazz + " despite it not matching bean requirements");
+                    available = true;
+                }
                 if (!available) {
                     if (BeanConfiguration.class.isAssignableFrom(clazz)) {
                         disabledConfigurations.add((BeanConfiguration) clazz.getConstructor().newInstance());

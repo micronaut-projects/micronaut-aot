@@ -19,6 +19,7 @@ import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.ApplicationContextBuilder;
 import io.micronaut.context.BeanContext;
 import io.micronaut.context.BeanResolutionContext;
+import io.micronaut.context.DefaultBeanContext;
 import io.micronaut.context.DefaultBeanResolutionContext;
 import io.micronaut.context.Qualifier;
 import io.micronaut.context.RequiresCondition;
@@ -30,6 +31,8 @@ import io.micronaut.core.convert.ArgumentConversionContext;
 import io.micronaut.core.type.Argument;
 import io.micronaut.inject.BeanDefinition;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -87,9 +90,23 @@ public final class ApplicationContextAnalyzer {
         ApplicationContextBuilder builder = ApplicationContext.builder();
         spec.accept(builder);
         ApplicationContext context = builder.build();
+        finalizeConfiguration(context);
+        return new ApplicationContextAnalyzer(context);
+    }
+
+    private static void finalizeConfiguration(ApplicationContext context) {
+        try {
+            Method method = DefaultBeanContext.class.getDeclaredMethod("readAllBeanConfigurations");
+            method.setAccessible(true);
+            method.invoke(context);
+            method = DefaultBeanContext.class.getDeclaredMethod("readAllBeanDefinitionClasses");
+            method.setAccessible(true);
+            method.invoke(context);
+        }  catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            // ignore
+        }
         Environment environment = context.getEnvironment();
         environment.start();
-        return new ApplicationContextAnalyzer(context);
     }
 
     /**

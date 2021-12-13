@@ -55,6 +55,11 @@ import static javax.lang.model.element.Modifier.PUBLIC;
                         key = "serviceloading.rejected.impls",
                         description = "A list of implementation types which shouldn't be included in the final application (comma separated)",
                         sampleValue = "com.Misc,org.Bar"
+                ),
+                @Option(
+                        key = "serviceloading.force.include.impls",
+                        description = "A list of implementation types to include even if they don't match bean requirements (comma separated)",
+                        sampleValue = "com.Misc,org.Bar"
                 )
         },
         enabledOn = Runtime.NATIVE,
