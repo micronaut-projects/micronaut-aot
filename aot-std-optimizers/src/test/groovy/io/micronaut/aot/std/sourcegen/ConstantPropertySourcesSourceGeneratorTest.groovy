@@ -58,6 +58,9 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
             ),
             @Option(
                     key = "serviceloading.rejected.impls"
+            ),
+            @Option(
+                    key = "serviceloading.force.include.impls"
             )
     ])
     static class TestServiceLoaderGenerator extends AbstractStaticServiceLoaderSourceGenerator {
