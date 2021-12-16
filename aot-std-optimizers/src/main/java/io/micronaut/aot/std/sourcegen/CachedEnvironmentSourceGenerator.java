@@ -26,12 +26,12 @@ import io.micronaut.core.optim.StaticOptimizations;
  * properties caching in Micronaut.
  */
 @AOTModule(
-        id = SealedEnvironmentSourceGenerator.ID,
-        description = SealedEnvironmentSourceGenerator.DESCRIPTION
+        id = CachedEnvironmentSourceGenerator.ID,
+        description = CachedEnvironmentSourceGenerator.DESCRIPTION
 )
-public class SealedEnvironmentSourceGenerator extends AbstractCodeGenerator {
-    public static final String ID = "sealed.environment";
-    public static final String DESCRIPTION = "Seals environment property values: environment properties will be deemed immutable after application startup.";
+public class CachedEnvironmentSourceGenerator extends AbstractCodeGenerator {
+    public static final String ID = "cached.environment";
+    public static final String DESCRIPTION = "Caches environment property values: environment properties will be deemed immutable after application startup.";
 
     @Override
     public void generate(@NonNull AOTContext context) {

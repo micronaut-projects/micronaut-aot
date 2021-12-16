@@ -12,7 +12,7 @@ import io.micronaut.aot.std.sourcegen.JitStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
 import io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
 import io.micronaut.aot.std.sourcegen.PublishersSourceGenerator
-import io.micronaut.aot.std.sourcegen.SealedEnvironmentSourceGenerator
+import io.micronaut.aot.std.sourcegen.CachedEnvironmentSourceGenerator
 import io.micronaut.aot.std.sourcegen.YamlPropertySourceGenerator
 import spock.lang.Specification
 import spock.lang.TempDir
@@ -45,6 +45,7 @@ class CliTest extends Specification {
         Files.exists(configFile)
         def config = normalize(configFile.toFile().text)
         String expected = normalize([
+                [CachedEnvironmentSourceGenerator.DESCRIPTION, 'cached.environment.enabled = true'],
                 [DeduceEnvironmentSourceGenerator.DESCRIPTION, "deduce.environment.enabled = true"],
                 runtime == 'native' ? [GraalVMOptimizationFeatureSourceGenerator.DESCRIPTION, "graalvm.config.enabled = true\n${toPropertiesSample(GraalVMOptimizationFeatureSourceGenerator)}"] : null,
                 [KnownMissingTypesSourceGenerator.DESCRIPTION, """known.missing.types.enabled = true
@@ -52,7 +53,6 @@ ${toPropertiesSample(KnownMissingTypesSourceGenerator)}"""],
                 [LogbackConfigurationSourceGenerator.DESCRIPTION, 'logback.xml.to.java.enabled = true'],
                 [EnvironmentPropertiesSourceGenerator.DESCRIPTION, 'precompute.environment.properties.enabled = true'],
                 [PublishersSourceGenerator.DESCRIPTION, 'scan.reactive.types.enabled = true'],
-                [SealedEnvironmentSourceGenerator.DESCRIPTION, 'sealed.environment.enabled = true'],
                 [AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION, """serviceloading.${runtime}.enabled = true
 ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES)}
 ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.REJECTED_CLASSES)}"""],

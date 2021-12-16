@@ -18,10 +18,10 @@ package io.micronaut.aot.std.sourcegen
 import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
 
-class SealedEnvironmentSourceGeneratorTest extends AbstractSourceGeneratorSpec {
+class CachedEnvironmentSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
     AOTCodeGenerator newGenerator() {
-        new SealedEnvironmentSourceGenerator()
+        new CachedEnvironmentSourceGenerator()
     }
 
     def "generates code to enable environment caching"() {
