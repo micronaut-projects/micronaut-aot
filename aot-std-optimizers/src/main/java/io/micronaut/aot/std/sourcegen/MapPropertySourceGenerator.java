@@ -20,15 +20,18 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTModule;
+import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.core.annotation.Generated;
 import io.micronaut.core.annotation.NonNull;
+import io.micronaut.core.order.Ordered;
 import io.micronaut.core.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.micronaut.aot.std.sourcegen.MapPropertySourceGenerator.BASE_ORDER_OPTION;
 import static javax.lang.model.element.Modifier.PUBLIC;
 
 /**
@@ -36,10 +39,18 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * set of values at build time.
  */
 @AOTModule(
-        id = MapPropertySourceGenerator.BASE_ID
+        id = MapPropertySourceGenerator.BASE_ID,
+        options = {
+                @Option(
+                        key = BASE_ORDER_OPTION,
+                        description = "The order of the generated property source",
+                        sampleValue = "1000"
+                )
+        }
 )
 public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator {
     public static final String BASE_ID = "map.property";
+    public static final String BASE_ORDER_OPTION = "map.property.order";
 
     private final String resourceName;
     private final Map<String, Object> values;
@@ -77,11 +88,20 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
     @NonNull
     protected JavaFile generate() {
         String typeName = computeTypeName();
+        String orderKey = BASE_ORDER_OPTION + "." + resourceName;
+        int order = getContext().getConfiguration()
+                .optionalValue(orderKey, value ->
+                        value.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE));
         TypeSpec type = TypeSpec.classBuilder(typeName)
                 .addModifiers(PUBLIC)
                 .superclass(MapPropertySource.class)
                 .addMethod(MethodSpec.constructorBuilder()
                         .addStatement("super($S, $L)", resourceName, generateMap())
+                        .build())
+                .addMethod(MethodSpec.methodBuilder("getOrder")
+                        .addModifiers(PUBLIC)
+                        .returns(int.class)
+                        .addStatement("return $L", order)
                         .build())
                 .addAnnotation(Generated.class)
                 .build();

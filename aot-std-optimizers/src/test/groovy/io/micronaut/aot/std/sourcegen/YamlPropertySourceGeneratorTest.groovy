@@ -49,6 +49,10 @@ public class Test_configStaticPropertySource extends MapPropertySource {
         put("micronaut.server.cors.enabled", true);
         }});
   }
+
+  public int getOrder() {
+    return -2147483648;
+  }
 }
 """
             }
