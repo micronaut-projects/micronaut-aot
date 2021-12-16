@@ -48,6 +48,10 @@ public class Test_configStaticPropertySource extends MapPropertySource {
         put("micronaut.server.port", 8181);
         }});
   }
+
+  public int getOrder() {
+    return -2147483648;
+  }
 }
 """
             }

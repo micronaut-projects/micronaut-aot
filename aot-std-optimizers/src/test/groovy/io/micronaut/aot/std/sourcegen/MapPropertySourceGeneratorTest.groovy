@@ -17,6 +17,8 @@ package io.micronaut.aot.std.sourcegen
 
 import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
+import io.micronaut.core.order.Ordered
+import spock.lang.Issue
 
 class MapPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
     private final Map<String, Object> values = [:]
@@ -46,10 +48,49 @@ public class TestStaticPropertySource extends MapPropertySource {
     super("test", new HashMap() {{
         }});
   }
+
+  public int getOrder() {
+    return -2147483648;
+  }
 }
 """
             }
         }
+    }
+
+    @Issue("https://github.com/micronaut-projects/micronaut-aot/issues/33")
+    def "can tweak the generated property source priority"() {
+        when:
+        props.put("map.property.order.test", order)
+        generate()
+
+        then:
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            hasClass('TestStaticPropertySource') {
+                withSources """package io.micronaut.test;
+
+import io.micronaut.context.env.MapPropertySource;
+import io.micronaut.core.annotation.Generated;
+import java.util.HashMap;
+
+@Generated
+public class TestStaticPropertySource extends MapPropertySource {
+  TestStaticPropertySource() {
+    super("test", new HashMap() {{
+        }});
+  }
+
+  public int getOrder() {
+    return $order;
+  }
+}
+"""
+            }
+        }
+
+        where:
+        order << [Ordered.LOWEST_PRECEDENCE, Ordered.HIGHEST_PRECEDENCE, 42]
     }
 
     def "supports generating a property source with multiple values"() {
@@ -75,6 +116,10 @@ public class TestStaticPropertySource extends MapPropertySource {
         put("title", "test");
         put("micronaut.port", 8080);
         }});
+  }
+
+  public int getOrder() {
+    return -2147483648;
   }
 }
 """
@@ -103,6 +148,10 @@ public class TestStaticPropertySource extends MapPropertySource {
     super("test", new HashMap() {{
         put("some.key", $literal);
         }});
+  }
+
+  public int getOrder() {
+    return -2147483648;
   }
 }
 """

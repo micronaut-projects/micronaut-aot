@@ -36,6 +36,10 @@ public abstract class AbstractSingleClassFileGenerator extends AbstractCodeGener
         context.registerGeneratedSourceFile(javaFile);
     }
 
+    protected final AOTContext getContext() {
+        return context;
+    }
+
     @NonNull
     public final JavaFile javaFile(TypeSpec typeSpec) {
         return context.javaFile(typeSpec);
