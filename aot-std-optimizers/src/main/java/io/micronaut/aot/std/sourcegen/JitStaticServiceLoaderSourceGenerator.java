@@ -61,6 +61,11 @@ import static javax.lang.model.element.Modifier.STATIC;
                         key = "serviceloading.force.include.impls",
                         description = "A list of implementation types to include even if they don't match bean requirements (comma separated)",
                         sampleValue = "com.Misc,org.Bar"
+                ),
+                @Option(
+                        key = Environments.POSSIBLE_ENVIRONMENTS_NAMES,
+                        description = Environments.POSSIBLE_ENVIRONMENTS_DESCRIPTION,
+                        sampleValue = Environments.POSSIBLE_ENVIRONMENTS_SAMPLE
                 )
         },
         enabledOn = Runtime.JIT,

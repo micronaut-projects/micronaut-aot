@@ -93,6 +93,11 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                     .stream()
                     .map(env -> "application-" + env)
                     .forEach(resourceNames::add);
+            context.getConfiguration().stringList(Environments.POSSIBLE_ENVIRONMENTS_NAMES)
+                    .stream()
+                    .filter(env -> !"default".equals(env))
+                    .map(env -> "application-" + env)
+                    .forEach(resourceNames::add);
             substitutions = new HashMap<>();
             if (context.getConfiguration().isFeatureEnabled(YamlPropertySourceGenerator.ID)) {
                 YamlPropertySourceGenerator yaml = new YamlPropertySourceGenerator(resourceNames);

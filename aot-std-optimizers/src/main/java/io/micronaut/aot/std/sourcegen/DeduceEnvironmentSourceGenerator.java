@@ -74,7 +74,7 @@ public class DeduceEnvironmentSourceGenerator extends AbstractCodeGenerator {
                 .addParameter(ApplicationContextBuilder.class, "builder");
         bodyBuilder.addStatement("builder.deduceEnvironment(false)");
         if (!environmentNames.isEmpty()) {
-            bodyBuilder.addStatement("builder.environments($L)", toQuotedStringList(environmentNames));
+            bodyBuilder.addStatement("builder.defaultEnvironments($L)", toQuotedStringList(environmentNames));
         }
         if (!packages.isEmpty()) {
             bodyBuilder.addStatement("builder.packages($L)", toQuotedStringList(packages));

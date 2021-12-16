@@ -61,6 +61,11 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
             ),
             @Option(
                     key = "serviceloading.force.include.impls"
+            ),
+            @Option(
+                    key = Environments.POSSIBLE_ENVIRONMENTS_NAMES,
+                    description = Environments.POSSIBLE_ENVIRONMENTS_DESCRIPTION,
+                    sampleValue = Environments.POSSIBLE_ENVIRONMENTS_SAMPLE
             )
     ])
     static class TestServiceLoaderGenerator extends AbstractStaticServiceLoaderSourceGenerator {

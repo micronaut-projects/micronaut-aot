@@ -7,6 +7,7 @@ import io.micronaut.aot.std.sourcegen.AbstractStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
 import io.micronaut.aot.std.sourcegen.DeduceEnvironmentSourceGenerator
 import io.micronaut.aot.std.sourcegen.EnvironmentPropertiesSourceGenerator
+import io.micronaut.aot.std.sourcegen.Environments
 import io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
 import io.micronaut.aot.std.sourcegen.JitStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
@@ -56,7 +57,8 @@ ${toPropertiesSample(KnownMissingTypesSourceGenerator)}"""],
                 [AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION, """serviceloading.${runtime}.enabled = true
 ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES)}
 ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.REJECTED_CLASSES)}
-${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.FORCE_INCLUDE)}"""],
+${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.FORCE_INCLUDE)}
+${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, Environments.POSSIBLE_ENVIRONMENTS_NAMES)}"""],
                 [YamlPropertySourceGenerator.DESCRIPTION, 'yaml.to.java.config.enabled = true'],
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
         ].findAll().collect { desc, c -> """# $desc
