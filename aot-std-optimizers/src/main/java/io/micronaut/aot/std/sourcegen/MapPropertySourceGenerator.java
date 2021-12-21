@@ -71,12 +71,29 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
             mapBuilder.add("put(\"" + key + "\", ");
             if (value == null) {
                 mapBuilder.add("null");
-            } else if (CharSequence.class.isAssignableFrom(value.getClass())) {
-                mapBuilder.add("\"" + value + "\"");
-            } else if (Number.class.isAssignableFrom(value.getClass()) || Boolean.class.isAssignableFrom(value.getClass())) {
-                mapBuilder.add(String.valueOf(value));
             } else {
-                throw new UnsupportedOperationException("Configuration map contains an entry of type " + value.getClass() + " which is not supported yet. Please file a bug report.");
+                Class<?> valueClass = value.getClass();
+                if (CharSequence.class.isAssignableFrom(valueClass)) {
+                    mapBuilder.add("\"" + value + "\"");
+                } else if (Number.class.isAssignableFrom(valueClass) || Boolean.class.isAssignableFrom(valueClass)) {
+                    String format = String.valueOf(value);
+                    String prefix = "";
+                    String appendix = "";
+                    if (Long.class.equals(valueClass)) {
+                        appendix = "L";
+                    } else if (Double.class.equals(valueClass)) {
+                        appendix = "D";
+                    } else if (Float.class.equals(valueClass)) {
+                        appendix = "F";
+                    } else if (Byte.class.equals(valueClass)) {
+                        prefix = "(byte) ";
+                    } else if (Short.class.equals(valueClass)) {
+                        prefix = "(short) ";
+                    }
+                    mapBuilder.add(prefix + format + appendix);
+                } else {
+                    throw new UnsupportedOperationException("Configuration map contains an entry of type " + valueClass + " which is not supported yet. Please file a bug report.");
+                }
             }
             mapBuilder.add(");\n");
         }
