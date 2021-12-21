@@ -60,8 +60,6 @@ public final class ApplicationContextAnalyzer {
 
     private ApplicationContextAnalyzer(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
-//        Environment environment = this.applicationContext.getEnvironment();
-//        environment.getPropertySourceLoaders().forEach(loader -> loader.load(environment));
     }
 
     public Set<String> getEnvironmentNames() {
@@ -96,17 +94,25 @@ public final class ApplicationContextAnalyzer {
 
     private static void finalizeConfiguration(ApplicationContext context) {
         try {
-            Method method = DefaultBeanContext.class.getDeclaredMethod("readAllBeanConfigurations");
-            method.setAccessible(true);
+            // Micronaut 3.2.3+
+            Method method = DefaultBeanContext.class.getDeclaredMethod("finalizeConfiguration");
             method.invoke(context);
-            method = DefaultBeanContext.class.getDeclaredMethod("readAllBeanDefinitionClasses");
-            method.setAccessible(true);
-            method.invoke(context);
-        }  catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            // ignore
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            // Micronaut 3.2.x
+            try {
+                Method method = DefaultBeanContext.class.getDeclaredMethod("readAllBeanConfigurations");
+                method.setAccessible(true);
+                method.invoke(context);
+                method = DefaultBeanContext.class.getDeclaredMethod("readAllBeanDefinitionClasses");
+                method.setAccessible(true);
+                method.invoke(context);
+            }  catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+                // ignore
+            }
         }
         Environment environment = context.getEnvironment();
         environment.start();
+        context.registerSingleton(Environment.class, environment);
     }
 
     /**
