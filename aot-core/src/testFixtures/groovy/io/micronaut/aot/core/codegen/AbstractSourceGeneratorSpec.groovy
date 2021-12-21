@@ -1,7 +1,7 @@
 /*
  * Copyright 2017-2021 original authors
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -27,8 +27,16 @@ import io.micronaut.context.ApplicationContextBuilder
 import spock.lang.Specification
 import spock.lang.TempDir
 
+import javax.tools.Diagnostic
+import javax.tools.DiagnosticCollector
+import javax.tools.JavaCompiler
+import javax.tools.JavaFileObject
+import javax.tools.StandardJavaFileManager
+import javax.tools.ToolProvider
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.function.Function
+import java.util.stream.Collectors
 
 @CompileStatic
 abstract class AbstractSourceGeneratorSpec extends Specification {
@@ -194,6 +202,57 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
             sources.keySet().collect { key ->
                 "${key.packageName}.${key.typeSpec.name}".toString()
             } as Set<String>
+        }
+
+        void compiles(List<File> classpath = []) {
+            def compiler = ToolProvider.getSystemJavaCompiler()
+            def ds = new DiagnosticCollector<>()
+            try (def mgr = compiler.getStandardFileManager(ds, null, null)) {
+                def fullClasspath = System.getProperty("java.class.path").split(File.pathSeparator).collect {
+                    new File(it)
+                }.findAll { it.name.endsWith(".jar") } + classpath
+                def sourceDir = testDirectory.resolve("sources").toFile()
+                def output = testDirectory.resolve("compiled").toFile()
+                List<String> options = compilerOptions(output, fullClasspath)
+                sources.keySet().each {
+                    it.writeTo(sourceDir)
+                }
+                def filesToCompile = Files.walk(sourceDir.toPath()).filter {
+                    it.toFile().isFile() && it.toFile().name.endsWith(".java")
+                }.map {
+                    it.toFile()
+                }.collect(Collectors.toList())
+                if (output.mkdirs()) {
+                    def sources = mgr.getJavaFileObjectsFromFiles(filesToCompile)
+                    def task = compiler.getTask(null, mgr, ds, options, null, sources)
+                    task.call()
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to compile generated classes", e)
+            }
+            def diagnostics = ds.diagnostics
+                    .findAll { d -> d.kind == Diagnostic.Kind.ERROR }
+            if (!diagnostics.isEmpty()) {
+                diagnostics.each {
+                    println "ERROR: ${((Diagnostic)it).getMessage(Locale.ENGLISH)}"
+                }
+                throw new AssertionError("Expected sources to compile but they didn't")
+            }
+        }
+
+        private static List<String> compilerOptions(File dstDir,
+                                                    List<File> classPath) {
+            def options = new ArrayList<String>()
+            options.add("-source")
+            options.add("1.8")
+            options.add("-target")
+            options.add("1.8")
+            options.add("-classpath")
+            String cp = classPath.collect { it.absolutePath }.join(File.pathSeparator)
+            options.add(cp)
+            options.add("-d")
+            options.add(dstDir.getAbsolutePath())
+            options
         }
     }
 
