@@ -22,6 +22,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTModule;
+import io.micronaut.aot.core.Environments;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
 import io.micronaut.core.io.service.SoftServiceLoader;

@@ -22,6 +22,7 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.WildcardTypeName;
 import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.Environments;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.aot.core.codegen.DelegatingSourceGenerationContext;
 import io.micronaut.aot.core.config.MetadataUtils;

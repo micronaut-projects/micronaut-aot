@@ -35,6 +35,18 @@ public class DefaultConfiguration implements Configuration {
         this.config = backingProperties;
     }
 
+    /**
+     * Returns true if the configuration contains an entry
+     * for the specified key.
+     *
+     * @param key the key to look for
+     * @return true if the configuration contains an entry for the key
+     */
+    @Override
+    public boolean containsKey(String key) {
+        return config.containsKey(key);
+    }
+
     @NonNull
     @Override
     public String mandatoryValue(String key) {

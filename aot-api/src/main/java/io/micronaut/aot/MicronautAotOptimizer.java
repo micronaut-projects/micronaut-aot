@@ -16,17 +16,18 @@
 package io.micronaut.aot;
 
 import com.squareup.javapoet.JavaFile;
-import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.AOTCodeGenerator;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.Configuration;
+import io.micronaut.aot.core.Environments;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
+import io.micronaut.aot.core.codegen.ApplicationContextConfigurerGenerator;
 import io.micronaut.aot.core.config.DefaultConfiguration;
 import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.config.SourceGeneratorLoader;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
 import io.micronaut.aot.core.context.DefaultSourceGenerationContext;
-import io.micronaut.aot.core.codegen.ApplicationContextConfigurerGenerator;
 import io.micronaut.aot.internal.StreamHelper;
 import io.micronaut.core.annotation.Experimental;
 import org.slf4j.Logger;
@@ -164,6 +165,11 @@ public final class MicronautAotOptimizer implements ConfigKeys {
                 }
                 wrt.println();
             }
+
+            // Add options which are generic to all AOT modules
+            wrt.println("# " + Environments.TARGET_ENVIRONMENTS_DESCRIPTION);
+            wrt.println(Environments.TARGET_ENVIRONMENTS_NAMES + " = " + Environments.TARGET_ENVIRONMENTS_SAMPLE);
+
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -307,9 +313,15 @@ public final class MicronautAotOptimizer implements ConfigKeys {
                     outputSourcesDirectory,
                     outputClassesDirectory,
                     logsDirectory);
-            ApplicationContextAnalyzer analyzer = ApplicationContextAnalyzer.create();
+            ApplicationContextAnalyzer analyzer = ApplicationContextAnalyzer.create(spec -> {
+                if (config.containsKey(Environments.TARGET_ENVIRONMENTS_NAMES)) {
+                    List<String> targetEnvs = config.stringList(Environments.TARGET_ENVIRONMENTS_NAMES);
+                    LOGGER.info("Configuration has explicitly set environments: {} ", targetEnvs);
+                    spec.environments(targetEnvs.toArray(new String[0]));
+                }
+            });
             Set<String> environmentNames = analyzer.getEnvironmentNames();
-            LOGGER.info("Detected environments: {}", environmentNames);
+            LOGGER.info("Analysis will be performed with active environments: {}", environmentNames);
             DefaultSourceGenerationContext context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config, outputClassesDirectory.toPath());
             List<AOTCodeGenerator> sourceGenerators = SourceGeneratorLoader.load(config.getRuntime(), context);
             ApplicationContextConfigurerGenerator generator = new ApplicationContextConfigurerGenerator(

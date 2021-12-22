@@ -31,6 +31,14 @@ import java.util.stream.Collectors;
  */
 public interface Configuration {
     /**
+     * Returns true if the configuration contains an entry
+     * for the specified key.
+     * @param key the key to look for
+     * @return true if the configuration contains an entry for the key
+     */
+    boolean containsKey(String key);
+
+    /**
      * Returns the value of the configuration for the requested
      * key or fails if not available.
      *
