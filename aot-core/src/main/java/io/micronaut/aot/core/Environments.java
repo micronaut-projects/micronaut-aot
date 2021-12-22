@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.aot.std.sourcegen;
+package io.micronaut.aot.core;
 
 /**
  * Constants used for configuration of environments.
@@ -22,4 +22,9 @@ public final class Environments {
     public static final String POSSIBLE_ENVIRONMENTS_NAMES = "possible.environments";
     public static final String POSSIBLE_ENVIRONMENTS_DESCRIPTION = "The list of environment names that this application can possibly use at runtime.";
     public static final String POSSIBLE_ENVIRONMENTS_SAMPLE = "dev,prod,aws,gcs";
+
+    public static final String TARGET_ENVIRONMENTS_NAMES = "target.environments";
+    public static final String TARGET_ENVIRONMENTS_DESCRIPTION = "Configures the active environments when the AOT dynamic analysis is performed.";
+    public static final String TARGET_ENVIRONMENTS_SAMPLE = "lambda";
+
 }

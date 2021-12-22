@@ -19,6 +19,7 @@ import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeSpec
 import io.micronaut.aot.core.AOTModule
 import io.micronaut.aot.core.AOTCodeGenerator
+import io.micronaut.aot.core.Environments
 import io.micronaut.aot.core.Option
 import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec

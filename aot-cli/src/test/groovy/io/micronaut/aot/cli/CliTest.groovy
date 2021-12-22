@@ -7,7 +7,7 @@ import io.micronaut.aot.std.sourcegen.AbstractStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
 import io.micronaut.aot.std.sourcegen.DeduceEnvironmentSourceGenerator
 import io.micronaut.aot.std.sourcegen.EnvironmentPropertiesSourceGenerator
-import io.micronaut.aot.std.sourcegen.Environments
+import io.micronaut.aot.core.Environments
 import io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
 import io.micronaut.aot.std.sourcegen.JitStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
@@ -45,7 +45,8 @@ class CliTest extends Specification {
         then:
         Files.exists(configFile)
         def config = normalize(configFile.toFile().text)
-        String expected = normalize([
+
+        def generatedDocs = [
                 [CachedEnvironmentSourceGenerator.DESCRIPTION, 'cached.environment.enabled = true'],
                 [DeduceEnvironmentSourceGenerator.DESCRIPTION, "deduce.environment.enabled = true"],
                 runtime == 'native' ? [GraalVMOptimizationFeatureSourceGenerator.DESCRIPTION, "graalvm.config.enabled = true\n${toPropertiesSample(GraalVMOptimizationFeatureSourceGenerator)}"] : null,
@@ -61,9 +62,16 @@ ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServic
 ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, Environments.POSSIBLE_ENVIRONMENTS_NAMES)}"""],
                 [YamlPropertySourceGenerator.DESCRIPTION, 'yaml.to.java.config.enabled = true'],
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
-        ].findAll().collect { desc, c -> """# $desc
+        ].findAll().collect { desc, c ->
+            """# $desc
 $c
-""" }.join("\n").trim())
+"""
+        }.join("\n").trim()
+        String expected = normalize """$generatedDocs
+
+# ${Environments.TARGET_ENVIRONMENTS_DESCRIPTION}
+${Environments.TARGET_ENVIRONMENTS_NAMES} = ${Environments.TARGET_ENVIRONMENTS_SAMPLE}
+""".trim()
 
         println config
         config == expected
