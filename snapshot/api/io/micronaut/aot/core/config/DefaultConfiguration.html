@@ -17,7 +17,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":10,"i1":10,"i2":10};
+var methods = {"i0":10,"i1":10,"i2":10,"i3":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -152,19 +152,26 @@ implements <a href="../../../../../io/micronaut/aot/core/Configuration.html" tit
 <th class="colLast" scope="col">Method and Description</th>
 </tr>
 <tr id="i0" class="altColor">
+<td class="colFirst"><code>boolean</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/config/DefaultConfiguration.html#containsKey-java.lang.String-">containsKey</a></span>(java.lang.String&nbsp;key)</code>
+<div class="block">Returns true if the configuration contains an entry
+ for the specified key.</div>
+</td>
+</tr>
+<tr id="i1" class="rowColor">
 <td class="colFirst"><code><a href="../../../../../io/micronaut/aot/core/Runtime.html" title="enum in io.micronaut.aot.core">Runtime</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/config/DefaultConfiguration.html#getRuntime--">getRuntime</a></span>()</code>
 <div class="block">Returns the target runtime for optimizations.</div>
 </td>
 </tr>
-<tr id="i1" class="rowColor">
+<tr id="i2" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/config/DefaultConfiguration.html#mandatoryValue-java.lang.String-">mandatoryValue</a></span>(java.lang.String&nbsp;key)</code>
 <div class="block">Returns the value of the configuration for the requested
  key or fails if not available.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>&lt;T&gt;&nbsp;T</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/config/DefaultConfiguration.html#optionalValue-java.lang.String-java.util.function.Function-">optionalValue</a></span>(java.lang.String&nbsp;key,
              java.util.function.Function&lt;java.util.Optional&lt;java.lang.String&gt;,T&gt;&nbsp;producer)</code>
@@ -217,6 +224,25 @@ implements <a href="../../../../../io/micronaut/aot/core/Configuration.html" tit
 <!--   -->
 </a>
 <h3>Method Detail</h3>
+<a name="containsKey-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>containsKey</h4>
+<pre>public&nbsp;boolean&nbsp;containsKey(java.lang.String&nbsp;key)</pre>
+<div class="block">Returns true if the configuration contains an entry
+ for the specified key.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../../../../io/micronaut/aot/core/Configuration.html#containsKey-java.lang.String-">containsKey</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../io/micronaut/aot/core/Configuration.html" title="interface in io.micronaut.aot.core">Configuration</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - the key to look for</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>true if the configuration contains an entry for the key</dd>
+</dl>
+</li>
+</ul>
 <a name="mandatoryValue-java.lang.String-">
 <!--   -->
 </a>

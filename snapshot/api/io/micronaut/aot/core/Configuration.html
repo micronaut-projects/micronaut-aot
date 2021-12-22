@@ -17,7 +17,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":18,"i1":6,"i2":18,"i3":6,"i4":18,"i5":6,"i6":18,"i7":18};
+var methods = {"i0":18,"i1":6,"i2":6,"i3":18,"i4":6,"i5":18,"i6":6,"i7":18,"i8":18};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -48,7 +48,7 @@ var activeTableTab = "activeTableTab";
 <div class="subNav">
 <ul class="navList">
 <li><a href="../../../../io/micronaut/aot/core/AOTModule.html" title="annotation in io.micronaut.aot.core"><span class="typeNameLink">Prev&nbsp;Class</span></a></li>
-<li><a href="../../../../io/micronaut/aot/core/Option.html" title="annotation in io.micronaut.aot.core"><span class="typeNameLink">Next&nbsp;Class</span></a></li>
+<li><a href="../../../../io/micronaut/aot/core/Environments.html" title="class in io.micronaut.aot.core"><span class="typeNameLink">Next&nbsp;Class</span></a></li>
 </ul>
 <ul class="navList">
 <li><a href="../../../../index.html?io/micronaut/aot/core/Configuration.html" target="_top">Frames</a></li>
@@ -131,26 +131,33 @@ var activeTableTab = "activeTableTab";
 </td>
 </tr>
 <tr id="i1" class="rowColor">
+<td class="colFirst"><code>boolean</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#containsKey-java.lang.String-">containsKey</a></span>(java.lang.String&nbsp;key)</code>
+<div class="block">Returns true if the configuration contains an entry
+ for the specified key.</div>
+</td>
+</tr>
+<tr id="i2" class="altColor">
 <td class="colFirst"><code><a href="../../../../io/micronaut/aot/core/Runtime.html" title="enum in io.micronaut.aot.core">Runtime</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#getRuntime--">getRuntime</a></span>()</code>
 <div class="block">Returns the target runtime for optimizations.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>default boolean</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#isFeatureEnabled-java.lang.String-">isFeatureEnabled</a></span>(java.lang.String&nbsp;featureId)</code>
 <div class="block">Returns true if a particular optimizer is enabled, independently
  of the runtime.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i4" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#mandatoryValue-java.lang.String-">mandatoryValue</a></span>(java.lang.String&nbsp;key)</code>
 <div class="block">Returns the value of the configuration for the requested
  key or fails if not available.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code>default java.lang.String</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#optionalString-java.lang.String-java.lang.String-">optionalString</a></span>(java.lang.String&nbsp;key,
               java.lang.String&nbsp;defaultValue)</code>
@@ -158,20 +165,20 @@ var activeTableTab = "activeTableTab";
  default value when missing.</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><code>&lt;T&gt;&nbsp;T</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#optionalValue-java.lang.String-java.util.function.Function-">optionalValue</a></span>(java.lang.String&nbsp;key,
              java.util.function.Function&lt;java.util.Optional&lt;java.lang.String&gt;,T&gt;&nbsp;producer)</code>
 <div class="block">Returns the value for the requested key.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code>default java.util.List&lt;java.lang.String&gt;</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#stringList-java.lang.String-">stringList</a></span>(java.lang.String&nbsp;key)</code>
 <div class="block">Returns a list of strings from a configuration entry.</div>
 </td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><code>default java.util.List&lt;java.lang.String&gt;</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../io/micronaut/aot/core/Configuration.html#stringList-java.lang.String-java.lang.String-">stringList</a></span>(java.lang.String&nbsp;key,
           java.lang.String&nbsp;separator)</code>
@@ -193,6 +200,23 @@ var activeTableTab = "activeTableTab";
 <!--   -->
 </a>
 <h3>Method Detail</h3>
+<a name="containsKey-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>containsKey</h4>
+<pre>boolean&nbsp;containsKey(java.lang.String&nbsp;key)</pre>
+<div class="block">Returns true if the configuration contains an entry
+ for the specified key.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - the key to look for</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>true if the configuration contains an entry for the key</dd>
+</dl>
+</li>
+</ul>
 <a name="mandatoryValue-java.lang.String-">
 <!--   -->
 </a>
@@ -379,7 +403,7 @@ default&nbsp;java.util.List&lt;java.lang.String&gt;&nbsp;stringList(@NonNull
 <div class="subNav">
 <ul class="navList">
 <li><a href="../../../../io/micronaut/aot/core/AOTModule.html" title="annotation in io.micronaut.aot.core"><span class="typeNameLink">Prev&nbsp;Class</span></a></li>
-<li><a href="../../../../io/micronaut/aot/core/Option.html" title="annotation in io.micronaut.aot.core"><span class="typeNameLink">Next&nbsp;Class</span></a></li>
+<li><a href="../../../../io/micronaut/aot/core/Environments.html" title="class in io.micronaut.aot.core"><span class="typeNameLink">Next&nbsp;Class</span></a></li>
 </ul>
 <ul class="navList">
 <li><a href="../../../../index.html?io/micronaut/aot/core/Configuration.html" target="_top">Frames</a></li>
