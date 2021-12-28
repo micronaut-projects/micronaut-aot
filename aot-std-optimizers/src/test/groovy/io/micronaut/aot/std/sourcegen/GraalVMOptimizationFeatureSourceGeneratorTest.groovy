@@ -19,6 +19,20 @@ class GraalVMOptimizationFeatureSourceGeneratorTest extends AbstractSourceGenera
             doesNotCreateInitializer()
             generatesMetaInfResource("native-image/$packageName/native-image.properties", """
 Args=--initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigurer \\
+""")
+        }
+    }
+
+    def "generates a feature file excluding service loading"() {
+        when:
+        props.put("${NativeStaticServiceLoaderSourceGenerator.ID}.enabled".toString(), "true")
+        generate()
+
+        then:
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            generatesMetaInfResource("native-image/$packageName/native-image.properties", """
+Args=--initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigurer \\
      -H:ServiceLoaderFeatureExcludeServices=A \\
      -H:ServiceLoaderFeatureExcludeServices=B \\
      -H:ServiceLoaderFeatureExcludeServices=C
