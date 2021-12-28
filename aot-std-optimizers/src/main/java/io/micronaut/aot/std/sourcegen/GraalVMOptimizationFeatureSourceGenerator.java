@@ -61,13 +61,15 @@ public class GraalVMOptimizationFeatureSourceGenerator extends AbstractCodeGener
             try (PrintWriter wrt = new PrintWriter(new FileWriter(propertiesFile))) {
                 wrt.print("Args=");
                 wrt.println("--initialize-at-build-time=" + context.getPackageName() + "." + ApplicationContextConfigurerGenerator.CUSTOMIZER_CLASS_NAME + NEXT_LINE);
-                for (int i = 0; i < serviceTypes.size(); i++) {
-                    String serviceType = serviceTypes.get(i);
-                    wrt.print("     -H:ServiceLoaderFeatureExcludeServices=" + serviceType);
-                    if (i < serviceTypes.size() - 1) {
-                        wrt.println(NEXT_LINE);
-                    } else {
-                        wrt.println();
+                if (context.getConfiguration().isFeatureEnabled(NativeStaticServiceLoaderSourceGenerator.ID)) {
+                    for (int i = 0; i < serviceTypes.size(); i++) {
+                        String serviceType = serviceTypes.get(i);
+                        wrt.print("     -H:ServiceLoaderFeatureExcludeServices=" + serviceType);
+                        if (i < serviceTypes.size() - 1) {
+                            wrt.println(NEXT_LINE);
+                        } else {
+                            wrt.println();
+                        }
                     }
                 }
                 wrt.println();
