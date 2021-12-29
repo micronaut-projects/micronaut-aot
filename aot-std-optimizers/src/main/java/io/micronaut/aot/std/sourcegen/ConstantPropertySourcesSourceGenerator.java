@@ -16,16 +16,14 @@
 package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.ParameterizedTypeName;
-import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.env.CachedEnvironment;
 import io.micronaut.context.env.ConstantPropertySources;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.core.annotation.NonNull;
-import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.util.EnvironmentProperties;
 
 import java.util.ArrayList;
@@ -58,20 +56,19 @@ public class ConstantPropertySourcesSourceGenerator extends AbstractCodeGenerato
                 .stream()
                 .map(javaFile -> javaFile.packageName + "." + javaFile.typeSpec.name)
                 .collect(Collectors.toList());
-        CodeBlock.Builder initializer = CodeBlock.builder();
-        EnvironmentProperties env = EnvironmentProperties.empty();
-        CachedEnvironment.getenv().keySet().forEach(env::findPropertyNamesForEnvironmentVariable);
 
-        initializer.addStatement("$T propertySources = new $T()",
-                ParameterizedTypeName.get(ClassName.get(List.class), ClassName.get(PropertySource.class)),
-                ParameterizedTypeName.get(ClassName.get(ArrayList.class), ClassName.get(PropertySource.class))
-        );
-        for (String substitute : substitutes) {
-            initializer.addStatement("propertySources.add(new $T())", ClassName.bestGuess(substitute));
-        }
-        initializer.addStatement("$T.set(new $T(propertySources))", StaticOptimizations.class, ConstantPropertySources.class);
-        context.registerStaticInitializer(staticMethodBuilder("preparePropertySources", m ->
-                m.addComment("Generates pre-computed Micronaut property sources from known configuration files")
-                        .addCode(initializer.build())));
+        context.registerStaticOptimization("AotConstantPropertySources", ConstantPropertySources.class, initializer -> {
+            EnvironmentProperties env = EnvironmentProperties.empty();
+            CachedEnvironment.getenv().keySet().forEach(env::findPropertyNamesForEnvironmentVariable);
+
+            initializer.addStatement("$T propertySources = new $T()",
+                    ParameterizedTypeName.get(ClassName.get(List.class), ClassName.get(PropertySource.class)),
+                    ParameterizedTypeName.get(ClassName.get(ArrayList.class), ClassName.get(PropertySource.class))
+            );
+            for (String substitute : substitutes) {
+                initializer.addStatement("propertySources.add(new $T())", ClassName.bestGuess(substitute));
+            }
+            initializer.addStatement("return new $T(propertySources)", ConstantPropertySources.class);
+        });
     }
 }

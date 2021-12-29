@@ -35,14 +35,29 @@ class EnvironmentPropertiesSourceGeneratorTest extends AbstractSourceGeneratorSp
 
         then:
         assertThatGeneratedSources {
-            createsInitializer """private static void prepareEnvironment() {
-  // Generates pre-computed Micronaut property names from environment variables
-  java.util.Map<java.lang.String, java.util.List<java.lang.String>> env = new java.util.HashMap<java.lang.String, java.util.List<java.lang.String>>();
-  env.put("MICRONAUT_PORT", java.util.Arrays.asList("micronaut.port", "micronaut-port"));
-  env.put("SOME_LONG_ENV_VAR", java.util.Arrays.asList("some.long.env.var", "some.long.env-var", "some.long-env.var", "some.long-env-var", "some-long.env.var", "some-long.env-var", "some-long-env.var", "some-long-env-var"));
-  io.micronaut.core.optim.StaticOptimizations.set(io.micronaut.core.util.EnvironmentProperties.of(env));
-}
-"""
+            doesNotCreateInitializer()
+            hasClass("EnvironmentPropertiesOptimizationLoader") {
+                withSources """package io.micronaut.test;
+
+import io.micronaut.core.optim.StaticOptimizations;
+import io.micronaut.core.util.EnvironmentProperties;
+import java.lang.Override;
+import java.lang.String;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class EnvironmentPropertiesOptimizationLoader implements StaticOptimizations.Loader<EnvironmentProperties> {
+  @Override
+  public EnvironmentProperties load() {
+    Map<String, List<String>> env = new HashMap<String, List<String>>();
+    env.put("MICRONAUT_PORT", Arrays.asList("micronaut.port", "micronaut-port"));
+    env.put("SOME_LONG_ENV_VAR", Arrays.asList("some.long.env.var", "some.long.env-var", "some.long-env.var", "some.long-env-var", "some-long.env.var", "some-long.env-var", "some-long-env.var", "some-long-env-var"));
+    return EnvironmentProperties.of(env);
+  }
+}"""
+            }
         }
     }
 }

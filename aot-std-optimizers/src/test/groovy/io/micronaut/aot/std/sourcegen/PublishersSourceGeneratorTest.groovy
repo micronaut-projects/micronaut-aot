@@ -31,12 +31,27 @@ class PublishersSourceGeneratorTest extends AbstractSourceGeneratorSpec {
 
         then:
         assertThatGeneratedSources {
-            doesNotGenerateClasses()
-            createsInitializer """
-private static void preparePublishers() {
-  io.micronaut.core.optim.StaticOptimizations.set(new io.micronaut.core.async.publisher.PublishersOptimizations(java.util.Arrays.asList(), java.util.Arrays.asList(io.micronaut.core.async.publisher.CompletableFuturePublisher.class, io.micronaut.core.async.publisher.Publishers.JustPublisher.class), java.util.Arrays.asList(io.micronaut.core.async.subscriber.Completable.class)));
-}
-"""
+            doesNotCreateInitializer()
+            hasClass("PublishersOptimizationsLoader") {
+                withSources """package io.micronaut.test;
+
+import io.micronaut.core.async.publisher.CompletableFuturePublisher;
+import io.micronaut.core.async.publisher.Publishers;
+import io.micronaut.core.async.publisher.PublishersOptimizations;
+import io.micronaut.core.async.subscriber.Completable;
+import io.micronaut.core.optim.StaticOptimizations;
+import java.lang.Override;
+import java.util.Arrays;
+
+public class PublishersOptimizationsLoader implements StaticOptimizations.Loader<PublishersOptimizations> {
+  @Override
+  public PublishersOptimizations load() {
+    return new PublishersOptimizations(Arrays.asList(), Arrays.asList(CompletableFuturePublisher.class, Publishers.JustPublisher.class), Arrays.asList(Completable.class));
+  }
+}"""
+                compiles()
+            }
+
         }
     }
 

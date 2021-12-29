@@ -30,6 +30,8 @@ import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
 import io.micronaut.aot.core.context.DefaultSourceGenerationContext;
 import io.micronaut.aot.internal.StreamHelper;
 import io.micronaut.core.annotation.Experimental;
+import io.micronaut.core.version.SemanticVersion;
+import io.micronaut.core.version.VersionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +97,8 @@ import static io.micronaut.aot.core.config.MetadataUtils.toPropertiesSample;
 @Experimental
 public final class MicronautAotOptimizer implements ConfigKeys {
     public static final String OUTPUT_RESOURCES_FILE_NAME = "resource-filter.txt";
+    private static final int MINIMAL_MAJOR = 3;
+    private static final int MINIMAL_MINOR = 3;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MicronautAotOptimizer.class);
 
@@ -140,6 +144,7 @@ public final class MicronautAotOptimizer implements ConfigKeys {
     /**
      * Scans the list of available optimization services and generates
      * a configuration file which includes all entries.
+     *
      * @param runtime the runtime for which to generate a properties file
      * @param propertiesFile the generated properties file
      */
@@ -270,6 +275,13 @@ public final class MicronautAotOptimizer implements ConfigKeys {
         }
     }
 
+    private static void assertMinimalMicronautVersion() {
+        String micronautVersion = VersionUtils.getMicronautVersion();
+        if (micronautVersion != null && !SemanticVersion.isAtLeastMajorMinor(micronautVersion, MINIMAL_MAJOR, MINIMAL_MINOR)) {
+            throw new RuntimeException("This version of the AOT optimizer requires at least Micronaut " + MINIMAL_MAJOR + "." + MINIMAL_MINOR + " but found " + micronautVersion);
+        }
+    }
+
     /**
      * The main AOT optimizer runner.
      */
@@ -319,6 +331,7 @@ public final class MicronautAotOptimizer implements ConfigKeys {
                     LOGGER.info("Configuration has explicitly set environments: {} ", targetEnvs);
                     spec.environments(targetEnvs.toArray(new String[0]));
                 }
+                assertMinimalMicronautVersion();
             });
             Set<String> environmentNames = analyzer.getEnvironmentNames();
             LOGGER.info("Analysis will be performed with active environments: {}", environmentNames);

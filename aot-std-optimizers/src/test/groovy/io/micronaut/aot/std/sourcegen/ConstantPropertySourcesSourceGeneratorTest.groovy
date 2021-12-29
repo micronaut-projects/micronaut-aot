@@ -17,24 +17,18 @@ package io.micronaut.aot.std.sourcegen
 
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeSpec
-import io.micronaut.aot.core.AOTModule
 import io.micronaut.aot.core.AOTCodeGenerator
-import io.micronaut.aot.core.Environments
-import io.micronaut.aot.core.Option
-import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
-import io.micronaut.core.annotation.NonNull
-
-import java.util.stream.Stream
 
 class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGeneratorSpec {
-    private final Map<String, AbstractSingleClassFileGenerator> substitutions = [:]
 
     @Override
     AOTCodeGenerator newGenerator() {
-        substitutions[TestServiceImpl.name] = new SubstituteGenerator()
-        AbstractStaticServiceLoaderSourceGenerator generator = new TestServiceLoaderGenerator()
-        generator.generate(context)
+        def substitutes = new AbstractStaticServiceLoaderSourceGenerator.Substitutes()
+        substitutes.putAll([
+                'io.micronaut.context.env.PropertySourceLoader': [JavaFile.builder(packageName, TypeSpec.classBuilder("Replacement").build()).build()]
+        ])
+        context.put(AbstractStaticServiceLoaderSourceGenerator.Substitutes, substitutes)
         new ConstantPropertySourcesSourceGenerator()
     }
 
@@ -44,50 +38,27 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
 
         then:
         assertThatGeneratedSources {
-            createsInitializer(1,"""private static void preparePropertySources() {
-  // Generates pre-computed Micronaut property sources from known configuration files
-  java.util.List<io.micronaut.context.env.PropertySource> propertySources = new java.util.ArrayList<io.micronaut.context.env.PropertySource>();
-  io.micronaut.core.optim.StaticOptimizations.set(new io.micronaut.context.env.ConstantPropertySources(propertySources));
-}
-""")
+            doesNotCreateInitializer()
+            hasClass("AotConstantPropertySources") {
+                withSources """package io.micronaut.test;
+
+import io.micronaut.context.env.ConstantPropertySources;
+import io.micronaut.context.env.PropertySource;
+import io.micronaut.core.optim.StaticOptimizations;
+import java.lang.Override;
+import java.util.ArrayList;
+import java.util.List;
+
+public class AotConstantPropertySources implements StaticOptimizations.Loader<ConstantPropertySources> {
+  @Override
+  public ConstantPropertySources load() {
+    List<PropertySource> propertySources = new ArrayList<PropertySource>();
+    propertySources.add(new Replacement());
+    return new ConstantPropertySources(propertySources);
+  }
+}"""
+            }
         }
     }
 
-    @AOTModule(id = "loader", options = [
-            @Option(
-                    key = "service.types"
-            ),
-            @Option(
-                    key = "serviceloading.rejected.impls"
-            ),
-            @Option(
-                    key = "serviceloading.force.include.impls"
-            ),
-            @Option(
-                    key = Environments.POSSIBLE_ENVIRONMENTS_NAMES,
-                    description = Environments.POSSIBLE_ENVIRONMENTS_DESCRIPTION,
-                    sampleValue = Environments.POSSIBLE_ENVIRONMENTS_SAMPLE
-            )
-    ])
-    static class TestServiceLoaderGenerator extends AbstractStaticServiceLoaderSourceGenerator {
-        @Override
-        protected void generateFindAllMethod(Stream<Class<?>> serviceClasses,
-                                             String serviceName,
-                                             Class<?> serviceType,
-                                             TypeSpec.Builder factory) {
-
-        }
-    }
-
-    @AOTModule(id = SubstituteGenerator.ID)
-    class SubstituteGenerator extends AbstractSingleClassFileGenerator {
-        private static final String ID = "internal.substitute.generator";
-
-        @Override
-        @NonNull
-        protected JavaFile generate() {
-            TypeSpec typeSpec = TypeSpec.classBuilder("Substitute").build()
-            JavaFile.builder(packageName, typeSpec).build()
-        }
-    }
 }

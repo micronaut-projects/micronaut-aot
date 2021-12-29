@@ -37,8 +37,6 @@ dependencies {
 
     api(libs.javapoet)
 
-    compileOnly(mn.logback)
-
     testFixturesImplementation(libs.javapoet)
     testFixturesApi(mn.spock)
 

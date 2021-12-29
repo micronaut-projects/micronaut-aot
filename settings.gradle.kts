@@ -6,6 +6,7 @@ pluginManagement {
     includeBuild("build-logic") {
         name = "aot-build-logic"
     }
+    includeBuild("../micronaut-build")
 }
 
 plugins {
@@ -27,6 +28,7 @@ val micronautVersion = providers.gradleProperty("micronautVersion")
 
 dependencyResolutionManagement {
     repositories {
+        mavenLocal()
         mavenCentral()
     }
 
