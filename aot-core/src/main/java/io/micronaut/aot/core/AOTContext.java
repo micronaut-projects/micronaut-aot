@@ -15,6 +15,7 @@
  */
 package io.micronaut.aot.core;
 
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
@@ -67,6 +68,25 @@ public interface AOTContext {
      * @param staticInitializer the static initializer method
      */
     void registerStaticInitializer(MethodSpec staticInitializer);
+
+    /**
+     * Registers a static optimization method. This will automatically
+     * create a class which implements the {@link io.micronaut.core.optim.StaticOptimizations}
+     * service type. The consumer should create a body which returns
+     * an instance of the optimization type.
+     * @param className the name of the class to generate
+     * @param optimizationKind the type of the optimization
+     * @param bodyBuilder the builder of the body of the load() method
+     * @param <T> the type class of the optimization
+     */
+    <T> void registerStaticOptimization(String className, Class<T> optimizationKind, Consumer<? super CodeBlock.Builder> bodyBuilder);
+
+    /**
+     * Registers a generated service type.
+     * @param serviceType the type of the service
+     * @param simpleServiceName the simple name of the generated type
+     */
+    void registerServiceImplementation(Class<?> serviceType, String simpleServiceName);
 
     /**
      * Registers a new generated resource.

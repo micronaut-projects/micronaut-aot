@@ -32,12 +32,27 @@ class NativeStaticServiceLoaderSourceGeneratorTest extends AbstractSourceGenerat
 
         then:
         assertThatGeneratedSources {
-            createsInitializer """private static void staticServices() {
-  java.util.Map<java.lang.String, io.micronaut.core.io.service.SoftServiceLoader.StaticServiceLoader<?>> staticServices = new java.util.HashMap<java.lang.String, io.micronaut.core.io.service.SoftServiceLoader.StaticServiceLoader<?>>();
-  staticServices.put("io.micronaut.aot.std.sourcegen.TestService", new TestServiceFactory());
-  io.micronaut.core.optim.StaticOptimizations.set(new io.micronaut.core.io.service.SoftServiceLoader.Optimizations(staticServices));
-}
-"""
+            doesNotCreateInitializer()
+            hasClass("StaticServicesLoader") {
+                withSources """package io.micronaut.test;
+
+import io.micronaut.core.io.service.SoftServiceLoader;
+import io.micronaut.core.optim.StaticOptimizations;
+import java.lang.Override;
+import java.lang.String;
+import java.util.HashMap;
+import java.util.Map;
+
+public class StaticServicesLoader implements StaticOptimizations.Loader<SoftServiceLoader.Optimizations> {
+  @Override
+  public SoftServiceLoader.Optimizations load() {
+    Map<String, SoftServiceLoader.StaticServiceLoader<?>> staticServices = new HashMap<String, SoftServiceLoader.StaticServiceLoader<?>>();
+    staticServices.put("io.micronaut.aot.std.sourcegen.TestService", new TestServiceFactory());
+    return new SoftServiceLoader.Optimizations(staticServices);
+  }
+}"""
+            }
+
             hasClass("TestServiceFactory") {
                 withSources """package io.micronaut.test;
 
@@ -75,12 +90,26 @@ public class TestServiceFactory implements SoftServiceLoader.StaticServiceLoader
 
         then:
         assertThatGeneratedSources {
-            createsInitializer """private static void staticServices() {
-  java.util.Map<java.lang.String, io.micronaut.core.io.service.SoftServiceLoader.StaticServiceLoader<?>> staticServices = new java.util.HashMap<java.lang.String, io.micronaut.core.io.service.SoftServiceLoader.StaticServiceLoader<?>>();
-  staticServices.put("io.micronaut.aot.std.sourcegen.TestServiceWithMoreThanOneImpl", new TestServiceWithMoreThanOneImplFactory());
-  io.micronaut.core.optim.StaticOptimizations.set(new io.micronaut.core.io.service.SoftServiceLoader.Optimizations(staticServices));
-}
-"""
+            doesNotCreateInitializer()
+            hasClass("StaticServicesLoader") {
+                withSources """package io.micronaut.test;
+
+import io.micronaut.core.io.service.SoftServiceLoader;
+import io.micronaut.core.optim.StaticOptimizations;
+import java.lang.Override;
+import java.lang.String;
+import java.util.HashMap;
+import java.util.Map;
+
+public class StaticServicesLoader implements StaticOptimizations.Loader<SoftServiceLoader.Optimizations> {
+  @Override
+  public SoftServiceLoader.Optimizations load() {
+    Map<String, SoftServiceLoader.StaticServiceLoader<?>> staticServices = new HashMap<String, SoftServiceLoader.StaticServiceLoader<?>>();
+    staticServices.put("io.micronaut.aot.std.sourcegen.TestServiceWithMoreThanOneImpl", new TestServiceWithMoreThanOneImplFactory());
+    return new SoftServiceLoader.Optimizations(staticServices);
+  }
+}"""
+            }
             hasClass("TestServiceWithMoreThanOneImplFactory") {
                 withSources """package io.micronaut.test;
 

@@ -16,13 +16,12 @@
 package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.ParameterizedTypeName;
+import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.Option;
-import io.micronaut.aot.core.AOTContext;
-import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
+import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.core.annotation.NonNull;
-import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.reflect.ClassUtils;
 
 import java.util.ArrayList;
@@ -66,15 +65,14 @@ public class KnownMissingTypesSourceGenerator extends AbstractCodeGenerator {
 
     @Override
     public void generate(@NonNull AOTContext context) {
-        List<String> classNames = context.getConfiguration().stringList(OPTION.key());
-        context.registerStaticInitializer(staticMethod("prepareKnownMissingTypes", body -> {
-            body.addStatement("$T knownMissingTypes = new $T()", ParameterizedTypeName.get(Set.class, String.class), ParameterizedTypeName.get(HashSet.class, String.class));
-            for (String knownMissingClass : findMissingClasses(classNames)) {
-                body.addStatement("knownMissingTypes.add($S)", knownMissingClass);
-            }
-            body.addStatement("$T.set(new $T(knownMissingTypes))",
-                    StaticOptimizations.class,
-                    ClassUtils.Optimizations.class);
-        }));
+        context.registerStaticOptimization("KnownMissingTypesOptimizationLoader", ClassUtils.Optimizations.class, body -> {
+            List<String> classNames = context.getConfiguration().stringList(OPTION.key());
+                body.addStatement("$T knownMissingTypes = new $T()", ParameterizedTypeName.get(Set.class, String.class), ParameterizedTypeName.get(HashSet.class, String.class));
+                for (String knownMissingClass : findMissingClasses(classNames)) {
+                    body.addStatement("knownMissingTypes.add($S)", knownMissingClass);
+                }
+                body.addStatement("return new $T(knownMissingTypes)", ClassUtils.Optimizations.class);
+        });
+
     }
 }

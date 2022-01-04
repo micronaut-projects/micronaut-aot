@@ -16,8 +16,8 @@
 package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.WildcardTypeName;
@@ -32,7 +32,6 @@ import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.annotation.Generated;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.io.service.SoftServiceLoader;
-import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.inject.BeanConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,7 +142,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                 .stream()
                 .map(context::javaFile)
                 .forEach(context::registerGeneratedSourceFile);
-        context.registerStaticInitializer(generateStaticInit());
+        context.registerStaticOptimization("StaticServicesLoader", SoftServiceLoader.Optimizations.class, this::buildOptimization);
     }
 
     private void generateServiceLoader() {
@@ -239,8 +238,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
         return factory;
     }
 
-    private MethodSpec generateStaticInit() {
-        return staticMethod("staticServices", body -> {
+    private void buildOptimization(CodeBlock.Builder body) {
             ParameterizedTypeName serviceLoaderType = ParameterizedTypeName.get(
                     ClassName.get(SoftServiceLoader.StaticServiceLoader.class), WildcardTypeName.subtypeOf(Object.class));
             body.addStatement("$T staticServices = new $T()",
@@ -250,10 +248,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
             for (Map.Entry<String, TypeSpec> entry : staticServiceClasses.entrySet()) {
                 body.addStatement("staticServices.put($S, new $T())", entry.getKey(), ClassName.bestGuess(entry.getValue().name));
             }
-            body.addStatement("$T.set(new $T(staticServices))",
-                    StaticOptimizations.class,
-                    SoftServiceLoader.Optimizations.class);
-        });
+            body.addStatement("return new $T(staticServices)", SoftServiceLoader.Optimizations.class);
     }
 
     /**
@@ -264,6 +259,10 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
 
         private Collection<List<JavaFile>> values() {
             return substitutes.values();
+        }
+
+        void putAll(Map<String, List<JavaFile>> substitutes) {
+            this.substitutes.putAll(substitutes);
         }
 
         private List<JavaFile> computeIfAbsent(String key, Function<? super String, ? extends List<JavaFile>> mappingFunction) {

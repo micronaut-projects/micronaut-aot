@@ -60,7 +60,7 @@ public class ApplicationContextConfigurerGenerator extends AbstractCodeGenerator
         }
         optimizedEntryPoint.addStaticBlock(staticInitializer.build());
         context.registerGeneratedSourceFile(context.javaFile(optimizedEntryPoint.build()));
-        writeServiceFile(context, ApplicationContextConfigurer.class, CUSTOMIZER_CLASS_NAME);
+        context.registerServiceImplementation(ApplicationContextConfigurer.class, CUSTOMIZER_CLASS_NAME);
     }
 
     private static final class StaticInitializerCapturingContext extends DelegatingSourceGenerationContext {

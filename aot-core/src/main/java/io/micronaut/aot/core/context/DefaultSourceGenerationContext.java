@@ -15,17 +15,24 @@
  */
 package io.micronaut.aot.core.context;
 
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Runtime;
 import io.micronaut.core.annotation.NonNull;
+import io.micronaut.core.optim.StaticOptimizations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.lang.model.element.Modifier;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
@@ -128,6 +135,51 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     @Override
     public void registerStaticInitializer(MethodSpec staticInitializer) {
         initializers.add(staticInitializer);
+    }
+
+    /**
+     * Registers a static optimization method. This will automatically
+     * create a class which implements the {@link StaticOptimizations}
+     * service type. The consumer should create a body which returns
+     * an instance of the optimization type.
+     *
+     * @param className the name of the class to generate
+     * @param optimizationKind the type of the optimization
+     * @param bodyBuilder the builder of the body of the load() method
+     */
+    @Override
+    public <T> void registerStaticOptimization(String className, Class<T> optimizationKind, Consumer<? super CodeBlock.Builder> bodyBuilder) {
+        CodeBlock.Builder body = CodeBlock.builder();
+        bodyBuilder.accept(body);
+        MethodSpec method = MethodSpec.methodBuilder("load")
+                .addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .returns(optimizationKind)
+                .addCode(body.build())
+                .build();
+        TypeSpec generatedType = TypeSpec.classBuilder(className)
+                .addModifiers(Modifier.PUBLIC)
+                .addSuperinterface(ParameterizedTypeName.get(StaticOptimizations.Loader.class, optimizationKind))
+                .addMethod(method)
+                .build();
+        registerGeneratedSourceFile(javaFile(generatedType));
+        registerServiceImplementation(StaticOptimizations.Loader.class, className);
+    }
+
+    /**
+     * Registers a generated service type.
+     *  @param serviceType the type of the service
+     * @param simpleServiceName the simple name of the generated type
+     */
+    @Override
+    public void registerServiceImplementation(Class<?> serviceType, String simpleServiceName) {
+        registerGeneratedResource("META-INF/services/" + serviceType.getName(), serviceFile -> {
+            try (PrintWriter wrt = new PrintWriter(new FileWriter(serviceFile, true))) {
+                wrt.println(getPackageName() + "." + simpleServiceName);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public List<MethodSpec> getGeneratedStaticInitializers() {
