@@ -35,7 +35,6 @@ class CliTest extends Specification {
         isolate {
             Main.execute(
                     '--classpath', classpath,
-                    '--optimizer-classpath', classpath,
                     '--runtime', runtime,
                     '--package', 'dummy',
                     '--config', configFile.toString()
