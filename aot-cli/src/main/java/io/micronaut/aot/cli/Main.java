@@ -30,7 +30,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -45,8 +44,6 @@ import java.util.stream.Collectors;
         versionProvider = VersionProvider.class,
         description = "Generates classes for Micronaut AOT (build time optimizations)")
 public class Main implements Runnable, ConfigKeys {
-    @Option(names = {"--optimizer-classpath", "-ocp"}, description = "The Micronaut AOT classpath", required = true)
-    private String aotClasspathString;
 
     @Option(names = {"--classpath", "-cp"}, description = "The Micronaut application classpath", required = true)
     private String classpathString;
@@ -65,9 +62,7 @@ public class Main implements Runnable, ConfigKeys {
 
     @Override
     public void run() {
-        List<URL> classpath = new ArrayList<>();
-        classpath.addAll(toURLs(aotClasspathString));
-        classpath.addAll(toURLs(classpathString));
+        List<URL> classpath = toURLs(classpathString);
         Properties props = new Properties();
         if (config.exists()) {
             try (InputStreamReader reader = new InputStreamReader(new FileInputStream(config))) {
