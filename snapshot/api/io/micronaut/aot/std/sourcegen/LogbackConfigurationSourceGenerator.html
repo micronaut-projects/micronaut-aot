@@ -17,7 +17,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":10,"i1":10};
+var methods = {"i0":10,"i1":10,"i2":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -193,6 +193,12 @@ extends <a href="../../../../../io/micronaut/aot/core/codegen/AbstractSingleClas
 <td class="colFirst"><code>void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html#generate-io.micronaut.aot.core.AOTContext-">generate</a></span>(<a href="../../../../../io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a>&nbsp;context)</code>&nbsp;</td>
 </tr>
+<tr id="i2" class="altColor">
+<td class="colFirst"><code>protected java.lang.String</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html#getLogbackFileName--">getLogbackFileName</a></span>()</code>
+<div class="block">Returns the name of the logback configuration file.</div>
+</td>
+</tr>
 </table>
 <ul class="blockList">
 <li class="blockList"><a name="methods.inherited.from.class.io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator">
@@ -291,6 +297,21 @@ protected&nbsp;com.squareup.javapoet.JavaFile&nbsp;generate()</pre>
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code><a href="../../../../../io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html#generate--">generate</a></code>&nbsp;in class&nbsp;<code><a href="../../../../../io/micronaut/aot/core/codegen/AbstractSingleClassFileGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractSingleClassFileGenerator</a></code></dd>
+</dl>
+</li>
+</ul>
+<a name="getLogbackFileName--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getLogbackFileName</h4>
+<pre>protected&nbsp;java.lang.String&nbsp;getLogbackFileName()</pre>
+<div class="block">Returns the name of the logback configuration file.
+ Can be overridden in tests.</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>the name of the logback configuration file</dd>
 </dl>
 </li>
 </ul>
