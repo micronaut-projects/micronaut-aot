@@ -39,6 +39,7 @@ class YamlPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.core.annotation.Generated;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -56,13 +57,11 @@ public class Test_configStaticPropertySource extends MapPropertySource {
   }
 
   private static List list2() {
-    List result = new ArrayList<>();
-    result.add("isAnonymous()");
-    return result;
+    return Collections.singletonList("isAnonymous()");
   }
 
   private static Map map1() {
-    Map result = new LinkedHashMap<>();
+    Map result = new LinkedHashMap<>(3);
     result.put("pattern", "/api/v1/subscriber/confirm");
     result.put("http-method", "PATCH");
     result.put("access", list2());
@@ -70,13 +69,11 @@ public class Test_configStaticPropertySource extends MapPropertySource {
   }
 
   private static List list4() {
-    List result = new ArrayList<>();
-    result.add("isAnonymous()");
-    return result;
+    return Collections.singletonList("isAnonymous()");
   }
 
   private static Map map3() {
-    Map result = new LinkedHashMap<>();
+    Map result = new LinkedHashMap<>(3);
     result.put("pattern", "/api/v1/subscriber/count");
     result.put("http-method", "GET");
     result.put("access", list4());
@@ -84,7 +81,7 @@ public class Test_configStaticPropertySource extends MapPropertySource {
   }
 
   private static List list0() {
-    List result = new ArrayList<>();
+    List result = new ArrayList<>(2);
     result.add(map1());
     result.add(map3());
     return result;

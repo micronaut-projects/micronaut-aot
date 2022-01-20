@@ -29,6 +29,7 @@ import io.micronaut.core.order.Ordered;
 import io.micronaut.core.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -119,11 +120,17 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         MethodSpec.Builder listMethod = MethodSpec.methodBuilder(methodName)
                 .addModifiers(PRIVATE, STATIC)
                 .returns(List.class);
-        listMethod.addStatement("$T result = new $T<>()", List.class, ArrayList.class);
-        for (Object o : value) {
-            listMethod.addStatement("result.add(" + convertValueToSource(o, builder) + ")");
+        if (value.isEmpty()) {
+            listMethod.addStatement("return $.emptyList()", Collections.class);
+        } else if (value.size() == 1) {
+            listMethod.addStatement("return $T.singletonList($L)", Collections.class, convertValueToSource(value.get(0), builder));
+        } else {
+            listMethod.addStatement("$T result = new $T<>($L)", List.class, ArrayList.class, value.size());
+            for (Object o : value) {
+                listMethod.addStatement("result.add(" + convertValueToSource(o, builder) + ")");
+            }
+            listMethod.addStatement("return result");
         }
-        listMethod.addStatement("return result");
         builder.addMethod(listMethod.build());
         return methodName + "()";
     }
@@ -133,11 +140,18 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         MethodSpec.Builder mapMethod = MethodSpec.methodBuilder(methodName)
                 .addModifiers(PRIVATE, STATIC)
                 .returns(Map.class);
-        mapMethod.addStatement("$T result = new $T<>()", Map.class, LinkedHashMap.class);
-        for (Map.Entry<?, ?> entry : value.entrySet()) {
-            mapMethod.addStatement("result.put(" + convertValueToSource(entry.getKey(), builder) + ", " + convertValueToSource(entry.getValue(), builder) + ")");
+        if (value.isEmpty()) {
+            mapMethod.addStatement("return $.emptyMap()", Collections.class);
+        } else if (value.size() == 1) {
+            Map.Entry<?, ?> entry = value.entrySet().iterator().next();
+            mapMethod.addStatement("return $T.singletonMap($L, $L)", Collections.class, convertValueToSource(entry.getKey(), builder), convertValueToSource(entry.getValue(), builder));
+        } else {
+            mapMethod.addStatement("$T result = new $T<>($L)", Map.class, LinkedHashMap.class, value.size());
+            for (Map.Entry<?, ?> entry : value.entrySet()) {
+                mapMethod.addStatement("result.put(" + convertValueToSource(entry.getKey(), builder) + ", " + convertValueToSource(entry.getValue(), builder) + ")");
+            }
+            mapMethod.addStatement("return result");
         }
-        mapMethod.addStatement("return result");
         builder.addMethod(mapMethod.build());
         return methodName + "()";
     }
