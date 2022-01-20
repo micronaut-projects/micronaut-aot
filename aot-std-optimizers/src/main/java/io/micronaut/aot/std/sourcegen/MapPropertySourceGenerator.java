@@ -28,11 +28,16 @@ import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.order.Ordered;
 import io.micronaut.core.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static io.micronaut.aot.std.sourcegen.MapPropertySourceGenerator.BASE_ORDER_OPTION;
+import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
+import static javax.lang.model.element.Modifier.STATIC;
 
 /**
  * A source generator which generates a map property source with a fixed
@@ -54,6 +59,7 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
 
     private final String resourceName;
     private final Map<String, Object> values;
+    private int methodCount = 0;
 
     public MapPropertySourceGenerator(
             String resourceName,
@@ -62,43 +68,78 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         this.values = values;
     }
 
-    private CodeBlock generateMap() {
+    private CodeBlock generateMap(TypeSpec.Builder builder) {
         CodeBlock.Builder mapBuilder = CodeBlock.builder();
         mapBuilder.add("new $T() {{\n", HashMap.class);
         for (Map.Entry<String, Object> entry : values.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            mapBuilder.add("put(\"" + key + "\", ");
-            if (value == null) {
-                mapBuilder.add("null");
-            } else {
-                Class<?> valueClass = value.getClass();
-                if (CharSequence.class.isAssignableFrom(valueClass)) {
-                    mapBuilder.add("\"" + value + "\"");
-                } else if (Number.class.isAssignableFrom(valueClass) || Boolean.class.isAssignableFrom(valueClass)) {
-                    String format = String.valueOf(value);
-                    String prefix = "";
-                    String appendix = "";
-                    if (Long.class.equals(valueClass)) {
-                        appendix = "L";
-                    } else if (Double.class.equals(valueClass)) {
-                        appendix = "D";
-                    } else if (Float.class.equals(valueClass)) {
-                        appendix = "F";
-                    } else if (Byte.class.equals(valueClass)) {
-                        prefix = "(byte) ";
-                    } else if (Short.class.equals(valueClass)) {
-                        prefix = "(short) ";
-                    }
-                    mapBuilder.add(prefix + format + appendix);
-                } else {
-                    throw new UnsupportedOperationException("Configuration map contains an entry of type " + valueClass + " which is not supported yet. Please file a bug report.");
-                }
-            }
+            mapBuilder.add("put(\"" + key + "\", " + convertValueToSource(value, builder));
             mapBuilder.add(");\n");
         }
         mapBuilder.add("}}");
         return mapBuilder.build();
+    }
+
+    private String convertValueToSource(Object value, TypeSpec.Builder builder) {
+        if (value == null) {
+             return "null";
+        } else {
+            Class<?> valueClass = value.getClass();
+            if (CharSequence.class.isAssignableFrom(valueClass)) {
+                return "\"" + value + "\"";
+            } else if (Number.class.isAssignableFrom(valueClass) || Boolean.class.isAssignableFrom(valueClass)) {
+                String format = String.valueOf(value);
+                String prefix = "";
+                String appendix = "";
+                if (Long.class.equals(valueClass)) {
+                    appendix = "L";
+                } else if (Double.class.equals(valueClass)) {
+                    appendix = "D";
+                } else if (Float.class.equals(valueClass)) {
+                    appendix = "F";
+                } else if (Byte.class.equals(valueClass)) {
+                    prefix = "(byte) ";
+                } else if (Short.class.equals(valueClass)) {
+                    prefix = "(short) ";
+                }
+                return prefix + format + appendix;
+            } else if (List.class.isAssignableFrom(valueClass) ) {
+                return generateListMethod((List<?>) value, builder);
+            } else if (Map.class.isAssignableFrom(valueClass) ) {
+                return generateMapMethod((Map<?, ?>) value, builder);
+            } else {
+                throw new UnsupportedOperationException("Configuration map contains an entry of type " + valueClass + " which is not supported yet. Please file a bug report.");
+            }
+        }
+    }
+
+    private String generateListMethod(List<?> value, TypeSpec.Builder builder) {
+        String methodName = "list" + methodCount++;
+        MethodSpec.Builder listMethod = MethodSpec.methodBuilder(methodName)
+                .addModifiers(PRIVATE, STATIC)
+                .returns(List.class);
+        listMethod.addStatement("$T result = new $T<>()", List.class, ArrayList.class);
+        for (Object o : value) {
+            listMethod.addStatement("result.add(" + convertValueToSource(o, builder) + ")");
+        }
+        listMethod.addStatement("return result");
+        builder.addMethod(listMethod.build());
+        return methodName + "()";
+    }
+
+    private String generateMapMethod(Map<?, ?> value, TypeSpec.Builder builder) {
+        String methodName = "map" + methodCount++;
+        MethodSpec.Builder mapMethod = MethodSpec.methodBuilder(methodName)
+                .addModifiers(PRIVATE, STATIC)
+                .returns(Map.class);
+        mapMethod.addStatement("$T result = new $T<>()", Map.class, LinkedHashMap.class);
+        for (Map.Entry<?, ?> entry : value.entrySet()) {
+            mapMethod.addStatement("result.put(" + convertValueToSource(entry.getKey(), builder) + ", " + convertValueToSource(entry.getValue(), builder) + ")");
+        }
+        mapMethod.addStatement("return result");
+        builder.addMethod(mapMethod.build());
+        return methodName + "()";
     }
 
     @Override
@@ -109,20 +150,19 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         int order = getContext().getConfiguration()
                 .optionalValue(orderKey, value ->
                         value.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE));
-        TypeSpec type = TypeSpec.classBuilder(typeName)
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName)
                 .addModifiers(PUBLIC)
-                .superclass(MapPropertySource.class)
-                .addMethod(MethodSpec.constructorBuilder()
-                        .addStatement("super($S, $L)", resourceName, generateMap())
+                .superclass(MapPropertySource.class);
+        typeBuilder.addMethod(MethodSpec.constructorBuilder()
+                        .addStatement("super($S, $L)", resourceName, generateMap(typeBuilder))
                         .build())
                 .addMethod(MethodSpec.methodBuilder("getOrder")
                         .addModifiers(PUBLIC)
                         .returns(int.class)
                         .addStatement("return $L", order)
                         .build())
-                .addAnnotation(Generated.class)
-                .build();
-        return javaFile(type);
+                .addAnnotation(Generated.class);
+        return javaFile(typeBuilder.build());
     }
 
     private String computeTypeName() {

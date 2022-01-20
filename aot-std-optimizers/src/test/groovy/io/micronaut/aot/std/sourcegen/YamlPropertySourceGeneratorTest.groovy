@@ -38,7 +38,11 @@ class YamlPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
 
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.core.annotation.Generated;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Generated
 public class Test_configStaticPropertySource extends MapPropertySource {
@@ -47,7 +51,43 @@ public class Test_configStaticPropertySource extends MapPropertySource {
         put("micronaut.application.name", "demoApp");
         put("micronaut.server.port", 8181);
         put("micronaut.server.cors.enabled", true);
+        put("micronaut.security.intercept-url-map", list0());
         }});
+  }
+
+  private static List list2() {
+    List result = new ArrayList<>();
+    result.add("isAnonymous()");
+    return result;
+  }
+
+  private static Map map1() {
+    Map result = new LinkedHashMap<>();
+    result.put("pattern", "/api/v1/subscriber/confirm");
+    result.put("http-method", "PATCH");
+    result.put("access", list2());
+    return result;
+  }
+
+  private static List list4() {
+    List result = new ArrayList<>();
+    result.add("isAnonymous()");
+    return result;
+  }
+
+  private static Map map3() {
+    Map result = new LinkedHashMap<>();
+    result.put("pattern", "/api/v1/subscriber/count");
+    result.put("http-method", "GET");
+    result.put("access", list4());
+    return result;
+  }
+
+  private static List list0() {
+    List result = new ArrayList<>();
+    result.add(map1());
+    result.add(map3());
+    return result;
   }
 
   public int getOrder() {
