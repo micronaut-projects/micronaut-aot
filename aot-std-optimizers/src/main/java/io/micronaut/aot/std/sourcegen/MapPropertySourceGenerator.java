@@ -105,9 +105,9 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
                     prefix = "(short) ";
                 }
                 return prefix + format + appendix;
-            } else if (List.class.isAssignableFrom(valueClass) ) {
+            } else if (List.class.isAssignableFrom(valueClass)) {
                 return generateListMethod((List<?>) value, builder);
-            } else if (Map.class.isAssignableFrom(valueClass) ) {
+            } else if (Map.class.isAssignableFrom(valueClass)) {
                 return generateMapMethod((Map<?, ?>) value, builder);
             } else {
                 throw new UnsupportedOperationException("Configuration map contains an entry of type " + valueClass + " which is not supported yet. Please file a bug report.");
