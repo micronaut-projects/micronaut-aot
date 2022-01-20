@@ -61,7 +61,7 @@ public class DeduceEnvironmentSourceGenerator extends AbstractCodeGenerator {
                     context.registerGeneratedSourceFile(
                             context.javaFile(buildApplicationContextConfigurer(environmentNames, packages))
                     );
-                    writeServiceFile(context, ApplicationContextConfigurer.class, DEDUCED_ENVIRONMENT_CONFIGURER);
+                    context.registerServiceImplementation(ApplicationContextConfigurer.class, DEDUCED_ENVIRONMENT_CONFIGURER);
                 }
             });
         }

@@ -17,13 +17,12 @@ package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
-import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.core.async.publisher.PublishersOptimizations;
-import io.micronaut.core.optim.StaticOptimizations;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,17 +43,19 @@ public class PublishersSourceGenerator extends AbstractCodeGenerator {
 
     @Override
     public void generate(@NonNull AOTContext context) {
-        List<String> knownReactiveTypes = typeNamesOf(Publishers.getKnownReactiveTypes());
-        List<String> knownSingleTypes = typeNamesOf(Publishers.getKnownSingleTypes());
-        List<String> knownCompletableTypes = typeNamesOf(Publishers.getKnownCompletableTypes());
-        context.registerStaticInitializer(staticMethod("preparePublishers", body -> body.addStatement(
-                "$T.set(new $T($L, $L, $L))",
-                StaticOptimizations.class,
-                PublishersOptimizations.class,
-                asClassList(knownReactiveTypes),
-                asClassList(knownSingleTypes),
-                asClassList(knownCompletableTypes)
-        )));
+        context.registerStaticOptimization("PublishersOptimizationsLoader", PublishersOptimizations.class, body -> {
+            List<String> knownReactiveTypes = typeNamesOf(Publishers.getKnownReactiveTypes());
+            List<String> knownSingleTypes = typeNamesOf(Publishers.getKnownSingleTypes());
+            List<String> knownCompletableTypes = typeNamesOf(Publishers.getKnownCompletableTypes());
+            body.addStatement(
+                    "return new $T($L, $L, $L)",
+                    PublishersOptimizations.class,
+                    asClassList(knownReactiveTypes),
+                    asClassList(knownSingleTypes),
+                    asClassList(knownCompletableTypes)
+            );
+        });
+
     }
 
     private static CodeBlock asClassList(List<String> types) {

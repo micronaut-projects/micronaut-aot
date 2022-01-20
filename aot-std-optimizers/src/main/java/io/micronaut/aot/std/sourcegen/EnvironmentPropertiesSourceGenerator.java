@@ -16,14 +16,12 @@
 package io.micronaut.aot.std.sourcegen;
 
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.ParameterizedTypeName;
-import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.env.CachedEnvironment;
 import io.micronaut.core.annotation.NonNull;
-import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.util.EnvironmentProperties;
 
 import java.util.Arrays;
@@ -56,21 +54,19 @@ public class EnvironmentPropertiesSourceGenerator extends AbstractCodeGenerator 
 
     @Override
     public void generate(@NonNull AOTContext context) {
-        CodeBlock.Builder initializer = CodeBlock.builder();
-        EnvironmentProperties props = EnvironmentProperties.empty();
-        env.keySet().forEach(props::findPropertyNamesForEnvironmentVariable);
+        context.registerStaticOptimization("EnvironmentPropertiesOptimizationLoader", EnvironmentProperties.class, initializer -> {
+            EnvironmentProperties props = EnvironmentProperties.empty();
+            env.keySet().forEach(props::findPropertyNamesForEnvironmentVariable);
 
-        initializer.addStatement("$T env = new $T()",
-                ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), ParameterizedTypeName.get(List.class, String.class)),
-                ParameterizedTypeName.get(ClassName.get(HashMap.class), ClassName.get(String.class), ParameterizedTypeName.get(List.class, String.class)));
-        for (Map.Entry<String, List<String>> entry : props.asMap().entrySet()) {
-            String values = entry.getValue().stream().map(e -> "\"" + e + "\"").collect(Collectors.joining(", "));
-            initializer.addStatement("env.put($S, $T.asList($L))", entry.getKey(), Arrays.class, values);
-        }
-        initializer.addStatement("$T.set($T.of(env))", StaticOptimizations.class, EnvironmentProperties.class);
-        context.registerStaticInitializer(staticMethodBuilder("prepareEnvironment", m ->
-                m.addComment("Generates pre-computed Micronaut property names from environment variables")
-                        .addCode(initializer.build())));
+            initializer.addStatement("$T env = new $T()",
+                    ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), ParameterizedTypeName.get(List.class, String.class)),
+                    ParameterizedTypeName.get(ClassName.get(HashMap.class), ClassName.get(String.class), ParameterizedTypeName.get(List.class, String.class)));
+            for (Map.Entry<String, List<String>> entry : props.asMap().entrySet()) {
+                String values = entry.getValue().stream().map(e -> "\"" + e + "\"").collect(Collectors.joining(", "));
+                initializer.addStatement("env.put($S, $T.asList($L))", entry.getKey(), Arrays.class, values);
+            }
+            initializer.addStatement("return $T.of(env)", EnvironmentProperties.class);
+        });
     }
 
 }

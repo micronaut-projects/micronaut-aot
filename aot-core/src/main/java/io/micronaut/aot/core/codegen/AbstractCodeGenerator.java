@@ -18,12 +18,8 @@ package io.micronaut.aot.core.codegen;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import io.micronaut.aot.core.AOTCodeGenerator;
-import io.micronaut.aot.core.AOTContext;
 
 import javax.lang.model.element.Modifier;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.function.Consumer;
 
 /**
@@ -49,13 +45,4 @@ public abstract class AbstractCodeGenerator implements AOTCodeGenerator {
         return staticMethodBuilder(name, m -> m.addCode(bodyBuilder.build()));
     }
 
-    protected final void writeServiceFile(AOTContext context, Class<?> serviceType, String simpleServiceName) {
-        context.registerGeneratedResource("META-INF/services/" + serviceType.getName(), serviceFile -> {
-            try (PrintWriter wrt = new PrintWriter(new FileWriter(serviceFile, true))) {
-                wrt.println(context.getPackageName() + "." + simpleServiceName);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
 }

@@ -79,7 +79,7 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
     public void generate(@NonNull AOTContext context) {
         super.generate(context);
         context.registerExcludedResource("logback.xml");
-        writeServiceFile(context, Configurator.class, "StaticLogbackConfiguration");
+        context.registerServiceImplementation(Configurator.class, "StaticLogbackConfiguration");
     }
 
     private static MethodSpec addStatusMethod() {

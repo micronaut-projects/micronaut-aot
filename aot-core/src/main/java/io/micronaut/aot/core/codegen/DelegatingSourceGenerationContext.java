@@ -15,6 +15,7 @@
  */
 package io.micronaut.aot.core.codegen;
 
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
@@ -67,6 +68,31 @@ public abstract class DelegatingSourceGenerationContext implements AOTContext {
     @Override
     public void registerStaticInitializer(MethodSpec staticInitializer) {
         delegate.registerStaticInitializer(staticInitializer);
+    }
+
+    /**
+     * Registers a static optimization method. This will automatically
+     * create a class which implements the {@link io.micronaut.core.optim.StaticOptimizations}
+     * service type. The consumer should create a body which returns
+     * an instance of the optimization type.
+     *
+     * @param className the name of the class to generate
+     * @param optimizationKind the type of the optimization
+     * @param bodyBuilder the builder of the body of the load() method
+     */
+    @Override
+    public <T> void registerStaticOptimization(String className, Class<T> optimizationKind, Consumer<? super CodeBlock.Builder> bodyBuilder) {
+        delegate.registerStaticOptimization(className, optimizationKind, bodyBuilder);
+    }
+
+    /**
+     * Registers a generated service type.
+     *  @param serviceType the type of the service
+     * @param simpleServiceName the simple name of the generated type
+     */
+    @Override
+    public void registerServiceImplementation(Class<?> serviceType, String simpleServiceName) {
+        delegate.registerServiceImplementation(serviceType, simpleServiceName);
     }
 
     @Override

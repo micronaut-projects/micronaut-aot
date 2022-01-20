@@ -37,13 +37,28 @@ class KnownMissingTypesSourceGeneratorTest extends AbstractSourceGeneratorSpec {
 
         then:
         assertThatGeneratedSources {
-            createsInitializer"""private static void prepareKnownMissingTypes() {
-  java.util.Set<java.lang.String> knownMissingTypes = new java.util.HashSet<java.lang.String>();
-  knownMissingTypes.add("non.existing.ClassName");
-  knownMissingTypes.add("another.missing.Clazz");
-  io.micronaut.core.optim.StaticOptimizations.set(new io.micronaut.core.reflect.ClassUtils.Optimizations(knownMissingTypes));
-}
-"""
+            doesNotCreateInitializer()
+            hasClass("KnownMissingTypesOptimizationLoader") {
+                withSources """package io.micronaut.test;
+
+import io.micronaut.core.optim.StaticOptimizations;
+import io.micronaut.core.reflect.ClassUtils;
+import java.lang.Override;
+import java.lang.String;
+import java.util.HashSet;
+import java.util.Set;
+
+public class KnownMissingTypesOptimizationLoader implements StaticOptimizations.Loader<ClassUtils.Optimizations> {
+  @Override
+  public ClassUtils.Optimizations load() {
+    Set<String> knownMissingTypes = new HashSet<String>();
+    knownMissingTypes.add("non.existing.ClassName");
+    knownMissingTypes.add("another.missing.Clazz");
+    return new ClassUtils.Optimizations(knownMissingTypes);
+  }
+}"""
+            }
+            compiles()
         }
     }
 }
