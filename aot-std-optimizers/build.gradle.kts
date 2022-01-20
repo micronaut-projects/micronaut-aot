@@ -27,11 +27,19 @@ dependencies {
     compileOnlyApi(mn.micronaut.core.reactive)
 
     compileOnlyApi(projects.aotCore)
-    compileOnly(mn.logback)
+    compileOnly(mn.logback) {
+        version {
+            require("1.3.0-alpha12")
+        }
+    }
 
     testImplementation(testFixtures(projects.aotCore))
     testImplementation(mn.micronaut.context)
     testImplementation(mn.micronaut.core.reactive)
     testCompileOnly(projects.aotCore)
-
+    testImplementation(mn.logback) {
+        version {
+            require("1.3.0-alpha12")
+        }
+    }
 }
