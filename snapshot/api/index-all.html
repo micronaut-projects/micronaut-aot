@@ -67,7 +67,7 @@
 <!--   -->
 </a></div>
 <!-- ========= END OF TOP NAVBAR ========= -->
-<div class="contentContainer"><a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a name="I:A">
+<div class="contentContainer"><a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a name="I:A">
 <!--   -->
 </a>
 <h2 class="title">A</h2>
@@ -701,6 +701,18 @@
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerGeneratedSourceFile-com.squareup.javapoet.JavaFile-">registerGeneratedSourceFile(JavaFile)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#registerServiceImplementation-java.lang.Class-java.lang.String-">registerServiceImplementation(Class&lt;?&gt;, String)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
+<dd>
+<div class="block">Registers a generated service type.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerServiceImplementation-java.lang.Class-java.lang.String-">registerServiceImplementation(Class&lt;?&gt;, String)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>
+<div class="block">Registers a generated service type.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerServiceImplementation-java.lang.Class-java.lang.String-">registerServiceImplementation(Class&lt;?&gt;, String)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>
+<div class="block">Registers a generated service type.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#registerStaticInitializer-com.squareup.javapoet.MethodSpec-">registerStaticInitializer(MethodSpec)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Registers a code block to be executed statically when
@@ -710,6 +722,18 @@
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerStaticInitializer-com.squareup.javapoet.MethodSpec-">registerStaticInitializer(MethodSpec)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/AOTContext.html#registerStaticOptimization-java.lang.String-java.lang.Class-java.util.function.Consumer-">registerStaticOptimization(String, Class&lt;T&gt;, Consumer&lt;? super CodeBlock.Builder&gt;)</a></span> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
+<dd>
+<div class="block">Registers a static optimization method.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerStaticOptimization-java.lang.String-java.lang.Class-java.util.function.Consumer-">registerStaticOptimization(String, Class&lt;T&gt;, Consumer&lt;? super CodeBlock.Builder&gt;)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>
+<div class="block">Registers a static optimization method.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerStaticOptimization-java.lang.String-java.lang.Class-java.util.function.Consumer-">registerStaticOptimization(String, Class&lt;T&gt;, Consumer&lt;? super CodeBlock.Builder&gt;)</a></span> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>
+<div class="block">Registers a static optimization method.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#REJECTED_CLASSES">REJECTED_CLASSES</a></span> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/cli/Main.html#run--">run()</a></span> - Method in class io.micronaut.aot.cli.<a href="io/micronaut/aot/cli/Main.html" title="class in io.micronaut.aot.cli">Main</a></dt>
@@ -818,14 +842,6 @@ the order they are declared.</div>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/cli/VersionProvider.html#VersionProvider--">VersionProvider()</a></span> - Constructor for class io.micronaut.aot.cli.<a href="io/micronaut/aot/cli/VersionProvider.html" title="class in io.micronaut.aot.cli">VersionProvider</a></dt>
 <dd>&nbsp;</dd>
 </dl>
-<a name="I:W">
-<!--   -->
-</a>
-<h2 class="title">W</h2>
-<dl>
-<dt><span class="memberNameLink"><a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#writeServiceFile-io.micronaut.aot.core.AOTContext-java.lang.Class-java.lang.String-">writeServiceFile(AOTContext, Class&lt;?&gt;, String)</a></span> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></dt>
-<dd>&nbsp;</dd>
-</dl>
 <a name="I:Y">
 <!--   -->
 </a>
@@ -840,7 +856,7 @@ the order they are declared.</div>
 <dt><span class="memberNameLink"><a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html#YamlPropertySourceGenerator-java.util.Collection-">YamlPropertySourceGenerator(Collection&lt;String&gt;)</a></span> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/YamlPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">YamlPropertySourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
-<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;</div>
+<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;</div>
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
 <div class="bottomNav"><a name="navbar.bottom">
 <!--   -->

@@ -17,7 +17,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10};
+var methods = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -236,9 +236,24 @@ implements <a href="../../../../../io/micronaut/aot/core/AOTContext.html" title=
 </tr>
 <tr id="i13" class="rowColor">
 <td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerServiceImplementation-java.lang.Class-java.lang.String-">registerServiceImplementation</a></span>(java.lang.Class&lt;?&gt;&nbsp;serviceType,
+                             java.lang.String&nbsp;simpleServiceName)</code>
+<div class="block">Registers a generated service type.</div>
+</td>
+</tr>
+<tr id="i14" class="altColor">
+<td class="colFirst"><code>void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerStaticInitializer-com.squareup.javapoet.MethodSpec-">registerStaticInitializer</a></span>(com.squareup.javapoet.MethodSpec&nbsp;staticInitializer)</code>
 <div class="block">Registers a code block to be executed statically when
  the optimized binary is loaded.</div>
+</td>
+</tr>
+<tr id="i15" class="rowColor">
+<td class="colFirst"><code>&lt;T&gt;&nbsp;void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerStaticOptimization-java.lang.String-java.lang.Class-java.util.function.Consumer-">registerStaticOptimization</a></span>(java.lang.String&nbsp;className,
+                          java.lang.Class&lt;T&gt;&nbsp;optimizationKind,
+                          java.util.function.Consumer&lt;? super com.squareup.javapoet.CodeBlock.Builder&gt;&nbsp;bodyBuilder)</code>
+<div class="block">Registers a static optimization method.</div>
 </td>
 </tr>
 </table>
@@ -367,6 +382,49 @@ public&nbsp;<a href="../../../../../io/micronaut/aot/core/context/ApplicationCon
 <dd><code><a href="../../../../../io/micronaut/aot/core/AOTContext.html#registerStaticInitializer-com.squareup.javapoet.MethodSpec-">registerStaticInitializer</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></code></dd>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>staticInitializer</code> - the static initializer method</dd>
+</dl>
+</li>
+</ul>
+<a name="registerStaticOptimization-java.lang.String-java.lang.Class-java.util.function.Consumer-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>registerStaticOptimization</h4>
+<pre>public&nbsp;&lt;T&gt;&nbsp;void&nbsp;registerStaticOptimization(java.lang.String&nbsp;className,
+                                           java.lang.Class&lt;T&gt;&nbsp;optimizationKind,
+                                           java.util.function.Consumer&lt;? super com.squareup.javapoet.CodeBlock.Builder&gt;&nbsp;bodyBuilder)</pre>
+<div class="block">Registers a static optimization method. This will automatically
+ create a class which implements the <code>StaticOptimizations</code>
+ service type. The consumer should create a body which returns
+ an instance of the optimization type.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../../../../io/micronaut/aot/core/AOTContext.html#registerStaticOptimization-java.lang.String-java.lang.Class-java.util.function.Consumer-">registerStaticOptimization</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></code></dd>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - the type class of the optimization</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>className</code> - the name of the class to generate</dd>
+<dd><code>optimizationKind</code> - the type of the optimization</dd>
+<dd><code>bodyBuilder</code> - the builder of the body of the load() method</dd>
+</dl>
+</li>
+</ul>
+<a name="registerServiceImplementation-java.lang.Class-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>registerServiceImplementation</h4>
+<pre>public&nbsp;void&nbsp;registerServiceImplementation(java.lang.Class&lt;?&gt;&nbsp;serviceType,
+                                          java.lang.String&nbsp;simpleServiceName)</pre>
+<div class="block">Registers a generated service type.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../../../../io/micronaut/aot/core/AOTContext.html#registerServiceImplementation-java.lang.Class-java.lang.String-">registerServiceImplementation</a></code>&nbsp;in interface&nbsp;<code><a href="../../../../../io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>serviceType</code> - the type of the service</dd>
+<dd><code>simpleServiceName</code> - the simple name of the generated type</dd>
 </dl>
 </li>
 </ul>
