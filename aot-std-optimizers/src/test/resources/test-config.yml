@@ -5,3 +5,15 @@ micronaut:
     port: 8181
     cors:
       enabled: true
+  security:
+    intercept-url-map:
+      -
+        pattern: /api/v1/subscriber/confirm
+        http-method: PATCH
+        access:
+          - isAnonymous()
+      -
+        pattern: /api/v1/subscriber/count
+        http-method: GET
+        access:
+          - isAnonymous()
