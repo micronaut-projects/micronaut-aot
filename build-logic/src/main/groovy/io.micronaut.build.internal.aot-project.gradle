@@ -37,3 +37,39 @@ pluginManager.withPlugin("java-test-fixtures") {
         outgoing.capability("$group:micronaut-${project.name}-test-fixtures:$projectVersion")
     }
 }
+
+// compileOnlyApi dependencies end up as `<scope>compile</scope>` in Maven
+// which isn't correct so we need to fix them and mark them as provided
+publishing {
+    publications.withType(MavenPublication) {
+        pom.withXml {
+            configurations.all {
+                if (it.name == 'compileOnlyApi') {
+                    def compileOnlyApi = it
+                    def deps = compileOnlyApi.dependencies.findAll {
+                        it instanceof ExternalModuleDependency
+                    }.collect {
+                        it.name
+                    } as Set<String>
+                    asNode().dependencies.dependency.findAll { xmlDep ->
+                        if (xmlDep.artifactId.text() in deps) {
+                            def scope = xmlDep.scope[0]
+                            if (!scope) {
+                                scope = xmlDep.appendNode('scope')
+                            }
+                            scope.value = 'provided'
+                        }
+                    }
+                }
+            }
+            // We don't need any optional dependency in the POM, especially
+            // because those come from test fixtures
+            asNode().dependencies.each { dependencies ->
+                dependencies.children().removeAll(dependencies.dependency.findAll {
+                    def opt = it.optional[0]
+                    opt && opt.text() == 'true'
+                })
+            }
+        }
+    }
+}
