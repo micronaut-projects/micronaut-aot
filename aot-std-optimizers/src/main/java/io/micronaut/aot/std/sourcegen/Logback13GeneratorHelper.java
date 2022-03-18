@@ -185,6 +185,11 @@ class Logback13GeneratorHelper {
             private boolean maybeGenerateAddOrSet(ImplicitModel model, Model parent, BiFunction<BeanDescription, String, Method> methodFinder) {
                 try {
                     String ownerClassName = ((ComponentModel) parent).getClassName();
+                    if (ownerClassName == null) {
+//                        System.err.println(((ComponentModel) parent).getClass().getName());
+//                        System.err.println("parent = " + parent);
+                        return false;
+                    }
                     BeanDescription beanDescription = beanDescriptionCache.getBeanDescription(Class.forName(ownerClassName));
                     Method method = methodFinder.apply(beanDescription, model.getTag());
                     if (method != null) {

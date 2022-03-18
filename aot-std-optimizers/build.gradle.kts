@@ -29,7 +29,7 @@ dependencies {
     compileOnlyApi(projects.aotCore)
     compileOnly(mn.logback) {
         version {
-            require("1.3.0-alpha12")
+            require(libs.versions.logback.future.get())
         }
     }
 
@@ -39,7 +39,7 @@ dependencies {
     testCompileOnly(projects.aotCore)
     testImplementation(mn.logback) {
         version {
-            require("1.3.0-alpha12")
+            require(libs.versions.logback.future.get())
         }
     }
 }
