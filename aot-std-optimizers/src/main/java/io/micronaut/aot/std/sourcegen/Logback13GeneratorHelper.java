@@ -15,12 +15,15 @@
  */
 package io.micronaut.aot.std.sourcegen;
 
+import ch.qos.logback.classic.PatternLayout;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.classic.model.ConfigurationModel;
 import ch.qos.logback.classic.model.LoggerModel;
 import ch.qos.logback.classic.model.RootLoggerModel;
+import ch.qos.logback.core.joran.event.SaxEventRecorder;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.joran.util.beans.BeanDescription;
 import ch.qos.logback.core.joran.util.beans.BeanDescriptionCache;
@@ -36,34 +39,103 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import io.micronaut.aot.core.AOTContext;
+import org.xml.sax.InputSource;
 
 import javax.lang.model.element.Modifier;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-
+import ch.qos.logback.core.net.ssl.KeyManagerFactoryFactoryBean;
+import ch.qos.logback.core.net.ssl.KeyStoreFactoryBean;
+import ch.qos.logback.core.net.ssl.SSLConfiguration;
+import ch.qos.logback.core.net.ssl.SSLParametersConfiguration;
+import ch.qos.logback.core.net.ssl.SecureRandomFactoryBean;
+import ch.qos.logback.core.net.ssl.TrustManagerFactoryFactoryBean;
 import static ch.qos.logback.classic.Level.toLevel;
 
 class Logback13GeneratorHelper {
+
+    static List<ParentTag_Tag_Class_Tuple> createTuplesList() {
+        List<ParentTag_Tag_Class_Tuple> tupleList = new ArrayList<>();
+        tupleList.add(new ParentTag_Tag_Class_Tuple("appender", "encoder", PatternLayoutEncoder.class));
+        tupleList.add(new ParentTag_Tag_Class_Tuple("appender", "layout", PatternLayout.class));
+        tupleList.add(new ParentTag_Tag_Class_Tuple("receiver", "ssl", SSLConfiguration.class));
+        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "parameters", SSLParametersConfiguration.class));
+        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "keyStore", KeyStoreFactoryBean.class));
+        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "trustStore", KeyManagerFactoryFactoryBean.class));
+        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "keyManagerFactory", SSLParametersConfiguration.class));
+        tupleList
+                .add(new ParentTag_Tag_Class_Tuple("ssl", "trustManagerFactory", TrustManagerFactoryFactoryBean.class));
+        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "secureRandom", SecureRandomFactoryBean.class));
+        return tupleList;
+    }
+
+    static  List<ParentTag_Tag_Class_Tuple>  TUPLE_LIST = createTuplesList();
+
+
+    static private void injectDefaultComponentClasses(Model aModel, Model parent) {
+
+        applyInjectionRules(aModel, parent);
+
+        for (Model sub : aModel.getSubModels()) {
+            injectDefaultComponentClasses(sub, aModel);
+        }
+    }
+
+    private static String unifiedTag(Model aModel) {
+        String tag = aModel.getTag();
+
+        char first = tag.charAt(0);
+        if (Character.isUpperCase(first)) {
+            char lower = Character.toLowerCase(first);
+            return lower + tag.substring(1);
+        } else
+            return tag;
+    }
+
+    private static  void applyInjectionRules(Model aModel, Model parent) {
+        if (parent == null)
+            return;
+
+        String parentTag = unifiedTag(parent);
+        String modelTag = unifiedTag(aModel);
+
+        if (aModel instanceof ImplicitModel) {
+            ImplicitModel implicitModel = (ImplicitModel) aModel;
+            String className = implicitModel.getClassName();
+
+            if (className == null || className.isEmpty()) {
+                for (ParentTag_Tag_Class_Tuple ruleTuple : TUPLE_LIST) {
+                    if (ruleTuple.parentTag.equals(parentTag) && ruleTuple.tag.equals(modelTag)) {
+                        implicitModel.setClassName(ruleTuple.aClass.getName());
+                        break;
+                    }
+                }
+            }
+        }
+    }
     static MethodSpec configureMethod(String fileName, AOTContext aotContext) {
         JoranConfigurator joranConfigurator = new JoranConfigurator();
         LoggerContext context = new LoggerContext();
         joranConfigurator.setContext(context);
+        Model model;
         try {
             URL logbackFile = aotContext.getAnalyzer().getApplicationContext().getClass().getClassLoader().getResource(fileName);
             if (logbackFile == null) {
                 throw new IllegalStateException("Could not find " + fileName + " file on application classpath");
             }
-            joranConfigurator.doConfigure(logbackFile);
-        } catch (JoranException e) {
+            InputSource inputSource = new InputSource(logbackFile.openStream());
+            SaxEventRecorder recorder = joranConfigurator.populateSaxEventRecorder(inputSource);
+            model = joranConfigurator.buildModelFromSaxEventList(recorder.saxEventList);
+            injectDefaultComponentClasses(model, null);
+        } catch (JoranException | IOException e) {
             throw new RuntimeException(e);
         }
-        Model model = joranConfigurator.getInterpretationContext().peekModel();
+        //Model model = joranConfigurator.getModelInterpretationContext().peekModel();
+
         CodeBlock.Builder codeBuilder = CodeBlock.builder();
         BeanDescriptionCache beanDescriptionCache = new BeanDescriptionCache(context);
         ModelVisitor visitor = new ModelVisitor() {
