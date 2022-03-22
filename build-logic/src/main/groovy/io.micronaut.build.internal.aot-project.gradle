@@ -27,9 +27,6 @@ version = projectVersion
 micronautBuild {
     enableProcessing = false
     enableBom = false
-    binaryCompatibility {
-        enabled = false
-    }
 }
 
 pluginManager.withPlugin("java-test-fixtures") {
