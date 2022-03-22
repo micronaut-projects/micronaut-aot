@@ -97,10 +97,10 @@ public class Main implements Runnable, ConfigKeys {
      * @param ctxClassLoader the current context classloader
      */
     private void executeInIsolatedLoader(Properties props, URL[] urls, ClassLoader ctxClassLoader) {
-        URLClassLoader cl = new URLClassLoader(urls, ctxClassLoader);
+        URLClassLoader cl = new URLClassLoader(urls, new FilteringClassLoader(ctxClassLoader));
         try {
             Thread.currentThread().setContextClassLoader(cl);
-            Class<?> runnerClass = cl.loadClass(MicronautAotOptimizer.class.getName());
+            Class<?> runnerClass = cl.loadClass("io.micronaut.aot.MicronautAotOptimizer");
             assert runnerClass != MicronautAotOptimizer.class;
             if (outputDirectory != null) {
                 runnerClass.getDeclaredMethod("execute", Properties.class)
@@ -136,5 +136,39 @@ public class Main implements Runnable, ConfigKeys {
 
     public static void main(String[] args) {
         System.exit(execute(args));
+    }
+
+    private static class FilteringClassLoader extends ClassLoader {
+        public FilteringClassLoader(ClassLoader ctxClassLoader) {
+            super(ctxClassLoader);
+        }
+
+        private Class<?> filter(String name, ClassFinder finder) throws ClassNotFoundException {
+            if (name.startsWith("io.micronaut")) {
+                throw new ClassNotFoundException(name);
+            }
+            return finder.find(name);
+        }
+
+        @Override
+        public Class<?> loadClass(String name) throws ClassNotFoundException {
+            return filter(name, super::loadClass);
+        }
+
+        @Override
+        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            return filter(name, n -> super.loadClass(n, resolve));
+        }
+
+        @Override
+        protected Class<?> findClass(String name) throws ClassNotFoundException {
+            //noinspection Convert2MethodRef
+            return filter(name, n -> super.findClass(n));
+        }
+
+        @FunctionalInterface
+        private interface ClassFinder {
+            Class<?> find(String name) throws ClassNotFoundException;
+        }
     }
 }
