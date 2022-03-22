@@ -44,7 +44,7 @@ import static io.micronaut.aot.std.sourcegen.Logback13GeneratorHelper.configureM
 )
 public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFileGenerator {
     public static final String ID = "logback.xml.to.java";
-    public static final String DESCRIPTION = "Replaces logback.xml with a pure Java configuration (NOT YET IMPLEMENTED!)";
+    public static final String DESCRIPTION = "Replaces logback.xml with a pure Java configuration (Experimental)";
 
     @Override
     @NonNull
