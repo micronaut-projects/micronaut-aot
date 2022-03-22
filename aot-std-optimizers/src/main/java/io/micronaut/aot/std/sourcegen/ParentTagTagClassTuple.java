@@ -17,18 +17,18 @@ package io.micronaut.aot.std.sourcegen;
 
 /**
  *
- * Represents default class name rules
+ * Represents default class name rules.
  *
  * @author Ceki G&uuml;c&uuml;
  *
  */
-public class ParentTag_Tag_Class_Tuple {
+public class ParentTagTagClassTuple {
 
     String parentTag;
     String tag;
     Class<?> aClass;
 
-    public ParentTag_Tag_Class_Tuple(String parentTag, String tag, Class<?> aClass) {
+    public ParentTagTagClassTuple(String parentTag, String tag, Class<?> aClass) {
         super();
         this.parentTag = parentTag;
         this.tag = tag;

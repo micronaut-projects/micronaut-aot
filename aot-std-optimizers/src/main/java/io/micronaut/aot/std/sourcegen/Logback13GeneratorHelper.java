@@ -58,25 +58,23 @@ import static ch.qos.logback.classic.Level.toLevel;
 
 class Logback13GeneratorHelper {
 
-    static List<ParentTag_Tag_Class_Tuple> createTuplesList() {
-        List<ParentTag_Tag_Class_Tuple> tupleList = new ArrayList<>();
-        tupleList.add(new ParentTag_Tag_Class_Tuple("appender", "encoder", PatternLayoutEncoder.class));
-        tupleList.add(new ParentTag_Tag_Class_Tuple("appender", "layout", PatternLayout.class));
-        tupleList.add(new ParentTag_Tag_Class_Tuple("receiver", "ssl", SSLConfiguration.class));
-        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "parameters", SSLParametersConfiguration.class));
-        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "keyStore", KeyStoreFactoryBean.class));
-        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "trustStore", KeyManagerFactoryFactoryBean.class));
-        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "keyManagerFactory", SSLParametersConfiguration.class));
-        tupleList
-                .add(new ParentTag_Tag_Class_Tuple("ssl", "trustManagerFactory", TrustManagerFactoryFactoryBean.class));
-        tupleList.add(new ParentTag_Tag_Class_Tuple("ssl", "secureRandom", SecureRandomFactoryBean.class));
-        return tupleList;
+    private static final List<ParentTagTagClassTuple> TUPLE_LIST = createTuplesList();
+
+    private static List<ParentTagTagClassTuple> createTuplesList() {
+        List<ParentTagTagClassTuple> tupleList = new ArrayList<>(9);
+        tupleList.add(new ParentTagTagClassTuple("appender", "encoder", PatternLayoutEncoder.class));
+        tupleList.add(new ParentTagTagClassTuple("appender", "layout", PatternLayout.class));
+        tupleList.add(new ParentTagTagClassTuple("receiver", "ssl", SSLConfiguration.class));
+        tupleList.add(new ParentTagTagClassTuple("ssl", "parameters", SSLParametersConfiguration.class));
+        tupleList.add(new ParentTagTagClassTuple("ssl", "keyStore", KeyStoreFactoryBean.class));
+        tupleList.add(new ParentTagTagClassTuple("ssl", "trustStore", KeyManagerFactoryFactoryBean.class));
+        tupleList.add(new ParentTagTagClassTuple("ssl", "keyManagerFactory", SSLParametersConfiguration.class));
+        tupleList.add(new ParentTagTagClassTuple("ssl", "trustManagerFactory", TrustManagerFactoryFactoryBean.class));
+        tupleList.add(new ParentTagTagClassTuple("ssl", "secureRandom", SecureRandomFactoryBean.class));
+        return Collections.unmodifiableList(tupleList);
     }
 
-    static  List<ParentTag_Tag_Class_Tuple>  TUPLE_LIST = createTuplesList();
-
-
-    static private void injectDefaultComponentClasses(Model aModel, Model parent) {
+    private static void injectDefaultComponentClasses(Model aModel, Model parent) {
 
         applyInjectionRules(aModel, parent);
 
@@ -92,13 +90,15 @@ class Logback13GeneratorHelper {
         if (Character.isUpperCase(first)) {
             char lower = Character.toLowerCase(first);
             return lower + tag.substring(1);
-        } else
+        } else {
             return tag;
+        }
     }
 
     private static  void applyInjectionRules(Model aModel, Model parent) {
-        if (parent == null)
+        if (parent == null) {
             return;
+        }
 
         String parentTag = unifiedTag(parent);
         String modelTag = unifiedTag(aModel);
@@ -108,7 +108,7 @@ class Logback13GeneratorHelper {
             String className = implicitModel.getClassName();
 
             if (className == null || className.isEmpty()) {
-                for (ParentTag_Tag_Class_Tuple ruleTuple : TUPLE_LIST) {
+                for (ParentTagTagClassTuple ruleTuple : TUPLE_LIST) {
                     if (ruleTuple.parentTag.equals(parentTag) && ruleTuple.tag.equals(modelTag)) {
                         implicitModel.setClassName(ruleTuple.aClass.getName());
                         break;
@@ -117,6 +117,7 @@ class Logback13GeneratorHelper {
             }
         }
     }
+
     static MethodSpec configureMethod(String fileName, AOTContext aotContext) {
         JoranConfigurator joranConfigurator = new JoranConfigurator();
         LoggerContext context = new LoggerContext();
