@@ -162,7 +162,8 @@ public class Main implements Runnable, ConfigKeys {
 
         @Override
         protected Class<?> findClass(String name) throws ClassNotFoundException {
-            return filter(name, super::findClass);
+            //noinspection Convert2MethodRef
+            return filter(name, n -> super.findClass(n));
         }
 
         @FunctionalInterface
