@@ -75,7 +75,7 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         for (Map.Entry<String, Object> entry : values.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            mapBuilder.add("put(\"" + key + "\", " + convertValueToSource(value, builder));
+            mapBuilder.add("$L", "put(\"" + key + "\", " + convertValueToSource(value, builder));
             mapBuilder.add(");\n");
         }
         mapBuilder.add("}}");
