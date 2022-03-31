@@ -55,15 +55,15 @@ public class DeduceEnvironmentSourceGenerator extends AbstractCodeGenerator {
         Set<String> environmentNames = analyzer.getEnvironmentNames();
         BeanContextConfiguration contextConfiguration = analyzer.getApplicationContext().getContextConfiguration();
         if (contextConfiguration instanceof ApplicationContextConfiguration) {
-            ((ApplicationContextConfiguration) contextConfiguration).getDeduceEnvironments().ifPresent(deduceEnvironments -> {
-                if (deduceEnvironments) {
-                    Collection<String> packages = analyzer.getApplicationContext().getEnvironment().getPackages();
-                    context.registerGeneratedSourceFile(
-                            context.javaFile(buildApplicationContextConfigurer(environmentNames, packages))
-                    );
-                    context.registerServiceImplementation(ApplicationContextConfigurer.class, DEDUCED_ENVIRONMENT_CONFIGURER);
-                }
-            });
+            ApplicationContextConfiguration applicationContextConfiguration = (ApplicationContextConfiguration) contextConfiguration;
+            boolean deduceEnvironments = applicationContextConfiguration.getDeduceEnvironments().orElse(true);
+            if (deduceEnvironments) {
+                Collection<String> packages = analyzer.getApplicationContext().getEnvironment().getPackages();
+                context.registerGeneratedSourceFile(
+                        context.javaFile(buildApplicationContextConfigurer(environmentNames, packages))
+                );
+                context.registerServiceImplementation(ApplicationContextConfigurer.class, DEDUCED_ENVIRONMENT_CONFIGURER);
+            }
         }
     }
 
