@@ -21,10 +21,17 @@ import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTCodeGenerator;
 import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.AOTModule;
+import io.micronaut.aot.core.config.MetadataUtils;
+import io.micronaut.context.ApplicationContextBuilder;
 import io.micronaut.context.ApplicationContextConfigurer;
 import io.micronaut.core.annotation.NonNull;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static javax.lang.model.element.Modifier.PUBLIC;
 
@@ -58,9 +65,39 @@ public class ApplicationContextConfigurerGenerator extends AbstractCodeGenerator
         for (AOTCodeGenerator sourceGenerator : sourceGenerators) {
             sourceGenerator.generate(capturer);
         }
+        addDiagnostics(context, optimizedEntryPoint);
         optimizedEntryPoint.addStaticBlock(staticInitializer.build());
         context.registerGeneratedSourceFile(context.javaFile(optimizedEntryPoint.build()));
         context.registerServiceImplementation(ApplicationContextConfigurer.class, CUSTOMIZER_CLASS_NAME);
+    }
+
+    private void addDiagnostics(AOTContext context, TypeSpec.Builder optimizedEntryPoint) {
+        MethodSpec.Builder configure = MethodSpec.methodBuilder("configure")
+                .addModifiers(PUBLIC)
+                .addAnnotation(Override.class)
+                .addParameter(ApplicationContextBuilder.class, "builder");
+        MapGenerator mapGenerator = new MapGenerator();
+        CodeBlock mapBlock = mapGenerator.generateMap(optimizedEntryPoint, createDiagnosticsMap(context));
+        configure.addStatement("builder.properties($L)", mapBlock);
+        optimizedEntryPoint.addMethod(configure.build());
+    }
+
+    private Map<String, Object> createDiagnosticsMap(AOTContext context) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("micronaut.aot.enabled", true);
+        values.put("micronaut.aot.runtime", context.getRuntime().toString());
+        values.put("micronaut.aot.optimizations", buildOptimizationList());
+        return values;
+    }
+
+    private List<String> buildOptimizationList() {
+        return sourceGenerators.stream()
+                .map(Object::getClass)
+                .map(MetadataUtils::findMetadata)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(AOTModule::id)
+                .collect(Collectors.toList());
     }
 
     private static final class StaticInitializerCapturingContext extends DelegatingSourceGenerationContext {
