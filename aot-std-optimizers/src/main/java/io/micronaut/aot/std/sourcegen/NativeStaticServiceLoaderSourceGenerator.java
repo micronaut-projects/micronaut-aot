@@ -50,7 +50,7 @@ import static javax.lang.model.element.Modifier.PUBLIC;
                 @Option(
                         key = "service.types",
                         description = "The list of service types to be scanned (comma separated)",
-                        sampleValue = "io.micronaut.Service1,io.micronaut.Service2"
+                        sampleValue = AbstractStaticServiceLoaderSourceGenerator.DEFAULT_SERVICE_TYPES
                 ),
                 @Option(
                         key = "serviceloading.rejected.impls",
