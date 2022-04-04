@@ -56,21 +56,7 @@ public class MapGenerator {
             if (CharSequence.class.isAssignableFrom(valueClass)) {
                 return "\"" + value + "\"";
             } else if (Number.class.isAssignableFrom(valueClass) || Boolean.class.isAssignableFrom(valueClass)) {
-                String format = String.valueOf(value);
-                String prefix = "";
-                String appendix = "";
-                if (Long.class.equals(valueClass)) {
-                    appendix = "L";
-                } else if (Double.class.equals(valueClass)) {
-                    appendix = "D";
-                } else if (Float.class.equals(valueClass)) {
-                    appendix = "F";
-                } else if (Byte.class.equals(valueClass)) {
-                    prefix = "(byte) ";
-                } else if (Short.class.equals(valueClass)) {
-                    prefix = "(short) ";
-                }
-                return prefix + format + appendix;
+                return convertNumberOrBoolean(valueClass, value);
             } else if (List.class.isAssignableFrom(valueClass)) {
                 return generateListMethod((List<?>) value, builder);
             } else if (Map.class.isAssignableFrom(valueClass)) {
@@ -79,6 +65,24 @@ public class MapGenerator {
                 throw new UnsupportedOperationException("Configuration map contains an entry of type " + valueClass + " which is not supported yet. Please file a bug report.");
             }
         }
+    }
+
+    private String convertNumberOrBoolean(Class<?> valueClass, Object value) {
+        String format = String.valueOf(value);
+        String prefix = "";
+        String appendix = "";
+        if (Long.class.equals(valueClass)) {
+            appendix = "L";
+        } else if (Double.class.equals(valueClass)) {
+            appendix = "D";
+        } else if (Float.class.equals(valueClass)) {
+            appendix = "F";
+        } else if (Byte.class.equals(valueClass)) {
+            prefix = "(byte) ";
+        } else if (Short.class.equals(valueClass)) {
+            prefix = "(short) ";
+        }
+        return prefix + format + appendix;
     }
 
     private String generateListMethod(List<?> value, TypeSpec.Builder builder) {
