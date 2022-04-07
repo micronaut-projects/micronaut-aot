@@ -41,7 +41,7 @@ import java.util.Set;
                 @Option(
                         key = "known.missing.types.list",
                         description = "A list of types that the AOT analyzer needs to check for existence (comma separated)",
-                        sampleValue = "javax.inject.Inject,io.micronaut.SomeType"
+                        sampleValue = "io.reactivex.Observable,reactor.core.publisher.Flux,kotlinx.coroutines.flow.Flow,io.reactivex.rxjava3.core.Flowable,io.reactivex.rxjava3.core.Observable,io.reactivex.Single,reactor.core.publisher.Mono,io.reactivex.Maybe,io.reactivex.rxjava3.core.Single,io.reactivex.rxjava3.core.Maybe,io.reactivex.Completable,io.reactivex.rxjava3.core.Completable,io.methvin.watchservice.MacOSXListeningWatchService,io.micronaut.core.async.publisher.CompletableFuturePublisher,io.micronaut.core.async.publisher.Publishers.JustPublisher,io.micronaut.core.async.subscriber.Completable"
                 )
         }
 )
