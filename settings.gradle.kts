@@ -9,7 +9,7 @@ pluginManagement {
 }
 
 plugins {
-    id("io.micronaut.build.shared.settings") version "5.3.2"
+    id("io.micronaut.build.shared.settings") version "5.3.3"
 }
 
 enableFeaturePreview("VERSION_CATALOGS")
