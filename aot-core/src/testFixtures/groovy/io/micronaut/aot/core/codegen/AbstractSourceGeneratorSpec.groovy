@@ -290,6 +290,11 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
             checkedSources = true
             assert generatedSource.contains(expected)
         }
+
+        void doesNotContainSources(String missing) {
+            checkedSources = true
+            assert !generatedSource.contains(missing)
+        }
     }
 
     static String normalize(Object input) {

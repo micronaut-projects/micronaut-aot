@@ -12,6 +12,7 @@ import io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
 import io.micronaut.aot.std.sourcegen.JitStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
 import io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
+import io.micronaut.aot.std.sourcegen.NettyPropertiesSourceGenerator
 import io.micronaut.aot.std.sourcegen.PublishersSourceGenerator
 import io.micronaut.aot.std.sourcegen.CachedEnvironmentSourceGenerator
 import io.micronaut.aot.std.sourcegen.YamlPropertySourceGenerator
@@ -52,6 +53,9 @@ class CliTest extends Specification {
                 [KnownMissingTypesSourceGenerator.DESCRIPTION, """known.missing.types.enabled = true
 ${toPropertiesSample(KnownMissingTypesSourceGenerator)}"""],
                 [LogbackConfigurationSourceGenerator.DESCRIPTION, 'logback.xml.to.java.enabled = true'],
+                [NettyPropertiesSourceGenerator.DESCRIPTION, """netty.properties.enabled = true
+${toPropertiesSample(NettyPropertiesSourceGenerator, NettyPropertiesSourceGenerator.MACHINE_ID)}
+${toPropertiesSample(NettyPropertiesSourceGenerator, NettyPropertiesSourceGenerator.PROCESS_ID)}"""],
                 [EnvironmentPropertiesSourceGenerator.DESCRIPTION, 'precompute.environment.properties.enabled = true'],
                 [PublishersSourceGenerator.DESCRIPTION, 'scan.reactive.types.enabled = true'],
                 [AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION, """serviceloading.${runtime}.enabled = true
