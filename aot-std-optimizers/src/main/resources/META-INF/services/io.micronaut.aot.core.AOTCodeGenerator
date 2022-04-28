@@ -8,3 +8,4 @@ io.micronaut.aot.std.sourcegen.CachedEnvironmentSourceGenerator
 io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
 io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
 io.micronaut.aot.std.sourcegen.DeduceEnvironmentSourceGenerator
+io.micronaut.aot.std.sourcegen.NettyPropertiesSourceGenerator
