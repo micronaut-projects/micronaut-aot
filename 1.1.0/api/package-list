@@ -1,0 +1,8 @@
+io.micronaut.aot
+io.micronaut.aot.cli
+io.micronaut.aot.core
+io.micronaut.aot.core.codegen
+io.micronaut.aot.core.config
+io.micronaut.aot.core.context
+io.micronaut.aot.internal
+io.micronaut.aot.std.sourcegen
