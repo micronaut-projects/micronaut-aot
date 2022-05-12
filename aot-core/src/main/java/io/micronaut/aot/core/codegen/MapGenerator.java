@@ -41,8 +41,8 @@ public class MapGenerator {
         for (Map.Entry<String, Object> entry : values.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            mapBuilder.add("$L", "put(\"" + key + "\", " + convertValueToSource(value, builder));
-            mapBuilder.add(");\n");
+            mapBuilder.add("$L", CodeBlock.of("put($S, $L)", key, convertValueToSource(value, builder)));
+            mapBuilder.add(";\n");
         }
         mapBuilder.add("}}");
         return mapBuilder.build();
@@ -54,7 +54,7 @@ public class MapGenerator {
         } else {
             Class<?> valueClass = value.getClass();
             if (CharSequence.class.isAssignableFrom(valueClass)) {
-                return "\"" + value + "\"";
+                return CodeBlock.of("$S", value).toString();
             } else if (Number.class.isAssignableFrom(valueClass) || Boolean.class.isAssignableFrom(valueClass)) {
                 return convertNumberOrBoolean(valueClass, value);
             } else if (List.class.isAssignableFrom(valueClass)) {
