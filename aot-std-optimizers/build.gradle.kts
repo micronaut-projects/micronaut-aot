@@ -34,6 +34,7 @@ dependencies {
     }
 
     testImplementation(testFixtures(projects.aotCore))
+    testImplementation(mn.snakeyaml)
     testImplementation(mn.micronaut.context)
     testImplementation(mn.micronaut.core.reactive)
     testCompileOnly(projects.aotCore)
