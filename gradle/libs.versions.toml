@@ -1,8 +1,6 @@
 [versions]
 javapoet = "1.13.0"
 logback-future = "1.3.0-alpha14"
-picocli = "4.6.3"
 
 [libraries]
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
-picocli = {group = "info.picocli", name = "picocli", version.ref = "picocli" }
