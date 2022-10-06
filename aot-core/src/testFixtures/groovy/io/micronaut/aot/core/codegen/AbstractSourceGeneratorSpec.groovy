@@ -72,7 +72,7 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
             [it, writer.toString()]
         }
 
-        this.generatedSources = new GeneratedSources(sources, context.getGeneratedStaticInitializers(), resourcesDir.toFile())
+        this.generatedSources = new GeneratedSources(sources as Map<JavaFile, String>, context.getGeneratedStaticInitializers(), resourcesDir.toFile())
     }
 
     void assertThatGeneratedSources(@DelegatesTo(value=GeneratedSources, strategy = Closure.DELEGATE_FIRST) Closure<?> spec) {
