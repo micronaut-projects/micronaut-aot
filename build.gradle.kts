@@ -18,3 +18,8 @@ plugins {
     id("io.micronaut.build.internal.dependency-updates")
     id("io.micronaut.build.internal.quality-reporting")
 }
+
+repositories {
+    mavenCentral()
+    maven { setUrl("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
+}
