@@ -42,4 +42,5 @@ dependencies {
             require(libs.versions.logback.future.get())
         }
     }
+    testRuntimeOnly(mn.snakeyaml)
 }

@@ -12,7 +12,6 @@ plugins {
     id("io.micronaut.build.shared.settings") version "5.3.14"
 }
 
-enableFeaturePreview("VERSION_CATALOGS")
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 rootProject.name = "aot-parent"
@@ -22,17 +21,14 @@ include("aot-std-optimizers")
 include("aot-api")
 include("aot-cli")
 
-val micronautVersion = providers.gradleProperty("micronautVersion")
-        .forUseAtConfigurationTime()
+configure<io.micronaut.build.MicronautBuildSettingsExtension> {
+    importMicronautCatalog()
+}
 
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-    }
-
-    versionCatalogs {
-        create("mn") {
-            from(micronautVersion.map { v -> "io.micronaut:micronaut-bom:${v}" }.get())
-        }
+        maven { setUrl("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
     }
 }
+
