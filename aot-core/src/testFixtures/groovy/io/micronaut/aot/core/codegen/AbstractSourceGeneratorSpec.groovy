@@ -29,9 +29,6 @@ import spock.lang.TempDir
 
 import javax.tools.Diagnostic
 import javax.tools.DiagnosticCollector
-import javax.tools.JavaCompiler
-import javax.tools.JavaFileObject
-import javax.tools.StandardJavaFileManager
 import javax.tools.ToolProvider
 import java.nio.file.Files
 import java.nio.file.Path
@@ -217,7 +214,7 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
                 sources.keySet().each {
                     it.writeTo(sourceDir)
                 }
-                def filesToCompile = Files.walk(sourceDir.toPath()).filter {
+                List<File> filesToCompile = Files.walk(sourceDir.toPath()).filter {
                     it.toFile().isFile() && it.toFile().name.endsWith(".java")
                 }.map {
                     it.toFile()
@@ -260,7 +257,7 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
         private final JavaFile javaFile
         private final String generatedSource
         private boolean checkedSources
-        private Function<String, String> normalizer = { it }
+        private Function<String, String> normalizer = { it.toString() }
 
         JavaFileAssertions(JavaFile javaFile, String sources) {
             this.javaFile = javaFile
