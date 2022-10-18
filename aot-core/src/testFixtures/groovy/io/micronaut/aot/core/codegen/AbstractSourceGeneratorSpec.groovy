@@ -207,7 +207,7 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
         void compiles(List<File> classpath = []) {
             def compiler = ToolProvider.getSystemJavaCompiler()
             def ds = new DiagnosticCollector<>()
-            try (def mgr = compiler.getStandardFileManager(ds, null, null)) {
+            try (StandardJavaFileManager mgr = compiler.getStandardFileManager(ds, null, null)) {
                 def fullClasspath = System.getProperty("java.class.path").split(File.pathSeparator).collect {
                     new File(it)
                 }.findAll { it.name.endsWith(".jar") } + classpath
@@ -217,14 +217,14 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
                 sources.keySet().each {
                     it.writeTo(sourceDir)
                 }
-                def filesToCompile = Files.walk(sourceDir.toPath()).filter {
+                List<File> filesToCompile = Files.walk(sourceDir.toPath()).filter {
                     it.toFile().isFile() && it.toFile().name.endsWith(".java")
                 }.map {
                     it.toFile()
                 }.collect(Collectors.toList())
                 if (output.mkdirs()) {
-                    def sources = mgr.getJavaFileObjectsFromFiles(filesToCompile)
-                    def task = compiler.getTask(null, mgr, ds, options, null, sources)
+                    Iterable<? extends JavaFileObject> sources = mgr.getJavaFileObjectsFromFiles(filesToCompile)
+                    JavaCompiler.CompilationTask task = compiler.getTask(null, mgr, ds, options, null, sources)
                     task.call()
                 }
             } catch (IOException e) {
@@ -260,7 +260,12 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
         private final JavaFile javaFile
         private final String generatedSource
         private boolean checkedSources
-        private Function<String, String> normalizer = { it }
+        private Function<String, String> normalizer = new Function<String, String>() {
+            @Override
+            String apply(String s) {
+                return s
+            }
+        }
 
         JavaFileAssertions(JavaFile javaFile, String sources) {
             this.javaFile = javaFile
