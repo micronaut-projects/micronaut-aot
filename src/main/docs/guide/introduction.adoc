@@ -9,4 +9,4 @@ This includes, but is not limited to:
 Micronaut AOT can generate specific optimizations for different environments, in particular, it can make a difference between optimizations needed in JIT mode (traditional JVM applications) and native mode (application compiled with GraalVM `native-image`).
 
 WARNING: Unlike other Micronaut modules, Micronaut AOT is not a dependency which needs to be added to your application: it's a framework which requires integration with your build process: it is typically aimed at being integrated into build tool plugins.
-Currently, integration with Micronaut AOT is only implemented by the https://github.com/micronaut-projects/micronaut-gradle-plugin[Gradle plugin].
+Integration with Micronaut AOT is implemented by the https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#_micronaut_aot_plugin[Micronaut Gradle plugin] and https://micronaut-projects.github.io/micronaut-maven-plugin/latest/examples/aot.html[Micronaut Maven plugin].
