@@ -35,8 +35,6 @@ import static io.micronaut.aot.std.sourcegen.Logback13GeneratorHelper.configureM
 /**
  * A source generator responsible for converting a logback.xml configuration into
  * Java configuration.
- *
- * Note: for now the implementation does NOT do that, it's hardcoded!
  */
 @AOTModule(
         id = LogbackConfigurationSourceGenerator.ID,
