@@ -9,7 +9,7 @@ pluginManagement {
 }
 
 plugins {
-    id("io.micronaut.build.shared.settings") version "6.0.2"
+    id("io.micronaut.build.shared.settings") version "6.1.1"
 }
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
@@ -22,13 +22,7 @@ include("aot-api")
 include("aot-cli")
 
 configure<io.micronaut.build.MicronautBuildSettingsExtension> {
+    addSnapshotRepository()
     importMicronautCatalog()
+    importMicronautCatalog("micronaut-picocli")
 }
-
-dependencyResolutionManagement {
-    repositories {
-        mavenCentral()
-        maven { setUrl("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
-    }
-}
-

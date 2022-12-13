@@ -148,6 +148,11 @@ public final class ApplicationContextAnalyzer {
         }
 
         @Override
+        public Collection<List<String>> getPropertyPathMatches(String pathPattern) {
+            return Collections.emptyList();
+        }
+
+        @Override
         public <T> T getBean(BeanDefinition<T> definition) {
             return applicationContext.getBean(definition);
         }

@@ -27,7 +27,7 @@ dependencies {
     compileOnlyApi(mn.micronaut.core.reactive)
 
     compileOnlyApi(projects.aotCore)
-    compileOnly(mn.logback) {
+    compileOnly(mn.logback.classic) {
         version {
             require(libs.versions.logback.future.get())
         }
@@ -37,7 +37,7 @@ dependencies {
     testImplementation(mn.micronaut.context)
     testImplementation(mn.micronaut.core.reactive)
     testCompileOnly(projects.aotCore)
-    testImplementation(mn.logback) {
+    testImplementation(mn.logback.classic) {
         version {
             require(libs.versions.logback.future.get())
         }
