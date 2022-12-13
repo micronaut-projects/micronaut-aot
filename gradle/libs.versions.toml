@@ -2,5 +2,9 @@
 javapoet = "1.13.0"
 logback-future = "1.3.0-alpha14"
 
+micronaut-picocli = "5.0.0-SNAPSHOT"
+
 [libraries]
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
+
+micronaut-picocli = { module = "io.micronaut.picocli:micronaut-picocli-bom", version.ref = "micronaut-picocli" }

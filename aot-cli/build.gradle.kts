@@ -27,11 +27,11 @@ val testAotRuntime by configurations.creating {
 }
 
 dependencies {
-    implementation(platform(mn.micronaut.bom))
+    implementation(platform(mn.micronaut.core.bom))
     implementation(projects.aotApi)
-    implementation(mn.picocli)
+    implementation(mnPicocli.picocli)
 
-    testImplementation(mn.spock)
+    testImplementation(mnTest.micronaut.test.spock)
     testImplementation(projects.aotCore)
     testImplementation(projects.aotStdOptimizers)
     testImplementation(mn.micronaut.core)
