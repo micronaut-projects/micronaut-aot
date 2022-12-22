@@ -260,12 +260,7 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
         private final JavaFile javaFile
         private final String generatedSource
         private boolean checkedSources
-        private Function<String, String> normalizer = new Function<String, String>() {
-            @Override
-            String apply(String s) {
-                return s
-            }
-        }
+        private Function<String, String> normalizer = { (String) it }
 
         JavaFileAssertions(JavaFile javaFile, String sources) {
             this.javaFile = javaFile

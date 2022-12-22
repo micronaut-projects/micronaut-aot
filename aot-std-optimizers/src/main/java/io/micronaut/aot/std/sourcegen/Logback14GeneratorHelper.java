@@ -15,14 +15,15 @@
  */
 package io.micronaut.aot.std.sourcegen;
 
-import ch.qos.logback.classic.PatternLayout;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.PatternLayout;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.classic.model.ConfigurationModel;
 import ch.qos.logback.classic.model.LoggerModel;
 import ch.qos.logback.classic.model.RootLoggerModel;
+import ch.qos.logback.classic.spi.Configurator;
 import ch.qos.logback.core.joran.event.SaxEventRecorder;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.joran.util.beans.BeanDescription;
@@ -33,6 +34,12 @@ import ch.qos.logback.core.model.ComponentModel;
 import ch.qos.logback.core.model.ImplicitModel;
 import ch.qos.logback.core.model.Model;
 import ch.qos.logback.core.model.NamedComponentModel;
+import ch.qos.logback.core.net.ssl.KeyManagerFactoryFactoryBean;
+import ch.qos.logback.core.net.ssl.KeyStoreFactoryBean;
+import ch.qos.logback.core.net.ssl.SSLConfiguration;
+import ch.qos.logback.core.net.ssl.SSLParametersConfiguration;
+import ch.qos.logback.core.net.ssl.SecureRandomFactoryBean;
+import ch.qos.logback.core.net.ssl.TrustManagerFactoryFactoryBean;
 import ch.qos.logback.core.spi.ContextAware;
 import ch.qos.logback.core.spi.LifeCycle;
 import com.squareup.javapoet.ClassName;
@@ -45,18 +52,19 @@ import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import ch.qos.logback.core.net.ssl.KeyManagerFactoryFactoryBean;
-import ch.qos.logback.core.net.ssl.KeyStoreFactoryBean;
-import ch.qos.logback.core.net.ssl.SSLConfiguration;
-import ch.qos.logback.core.net.ssl.SSLParametersConfiguration;
-import ch.qos.logback.core.net.ssl.SecureRandomFactoryBean;
-import ch.qos.logback.core.net.ssl.TrustManagerFactoryFactoryBean;
+
 import static ch.qos.logback.classic.Level.toLevel;
 
-class Logback13GeneratorHelper {
+class Logback14GeneratorHelper {
 
     private static final List<ParentTagTagClassTuple> TUPLE_LIST = createTuplesList();
 
@@ -130,7 +138,7 @@ class Logback13GeneratorHelper {
             }
             InputSource inputSource = new InputSource(logbackFile.openStream());
             SaxEventRecorder recorder = joranConfigurator.populateSaxEventRecorder(inputSource);
-            model = joranConfigurator.buildModelFromSaxEventList(recorder.saxEventList);
+            model = joranConfigurator.buildModelFromSaxEventList(recorder.getSaxEventList());
             injectDefaultComponentClasses(model, null);
         } catch (JoranException | IOException e) {
             throw new RuntimeException(e);
@@ -327,9 +335,10 @@ class Logback13GeneratorHelper {
             }
         };
         visitor.visit(model);
-
+        codeBuilder.addStatement(CodeBlock.of("return $T.NEUTRAL", Configurator.ExecutionStatus.class));
         return MethodSpec.methodBuilder("configure")
                 .addModifiers(Modifier.PUBLIC)
+                .returns(Configurator.ExecutionStatus.class)
                 .addParameter(LoggerContext.class, "loggerContext")
                 .addCode(codeBuilder.build())
                 .build();
