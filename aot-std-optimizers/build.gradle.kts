@@ -27,20 +27,12 @@ dependencies {
     compileOnlyApi(mn.micronaut.core.reactive)
 
     compileOnlyApi(projects.aotCore)
-    compileOnly(mn.logback.classic) {
-        version {
-            require(libs.versions.logback.future.get())
-        }
-    }
+    compileOnly(mn.logback.classic)
 
     testImplementation(testFixtures(projects.aotCore))
     testImplementation(mn.micronaut.context)
     testImplementation(mn.micronaut.core.reactive)
     testCompileOnly(projects.aotCore)
-    testImplementation(mn.logback.classic) {
-        version {
-            require(libs.versions.logback.future.get())
-        }
-    }
+    testImplementation(mn.logback.classic)
     testRuntimeOnly(mn.snakeyaml)
 }

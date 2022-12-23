@@ -30,7 +30,7 @@ import io.micronaut.core.annotation.NonNull;
 import javax.lang.model.element.Modifier;
 import java.util.Locale;
 
-import static io.micronaut.aot.std.sourcegen.Logback13GeneratorHelper.configureMethod;
+import static io.micronaut.aot.std.sourcegen.Logback14GeneratorHelper.configureMethod;
 
 /**
  * A source generator responsible for converting a logback.xml configuration into
@@ -50,7 +50,7 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
         try {
             Class.forName("ch.qos.logback.core.model.Model");
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("The logback.xml conversion feature requires logback 1.3 on the AOT optimizer classpath.");
+            throw new IllegalStateException("The logback.xml conversion feature requires logback 1.4 on the AOT optimizer classpath.");
         }
         TypeSpec typeSpec = TypeSpec.classBuilder("StaticLogbackConfiguration")
                 .addModifiers(Modifier.PUBLIC)

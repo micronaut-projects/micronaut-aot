@@ -149,7 +149,7 @@ public final class ApplicationContextAnalyzer {
 
         @Override
         public Collection<List<String>> getPropertyPathMatches(String pathPattern) {
-            return Collections.emptyList();
+            return applicationContext.getPropertyPathMatches(pathPattern);
         }
 
         @Override

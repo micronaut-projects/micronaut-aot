@@ -53,7 +53,7 @@ import java.lang.Throwable;
 public class StaticLogbackConfiguration implements Configurator {
   private Context context;
 
-  public void configure(LoggerContext loggerContext) {
+  public Configurator.ExecutionStatus configure(LoggerContext loggerContext) {
     ConsoleAppender stdout = new ConsoleAppender();
     stdout.setWithJansi(true);
     PatternLayoutEncoder encoder = new PatternLayoutEncoder();
@@ -78,6 +78,7 @@ public class StaticLogbackConfiguration implements Configurator {
     io_micronaut_core_optim_staticoptimizations.addAppender(stdout);
     io_micronaut_core_io_service_softserviceloader.addAppender(stdout);
     io_micronaut_aot.addAppender(stdout);
+    return Configurator.ExecutionStatus.NEUTRAL;
   }
 
   public void setContext(Context context) {
@@ -143,7 +144,7 @@ import java.lang.Throwable;
 public class StaticLogbackConfiguration implements Configurator {
   private Context context;
 
-  public void configure(LoggerContext loggerContext) {
+  public Configurator.ExecutionStatus configure(LoggerContext loggerContext) {
     ConsoleAppender console = new ConsoleAppender();
     PatternLayoutEncoder encoder = new PatternLayoutEncoder();
     encoder.setPattern("%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n");
@@ -168,6 +169,7 @@ public class StaticLogbackConfiguration implements Configurator {
     _rootLogger.setLevel(Level.INFO);
     _rootLogger.addAppender(file);
     org_acme.addAppender(console);
+    return Configurator.ExecutionStatus.NEUTRAL;
   }
 
   public void setContext(Context context) {
@@ -235,7 +237,7 @@ import java.lang.Throwable;
 public class StaticLogbackConfiguration implements Configurator {
   private Context context;
 
-  public void configure(LoggerContext loggerContext) {
+  public Configurator.ExecutionStatus configure(LoggerContext loggerContext) {
     RollingFileAppender file = new RollingFileAppender();
     file.setFile("/tmp/logback.log");
     TimeBasedRollingPolicy rollingpolicy = new TimeBasedRollingPolicy();
@@ -260,6 +262,7 @@ public class StaticLogbackConfiguration implements Configurator {
     Logger _rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
     _rootLogger.setLevel(Level.INFO);
     _rootLogger.addAppender(file);
+    return Configurator.ExecutionStatus.NEUTRAL;
   }
 
   public void setContext(Context context) {
@@ -326,7 +329,7 @@ import java.lang.Throwable;
 public class StaticLogbackConfiguration implements Configurator {
   private Context context;
 
-  public void configure(LoggerContext loggerContext) {
+  public Configurator.ExecutionStatus configure(LoggerContext loggerContext) {
     ConsoleAppender console = new ConsoleAppender();
     PatternLayoutEncoder encoder = new PatternLayoutEncoder();
     encoder.setPattern("%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n");
@@ -345,6 +348,7 @@ public class StaticLogbackConfiguration implements Configurator {
     Logger _rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
     _rootLogger.setLevel(Level.INFO);
     _rootLogger.addAppender(console);
+    return Configurator.ExecutionStatus.NEUTRAL;
   }
 
   public void setContext(Context context) {
