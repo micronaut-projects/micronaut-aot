@@ -156,9 +156,14 @@ public class MyResourceGenerator implements AOTCodeGenerator {
 
 Then in a configuration file, the code generator would be configured this way:
 
-```
-my.resource.generator.enabled=true
-greeter.message=Hello, world!
-```
+[configuration]
+----
+my:
+  resource:
+    generator:
+      enabled: true
+greeter:
+  message: 'Hello, world!'
+----
 
 NOTE: Different code generators may share the same option values: it is legal, but often simply required (for example if there's a different implementation of a specific optimization based on the target runtime).
