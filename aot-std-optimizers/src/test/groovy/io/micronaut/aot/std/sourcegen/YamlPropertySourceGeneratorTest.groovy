@@ -49,10 +49,13 @@ import java.util.Map;
 public class Test_configStaticPropertySource extends MapPropertySource {
   Test_configStaticPropertySource() {
     super("test-config", new HashMap() {{
+        put("my.prop1", "val1");
+        put("my.prop2", "val2");
         put("micronaut.application.name", "demoApp");
         put("micronaut.server.port", 8181);
         put("micronaut.server.cors.enabled", true);
         put("micronaut.security.intercept-url-map", list0());
+        put("otel.exclusions", list5());
         }});
   }
 
@@ -84,6 +87,14 @@ public class Test_configStaticPropertySource extends MapPropertySource {
     List result = new ArrayList<>(2);
     result.add(map1());
     result.add(map3());
+    return result;
+  }
+
+  private static List list5() {
+    List result = new ArrayList<>(3);
+    result.add("\${my.prop1}");
+    result.add("\${my.prop2}");
+    result.add("fixed-value");
     return result;
   }
 
