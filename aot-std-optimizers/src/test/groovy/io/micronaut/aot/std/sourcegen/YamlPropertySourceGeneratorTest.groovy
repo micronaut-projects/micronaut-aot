@@ -55,7 +55,7 @@ public class Test_configStaticPropertySource extends MapPropertySource {
         put("micronaut.server.port", 8181);
         put("micronaut.server.cors.enabled", true);
         put("micronaut.security.intercept-url-map", list0());
-        put("otel.exclusions", list5());
+        put("otel.exclusions", list6());
         }});
   }
 
@@ -98,7 +98,7 @@ public class Test_configStaticPropertySource extends MapPropertySource {
     return result;
   }
 
-  private static List list5() {
+  private static List list6() {
     List result = new ArrayList<>(3);
     result.add("\${my.prop1}");
     result.add("\${my.prop2}");
