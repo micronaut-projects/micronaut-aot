@@ -83,10 +83,18 @@ public class Test_configStaticPropertySource extends MapPropertySource {
     return result;
   }
 
+  private static Map map5() {
+    Map result = new LinkedHashMap<>(2);
+    result.put("pattern", "/v1/odata/\$metadata");
+    result.put("http-method", "GET");
+    return result;
+  }
+
   private static List list0() {
-    List result = new ArrayList<>(2);
+    List result = new ArrayList<>(3);
     result.add(map1());
     result.add(map3());
+    result.add(map5());
     return result;
   }
 

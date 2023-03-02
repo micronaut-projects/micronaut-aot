@@ -118,7 +118,7 @@ public class MapGenerator {
         } else {
             mapMethod.addStatement("$T result = new $T<>($L)", Map.class, LinkedHashMap.class, value.size());
             for (Map.Entry<?, ?> entry : value.entrySet()) {
-                mapMethod.addStatement("result.put(" + convertValueToSource(entry.getKey(), builder) + ", " + convertValueToSource(entry.getValue(), builder) + ")");
+                mapMethod.addCode("result.put($L, $L);\n", convertValueToSource(entry.getKey(), builder), convertValueToSource(entry.getValue(), builder));
             }
             mapMethod.addStatement("return result");
         }
