@@ -55,7 +55,7 @@ public class Test_configStaticPropertySource extends MapPropertySource {
         put("micronaut.server.port", 8181);
         put("micronaut.server.cors.enabled", true);
         put("micronaut.security.intercept-url-map", list0());
-        put("otel.exclusions", list5());
+        put("otel.exclusions", list6());
         }});
   }
 
@@ -83,14 +83,22 @@ public class Test_configStaticPropertySource extends MapPropertySource {
     return result;
   }
 
-  private static List list0() {
-    List result = new ArrayList<>(2);
-    result.add(map1());
-    result.add(map3());
+  private static Map map5() {
+    Map result = new LinkedHashMap<>(2);
+    result.put("pattern", "/v1/odata/\$metadata");
+    result.put("http-method", "GET");
     return result;
   }
 
-  private static List list5() {
+  private static List list0() {
+    List result = new ArrayList<>(3);
+    result.add(map1());
+    result.add(map3());
+    result.add(map5());
+    return result;
+  }
+
+  private static List list6() {
     List result = new ArrayList<>(3);
     result.add("\${my.prop1}");
     result.add("\${my.prop2}");

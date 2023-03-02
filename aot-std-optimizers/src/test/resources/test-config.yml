@@ -21,6 +21,9 @@ micronaut:
         http-method: GET
         access:
           - isAnonymous()
+      -
+        pattern: /v1/odata/$metadata
+        http-method: GET
 otel:
   exclusions:
     - ${my.prop1}
