@@ -46,6 +46,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -69,7 +70,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     private final String packageName;
     private final ApplicationContextAnalyzer analyzer;
     private final Set<String> excludedResources = new TreeSet<>();
-    private final Map<String, List<String>> diagnostics = new HashMap<>();
+    private final Map<String, List<String>> diagnostics = new ConcurrentHashMap<>();
     private final Set<Class<?>> classesRequiredAtCompilation = new HashSet<>();
     private final Configuration configuration;
     private final Map<Class<?>, Object> context = new HashMap<>();
@@ -236,7 +237,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
 
     @Override
     public void addDiagnostics(String category, String message) {
-        diagnostics.computeIfAbsent(category, c -> new ArrayList<>()).add(message);
+        diagnostics.computeIfAbsent(category, c -> Collections.synchronizedList(new ArrayList<>())).add(message);
     }
 
     @Override
