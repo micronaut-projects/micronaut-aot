@@ -97,7 +97,7 @@ public class MapGenerator {
         } else {
             listMethod.addStatement("$T result = new $T<>($L)", List.class, ArrayList.class, value.size());
             for (Object o : value) {
-                listMethod.addStatement("result.add(" + convertValueToSource(o, builder) + ")");
+                listMethod.addCode("result.add($L);\n", convertValueToSource(o, builder));
             }
             listMethod.addStatement("return result");
         }
