@@ -97,7 +97,7 @@ public class MapGenerator {
         } else {
             listMethod.addStatement("$T result = new $T<>($L)", List.class, ArrayList.class, value.size());
             for (Object o : value) {
-                listMethod.addStatement("result.add(" + convertValueToSource(o, builder) + ")");
+                listMethod.addCode("result.add($L);\n", convertValueToSource(o, builder));
             }
             listMethod.addStatement("return result");
         }
@@ -118,7 +118,7 @@ public class MapGenerator {
         } else {
             mapMethod.addStatement("$T result = new $T<>($L)", Map.class, LinkedHashMap.class, value.size());
             for (Map.Entry<?, ?> entry : value.entrySet()) {
-                mapMethod.addStatement("result.put(" + convertValueToSource(entry.getKey(), builder) + ", " + convertValueToSource(entry.getValue(), builder) + ")");
+                mapMethod.addCode("result.put($L, $L);\n", convertValueToSource(entry.getKey(), builder), convertValueToSource(entry.getValue(), builder));
             }
             mapMethod.addStatement("return result");
         }

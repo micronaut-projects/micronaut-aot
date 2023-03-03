@@ -49,11 +49,15 @@ import java.util.List;
 import java.util.Map;
 
 public class EnvironmentPropertiesOptimizationLoader implements StaticOptimizations.Loader<EnvironmentProperties> {
+  private void load0(Map<String, List<String>> env) {
+    env.put("MICRONAUT_PORT", Arrays.asList("micronaut.port", "micronaut-port"));
+    env.put("SOME_LONG_ENV_VAR", Arrays.asList("some.long.env.var", "some.long.env-var", "some.long-env.var", "some.long-env-var", "some-long.env.var", "some-long.env-var", "some-long-env.var", "some-long-env-var"));
+  }
+
   @Override
   public EnvironmentProperties load() {
     Map<String, List<String>> env = new HashMap<String, List<String>>();
-    env.put("MICRONAUT_PORT", Arrays.asList("micronaut.port", "micronaut-port"));
-    env.put("SOME_LONG_ENV_VAR", Arrays.asList("some.long.env.var", "some.long.env-var", "some.long-env.var", "some.long-env-var", "some-long.env.var", "some-long.env-var", "some-long-env.var", "some-long-env-var"));
+    load0(env);
     return EnvironmentProperties.of(env);
   }
 }"""
