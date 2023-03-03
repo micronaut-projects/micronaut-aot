@@ -96,13 +96,13 @@
         <h1>Micronaut AOT</h1>
         <p></p>
         <p>Build time optimizations for Micronaut</p>
-        <p><strong>Version:</strong> <select style='max-width: 200px' onChange='window.document.location.href=this.options[this.selectedIndex].value;'><option value='https://micronaut-projects.github.io/micronaut-aot/snapshot/guide/index.html'>SNAPSHOT</option><option selected='selected' value='https://micronaut-projects.github.io/micronaut-aot/1.1.1/guide/index.html'>1.1.1</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.1.0/guide/index.html'>1.1.0</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.3/guide/index.html'>1.0.3</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.2/guide/index.html'>1.0.2</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.1/guide/index.html'>1.0.1</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0/guide/index.html'>1.0.0</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M7/guide/index.html'>1.0.0-M7</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M6/guide/index.html'>1.0.0-M6</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M5/guide/index.html'>1.0.0-M5</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M4/guide/index.html'>1.0.0-M4</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M3/guide/index.html'>1.0.0-M3</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M2/guide/index.html'>1.0.0-M2</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M1/guide/index.html'>1.0.0-M1</option></select> </p>
+        <p><strong>Version:</strong> <select style='max-width: 200px' onChange='window.document.location.href=this.options[this.selectedIndex].value;'><option value='https://micronaut-projects.github.io/micronaut-aot/snapshot/guide/index.html'>SNAPSHOT</option><option value='https://micronaut-projects.github.io/micronaut-aot/latest/guide/index.html'>LATEST</option><option selected='selected' value='https://micronaut-projects.github.io/micronaut-aot/1.1.2/guide/index.html'>1.1.2</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.1.1/guide/index.html'>1.1.1</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.1.0/guide/index.html'>1.1.0</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.3/guide/index.html'>1.0.3</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.2/guide/index.html'>1.0.2</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.1/guide/index.html'>1.0.1</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0/guide/index.html'>1.0.0</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M7/guide/index.html'>1.0.0-M7</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M6/guide/index.html'>1.0.0-M6</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M5/guide/index.html'>1.0.0-M5</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M4/guide/index.html'>1.0.0-M4</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M3/guide/index.html'>1.0.0-M3</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M2/guide/index.html'>1.0.0-M2</option><option value='https://micronaut-projects.github.io/micronaut-aot/1.0.0-M1/guide/index.html'>1.0.0-M1</option></select> </p>
     </div>
     
 <h1 id="introduction"><a class="anchor" href="#introduction"></a>1 Introduction</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/master/src/main/docs/guide/introduction.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/1.1.x/src/main/docs/guide/introduction.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -137,16 +137,18 @@ This includes, but is not limited to:</p>
 </td>
 <td class="content">
 Unlike other Micronaut modules, Micronaut AOT is not a dependency which needs to be added to your application: it&#8217;s a framework which requires integration with your build process: it is typically aimed at being integrated into build tool plugins.
-Currently, integration with Micronaut AOT is only implemented by the <a href="https://github.com/micronaut-projects/micronaut-gradle-plugin">Gradle plugin</a>.
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p>Both <a href="https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#_micronaut_aot_plugin">Micronaut Gradle plugin</a> and <a href="https://micronaut-projects.github.io/micronaut-maven-plugin/latest/examples/aot.html">Micronaut Maven Plugin</a> integrate with Micronaut AOT.</p>
 </div>
 
 <h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>2 Release History</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/master/src/main/docs/guide/releaseHistory.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/1.1.x/src/main/docs/guide/releaseHistory.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -162,7 +164,7 @@ Currently, integration with Micronaut AOT is only implemented by the <a href="ht
 <h1 id="quickStart"><a class="anchor" href="#quickStart"></a>3 Quick Start</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/master/src/main/docs/guide/quickStart.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/1.1.x/src/main/docs/guide/quickStart.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -476,7 +478,7 @@ Different code generators may share the same option values: it is legal, but oft
 <h1 id="repository"><a class="anchor" href="#repository"></a>4 Repository</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/master/src/main/docs/guide/repository.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/1.1.x/src/main/docs/guide/repository.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
