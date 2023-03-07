@@ -9,13 +9,14 @@ pluginManagement {
 }
 
 plugins {
-    id("io.micronaut.build.shared.settings") version "6.2.2"
+    id("io.micronaut.build.shared.settings") version "6.3.3"
 }
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 rootProject.name = "aot-parent"
 
+include("aot-bom")
 include("aot-core")
 include("aot-std-optimizers")
 include("aot-api")
@@ -25,4 +26,5 @@ configure<io.micronaut.build.MicronautBuildSettingsExtension> {
     addSnapshotRepository()
     importMicronautCatalog()
     importMicronautCatalog("micronaut-picocli")
+    useStandardizedProjectNames.set(true)
 }

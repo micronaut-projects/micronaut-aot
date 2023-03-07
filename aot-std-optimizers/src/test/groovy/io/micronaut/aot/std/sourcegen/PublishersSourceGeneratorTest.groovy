@@ -46,7 +46,7 @@ import java.util.Arrays;
 public class PublishersOptimizationsLoader implements StaticOptimizations.Loader<PublishersOptimizations> {
   @Override
   public PublishersOptimizations load() {
-    return new PublishersOptimizations(Arrays.asList(), Arrays.asList(CompletableFuturePublisher.class, Publishers.JustPublisher.class), Arrays.asList(Completable.class));
+    return new PublishersOptimizations(Arrays.asList(CompletableFuturePublisher.class, Publishers.JustPublisher.class, Completable.class), Arrays.asList(CompletableFuturePublisher.class, Publishers.JustPublisher.class), Arrays.asList(Completable.class));
   }
 }"""
                 compiles()
