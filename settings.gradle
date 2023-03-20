@@ -22,7 +22,7 @@ include("aot-std-optimizers")
 include("aot-api")
 include("aot-cli")
 
-configure<io.micronaut.build.MicronautBuildSettingsExtension> {
+micronautBuild {
     addSnapshotRepository()
     importMicronautCatalog()
     importMicronautCatalog("micronaut-picocli")
