@@ -1,6 +1,6 @@
 [versions]
 javapoet = "1.13.0"
-micronaut-picocli = "5.0.0-SNAPSHOT"
+micronaut-picocli = "5.0.0-M1"
 
 [libraries]
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
