@@ -23,6 +23,7 @@ include("aot-api")
 include("aot-cli")
 
 micronautBuild {
+    importMicronautCatalog("micronaut-logging")
     importMicronautCatalog()
     importMicronautCatalog("micronaut-picocli")
     useStandardizedProjectNames.set(true)
