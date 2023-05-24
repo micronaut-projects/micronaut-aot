@@ -23,7 +23,6 @@ include("aot-api")
 include("aot-cli")
 
 micronautBuild {
-    addSnapshotRepository()
     importMicronautCatalog()
     importMicronautCatalog("micronaut-picocli")
     useStandardizedProjectNames.set(true)
