@@ -1,7 +1,9 @@
 [versions]
 javapoet = "1.13.0"
-micronaut-picocli = "5.0.0-M1"
+micronaut-picocli = "5.0.0-M2"
 
+micronaut-logging = "1.0.0-M2"
 [libraries]
+micronaut-logging = { module = "io.micronaut.logging:micronaut-logging-bom", version.ref = "micronaut-logging" }
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 micronaut-picocli = { module = "io.micronaut.picocli:micronaut-picocli-bom", version.ref = "micronaut-picocli" }
