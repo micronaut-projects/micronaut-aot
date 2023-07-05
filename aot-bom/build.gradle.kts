@@ -2,12 +2,10 @@ plugins {
     id("io.micronaut.build.internal.bom")
 }
 
-val isGreaterThan2_0 = provider {
-    version.toString()
-        .split('.')
-        .let { it[0].toInt() >= 2 && (it[1].toInt() > 0) }
-}
-
 micronautBuild {
-    binaryCompatibility.enabled.set(isGreaterThan2_0)
+    binaryCompatibility {
+        // TODO required for now. Remove after Micronaut 4 release
+        baselineVersion.set("2.0.0-M4")
+        enabled.set(true)
+    }
 }
