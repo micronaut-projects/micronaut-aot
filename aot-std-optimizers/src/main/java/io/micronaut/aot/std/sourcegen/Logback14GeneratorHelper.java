@@ -335,7 +335,7 @@ class Logback14GeneratorHelper {
             }
         };
         visitor.visit(model);
-        codeBuilder.addStatement(CodeBlock.of("return $T.NEUTRAL", Configurator.ExecutionStatus.class));
+        codeBuilder.addStatement(CodeBlock.of("return $T.DO_NOT_INVOKE_NEXT_IF_ANY", Configurator.ExecutionStatus.class));
         return MethodSpec.methodBuilder("configure")
                 .addModifiers(Modifier.PUBLIC)
                 .returns(Configurator.ExecutionStatus.class)
