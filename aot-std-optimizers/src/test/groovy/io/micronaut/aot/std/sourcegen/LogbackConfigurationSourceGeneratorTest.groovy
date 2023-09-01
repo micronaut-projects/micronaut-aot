@@ -78,7 +78,7 @@ public class StaticLogbackConfiguration implements Configurator {
     io_micronaut_core_optim_staticoptimizations.addAppender(stdout);
     io_micronaut_core_io_service_softserviceloader.addAppender(stdout);
     io_micronaut_aot.addAppender(stdout);
-    return Configurator.ExecutionStatus.NEUTRAL;
+    return Configurator.ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
   }
 
   public void setContext(Context context) {
@@ -169,7 +169,7 @@ public class StaticLogbackConfiguration implements Configurator {
     _rootLogger.setLevel(Level.INFO);
     _rootLogger.addAppender(file);
     org_acme.addAppender(console);
-    return Configurator.ExecutionStatus.NEUTRAL;
+    return Configurator.ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
   }
 
   public void setContext(Context context) {
@@ -262,7 +262,7 @@ public class StaticLogbackConfiguration implements Configurator {
     Logger _rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
     _rootLogger.setLevel(Level.INFO);
     _rootLogger.addAppender(file);
-    return Configurator.ExecutionStatus.NEUTRAL;
+    return Configurator.ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
   }
 
   public void setContext(Context context) {
@@ -348,7 +348,7 @@ public class StaticLogbackConfiguration implements Configurator {
     Logger _rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
     _rootLogger.setLevel(Level.INFO);
     _rootLogger.addAppender(console);
-    return Configurator.ExecutionStatus.NEUTRAL;
+    return Configurator.ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
   }
 
   public void setContext(Context context) {
