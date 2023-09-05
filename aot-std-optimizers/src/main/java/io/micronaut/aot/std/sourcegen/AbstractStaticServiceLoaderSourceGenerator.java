@@ -66,7 +66,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     public static final String REJECTED_CLASSES = "serviceloading.rejected.impls";
     public static final String FORCE_INCLUDE = "serviceloading.force.include.impls";
 
-    protected static final String DEFAULT_SERVICE_TYPES = "io.micronaut.context.env.PropertySourceLoader,io.micronaut.inject.BeanConfiguration,io.micronaut.inject.BeanDefinitionReference,io.micronaut.http.HttpRequestFactory,io.micronaut.http.HttpResponseFactory,io.micronaut.core.beans.BeanIntrospectionReference,io.micronaut.core.convert.TypeConverterRegistrar,io.micronaut.context.ApplicationContextConfigurer,io.micronaut.context.env.PropertyExpressionResolver";
+    protected static final String DEFAULT_SERVICE_TYPES = "io.micronaut.context.env.PropertySourceLoader,io.micronaut.inject.BeanConfiguration,io.micronaut.inject.BeanDefinitionReference,io.micronaut.http.HttpRequestFactory,io.micronaut.http.HttpResponseFactory,io.micronaut.core.beans.BeanIntrospectionReference,io.micronaut.core.convert.TypeConverterRegistrar,io.micronaut.context.env.PropertyExpressionResolver";
     public static final List<String> DEFAULT_SERVICE_TYPES_LIST = Arrays.stream(DEFAULT_SERVICE_TYPES.split(",")).toList();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStaticServiceLoaderSourceGenerator.class);
