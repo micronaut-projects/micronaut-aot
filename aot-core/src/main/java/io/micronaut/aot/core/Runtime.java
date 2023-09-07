@@ -19,6 +19,16 @@ package io.micronaut.aot.core;
  * The targetted type of runtime.
  */
 public enum Runtime {
-    JIT,
-    NATIVE
+    JIT("JIT"),
+    NATIVE("native");
+
+    private final String displayName;
+
+    Runtime(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String displayName() {
+        return displayName;
+    }
 }

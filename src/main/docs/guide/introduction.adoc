@@ -1,3 +1,6 @@
+WARNING: Unlike other Micronaut modules, Micronaut AOT is not a dependency which needs to be added to your application: it's a framework which requires integration with your build process: it is typically aimed at being integrated into build tool plugins. If you are looking into documentation about how to configure Micronaut AOT, you should look into the corresponding build tool documentation.
+Micronaut AOT support is implemented by the https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#_micronaut_aot_plugin[Micronaut Gradle plugin] and https://micronaut-projects.github.io/micronaut-maven-plugin/latest/examples/aot.html[Micronaut Maven plugin].
+
 Micronaut AOT is a framework which implements _ahead-of-time_ (AOT) optimizations for Micronaut application and libraries.
 Those optimizations consist of computing _at build time_ things which would normally be done at runtime.
 This includes, but is not limited to:
@@ -7,6 +10,3 @@ This includes, but is not limited to:
 - performing substitution of classes with "optimized" versions for a particular environment
 
 Micronaut AOT can generate specific optimizations for different environments, in particular, it can make a difference between optimizations needed in JIT mode (traditional JVM applications) and native mode (application compiled with GraalVM `native-image`).
-
-WARNING: Unlike other Micronaut modules, Micronaut AOT is not a dependency which needs to be added to your application: it's a framework which requires integration with your build process: it is typically aimed at being integrated into build tool plugins.
-Integration with Micronaut AOT is implemented by the https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#_micronaut_aot_plugin[Micronaut Gradle plugin] and https://micronaut-projects.github.io/micronaut-maven-plugin/latest/examples/aot.html[Micronaut Maven plugin].

@@ -1,3 +1,5 @@
+import org.gradle.api.plugins.internal.JvmPluginsHelper
+
 /*
  * Copyright 2017-2021 original authors
  *
@@ -35,4 +37,38 @@ dependencies {
     testCompileOnly(projects.micronautAotCore)
     testImplementation(mnLogging.logback.classic)
     testRuntimeOnly(mn.snakeyaml)
+}
+
+val configPropsGenerator by sourceSets.creating {
+}
+
+dependencies {
+    "configPropsGeneratorImplementation"(project)
+    "configPropsGeneratorRuntimeOnly"(projects.micronautAotCore)
+    "configPropsGeneratorRuntimeOnly"(mn.micronaut.context)
+    "configPropsGeneratorRuntimeOnly"(mnLogging.slf4j.simple)
+}
+
+val configFile = layout.buildDirectory.file("generated-config/standard-optimizers.adoc")
+
+val generateConfigProps = tasks.register<JavaExec>("generateConfigProps") {
+    classpath = configPropsGenerator.runtimeClasspath
+    mainClass.set("io.micronaut.aot.config.ConfigPropsGenerator")
+    args(configFile.map { it.asFile.absolutePath }.get())
+    doFirst {
+        configFile.map { it.asFile.absoluteFile.parentFile }.get().mkdirs()
+    }
+}
+
+configurations {
+    individualConfigurationPropertiesElements {
+        outgoing.artifact(configFile) {
+            builtBy(generateConfigProps)
+        }
+    }
+    configurationPropertiesElements {
+        outgoing.artifact(configFile) {
+            builtBy(generateConfigProps)
+        }
+    }
 }
