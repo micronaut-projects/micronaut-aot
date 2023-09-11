@@ -109,6 +109,19 @@
 </div>
 
 
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Unlike other Micronaut modules, Micronaut AOT is not a dependency which needs to be added to your application: it&#8217;s a framework which requires integration with your build process: it is typically aimed at being integrated into build tool plugins. If you are looking into documentation about how to configure Micronaut AOT, you should look into the corresponding build tool documentation.
+Micronaut AOT support is implemented by the <a href="https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#_micronaut_aot_plugin">Micronaut Gradle plugin</a> and <a href="https://micronaut-projects.github.io/micronaut-maven-plugin/latest/examples/aot.html">Micronaut Maven plugin</a>.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>Micronaut AOT is a framework which implements <em>ahead-of-time</em> (AOT) optimizations for Micronaut application and libraries.
 Those optimizations consist of computing <em>at build time</em> things which would normally be done at runtime.
@@ -129,19 +142,6 @@ This includes, but is not limited to:</p>
 </div>
 <div class="paragraph">
 <p>Micronaut AOT can generate specific optimizations for different environments, in particular, it can make a difference between optimizations needed in JIT mode (traditional JVM applications) and native mode (application compiled with GraalVM <code>native-image</code>).</p>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-Unlike other Micronaut modules, Micronaut AOT is not a dependency which needs to be added to your application: it&#8217;s a framework which requires integration with your build process: it is typically aimed at being integrated into build tool plugins.
-Integration with Micronaut AOT is implemented by the <a href="https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#_micronaut_aot_plugin">Micronaut Gradle plugin</a> and <a href="https://micronaut-projects.github.io/micronaut-maven-plugin/latest/examples/aot.html">Micronaut Maven plugin</a>.
-</td>
-</tr>
-</table>
 </div>
 
 <h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>2 Release History</h1>
@@ -172,24 +172,19 @@ Integration with Micronaut AOT is implemented by the <a href="https://micronaut-
 <div class="sect1">
 <h2 id="_applicability">Applicability</h2>
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Micronaut AOT is an experimental project. Use at your own risk.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>The goal of Micronaut AOT is to create an optimized "binary" for a particular deployment environment.
 It is <strong>not</strong> to make development experience faster: because build time optimizations require deep analysis of the application, it will actually make the local development slower if you use optimized binaries.</p>
 </div>
 <div class="paragraph">
 <p>You should consider Micronaut AOT similarly to what GraalVM&#8217;s <code>native-image</code> tool is: a "compiler" which generates a <em>different</em> application, aimed at a particular <em>runtime</em>. That is, depending on the optimizations which are enabled, a binary optimized by AOT may, or may not, work in a specific deployment environment.</p>
+</div>
+<div class="paragraph">
+<p>As a consequence, it is recommended to build your Micronaut AOT optimized application on the same environment as the deployment one.
+Please refer to the documentation of your build tool for configuration options.</p>
+</div>
+<div class="paragraph">
+<p>The following documentation is for users who want to implement their own AOT optimizers.</p>
 </div>
 </div>
 </div>
