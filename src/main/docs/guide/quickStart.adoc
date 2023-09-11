@@ -1,7 +1,5 @@
 == Applicability
 
-NOTE: Micronaut AOT is an experimental project. Use at your own risk.
-
 The goal of Micronaut AOT is to create an optimized "binary" for a particular deployment environment.
 It is **not** to make development experience faster: because build time optimizations require deep analysis of the application, it will actually make the local development slower if you use optimized binaries.
 
