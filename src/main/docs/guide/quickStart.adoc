@@ -1,11 +1,14 @@
 == Applicability
 
-NOTE: Micronaut AOT is an experimental project. Use at your own risk.
-
 The goal of Micronaut AOT is to create an optimized "binary" for a particular deployment environment.
 It is **not** to make development experience faster: because build time optimizations require deep analysis of the application, it will actually make the local development slower if you use optimized binaries.
 
 You should consider Micronaut AOT similarly to what GraalVM's `native-image` tool is: a "compiler" which generates a _different_ application, aimed at a particular _runtime_. That is, depending on the optimizations which are enabled, a binary optimized by AOT may, or may not, work in a specific deployment environment.
+
+As a consequence, it is recommended to build your Micronaut AOT optimized application on the same environment as the deployment one.
+Please refer to the documentation of your build tool for configuration options.
+
+The following documentation is for users who want to implement their own AOT optimizers.
 
 == Micronaut AOT projects
 
