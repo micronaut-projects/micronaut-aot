@@ -76,7 +76,7 @@ public class DefaultConfiguration implements Configuration {
     }
 
     private static void invalidConfiguration(String key, String message) {
-        throw new IllegalStateException("Parameter '" + "'" + key + " " + message);
+        throw new IllegalStateException("Parameter '" + key + "' " + message);
     }
 
 }
