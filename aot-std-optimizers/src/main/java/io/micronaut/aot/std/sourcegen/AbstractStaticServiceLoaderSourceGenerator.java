@@ -79,7 +79,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
     private Map<String, AbstractCodeGenerator> substitutions;
     private Set<String> forceInclude;
     private final Substitutes substitutes = new Substitutes();
-    private final Map<String, TypeSpec> staticServiceClasses = new HashMap<>();
+    private final Map<String, GeneratedType> staticServiceClasses = new HashMap<>();
     private final Set<BeanConfiguration> disabledConfigurations = Collections.synchronizedSet(new HashSet<>());
     private final Map<String, List<Class<?>>> serviceClasses = new HashMap<>();
     private final Set<Class<?>> disabledServices = new HashSet<>();
@@ -144,7 +144,10 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
         LOGGER.debug("Generated static {} service loader substitutions", substitutes.values().size());
         staticServiceClasses.values()
                 .stream()
-                .map(context::javaFile)
+                .map(generatedType -> {
+                    context.registerBuildTimeInit(generatedType.className());
+                    return context.javaFile(generatedType.typeSpec());
+                })
                 .forEach(context::registerGeneratedSourceFile);
         context.registerStaticOptimization("StaticServicesLoader", SoftServiceLoader.Optimizations.class, this::buildOptimization);
     }
@@ -166,7 +169,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                     serviceName,
                     serviceType,
                     factory);
-            staticServiceClasses.put(serviceName, factory.build());
+            staticServiceClasses.put(serviceName, new GeneratedType(context.getPackageName() + "." + factoryNameFor(serviceName), factory.build()));
         }
     }
 
@@ -234,12 +237,16 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                                                   TypeSpec.Builder factory);
 
     private TypeSpec.Builder prepareServiceLoaderType(String serviceName, Class<?> serviceType) {
-        String name = simpleNameOf(serviceName) + "Factory";
+        String name = factoryNameFor(serviceName);
         TypeSpec.Builder factory = TypeSpec.classBuilder(name)
                 .addModifiers(PUBLIC)
                 .addAnnotation(Generated.class)
                 .addSuperinterface(ParameterizedTypeName.get(SoftServiceLoader.StaticServiceLoader.class, serviceType));
         return factory;
+    }
+
+    private static String factoryNameFor(String serviceName) {
+        return simpleNameOf(serviceName) + "Factory";
     }
 
     private void buildOptimization(CodeBlock.Builder body) {
@@ -249,8 +256,8 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                     ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), serviceLoaderType),
                     ParameterizedTypeName.get(ClassName.get(HashMap.class), ClassName.get(String.class), serviceLoaderType));
 
-            for (Map.Entry<String, TypeSpec> entry : staticServiceClasses.entrySet()) {
-                body.addStatement("staticServices.put($S, new $T())", entry.getKey(), ClassName.bestGuess(entry.getValue().name));
+            for (Map.Entry<String, GeneratedType> entry : staticServiceClasses.entrySet()) {
+                body.addStatement("staticServices.put($S, new $T())", entry.getKey(), ClassName.bestGuess(entry.getValue().typeSpec().name));
             }
             body.addStatement("return new $T(staticServices)", SoftServiceLoader.Optimizations.class);
     }
@@ -324,5 +331,11 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
         }
     }
 
+    private record GeneratedType(
+        String className,
+        TypeSpec typeSpec
+    ) {
+
+    }
 
 }

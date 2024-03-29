@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -116,6 +117,12 @@ public interface AOTContext {
     void registerClassNeededAtCompileTime(@NonNull Class<?> clazz);
 
     /**
+     * Registers a type as a requiring initialization at build time.
+     * @param className the type
+     */
+    void registerBuildTimeInit(@NonNull String className);
+
+    /**
      * Generates a java file spec.
      * @param typeSpec the type spec of the main class
      * @return a java file
@@ -165,4 +172,16 @@ public interface AOTContext {
      */
     @NonNull
     Runtime getRuntime();
+
+    /**
+     * Returns the set of classes which require build time initialization
+     * @return the set of classes needing build time init
+     */
+    Set<String> getBuildTimeInitClasses();
+
+    /**
+     * Performs actions which have to be done as late as possible during
+     * source generation.
+     */
+    void finish();
 }

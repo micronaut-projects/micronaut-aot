@@ -34,6 +34,8 @@ public abstract class AbstractSingleClassFileGenerator extends AbstractCodeGener
         this.context = context;
         JavaFile javaFile = generate();
         context.registerGeneratedSourceFile(javaFile);
+        context.registerBuildTimeInit(javaFile.packageName + "." + javaFile.typeSpec.name);
+        context.registerBuildTimeInit(javaFile.packageName + "." + javaFile.typeSpec.name + "$1");
     }
 
     protected final AOTContext getContext() {

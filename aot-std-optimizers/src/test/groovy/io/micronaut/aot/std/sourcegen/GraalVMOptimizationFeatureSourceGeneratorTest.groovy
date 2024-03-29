@@ -18,7 +18,8 @@ class GraalVMOptimizationFeatureSourceGeneratorTest extends AbstractSourceGenera
         assertThatGeneratedSources {
             doesNotCreateInitializer()
             generatesMetaInfResource("native-image/$packageName/native-image.properties", """
-Args=--initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigurer \\
+Args=--initialize-at-build-time=io.micronaut.context.ApplicationContextConfigurer\$1 \\
+     --initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigurer \\
 """)
         }
     }
@@ -32,7 +33,8 @@ Args=--initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigure
         assertThatGeneratedSources {
             doesNotCreateInitializer()
             generatesMetaInfResource("native-image/$packageName/native-image.properties", """
-Args=--initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigurer \\
+Args=--initialize-at-build-time=io.micronaut.context.ApplicationContextConfigurer\$1 \\
+     --initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigurer \\
      -H:ServiceLoaderFeatureExcludeServices=A \\
      -H:ServiceLoaderFeatureExcludeServices=B \\
      -H:ServiceLoaderFeatureExcludeServices=C

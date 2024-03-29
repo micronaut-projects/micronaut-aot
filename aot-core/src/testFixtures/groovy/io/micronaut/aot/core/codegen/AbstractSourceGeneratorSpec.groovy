@@ -63,9 +63,10 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
 
     abstract AOTCodeGenerator newGenerator()
 
-    void generate() {
+    final void generate() {
         def sourceGenerator = newGenerator()
         sourceGenerator.generate(context)
+        context.finish()
         def sources = context.getGeneratedJavaFiles().collectEntries([:]) {
             def writer = new StringWriter()
             it.writeTo(writer)
