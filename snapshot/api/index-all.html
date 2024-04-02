@@ -298,6 +298,15 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the option with the corresponding name.</div>
 </dd>
+<dt><a href="io/micronaut/aot/core/AOTContext.html#finish()" class="member-name-link">finish()</a> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
+<dd>
+<div class="block">Performs actions which have to be done as late as possible during
+ source generation.</div>
+</dd>
+<dt><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#finish()" class="member-name-link">finish()</a> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#finish()" class="member-name-link">finish()</a> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html#FORCE_INCLUDE" class="member-name-link">FORCE_INCLUDE</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 </dl>
@@ -373,6 +382,14 @@ loadScripts(document, 'script');</script>
  if a bean matches requirements.</div>
 </dd>
 <dt><a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html#getApplicationContext()" class="member-name-link">getApplicationContext()</a> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/core/AOTContext.html#getBuildTimeInitClasses()" class="member-name-link">getBuildTimeInitClasses()</a> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
+<dd>
+<div class="block">Returns the set of classes which require build time initialization</div>
+</dd>
+<dt><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#getBuildTimeInitClasses()" class="member-name-link">getBuildTimeInitClasses()</a> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#getBuildTimeInitClasses()" class="member-name-link">getBuildTimeInitClasses()</a> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/AOTContext.html#getConfiguration()" class="member-name-link">getConfiguration()</a> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
@@ -683,6 +700,14 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:R">R</h2>
 <dl class="index">
+<dt><a href="io/micronaut/aot/core/AOTContext.html#registerBuildTimeInit(java.lang.String)" class="member-name-link">registerBuildTimeInit(String)</a> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
+<dd>
+<div class="block">Registers a type as a requiring initialization at build time.</div>
+</dd>
+<dt><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html#registerBuildTimeInit(java.lang.String)" class="member-name-link">registerBuildTimeInit(String)</a> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html#registerBuildTimeInit(java.lang.String)" class="member-name-link">registerBuildTimeInit(String)</a> - Method in class io.micronaut.aot.core.context.<a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/AOTContext.html#registerClassNeededAtCompileTime(java.lang.Class)" class="member-name-link">registerClassNeededAtCompileTime(Class&lt;?&gt;)</a> - Method in interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTContext.html" title="interface in io.micronaut.aot.core">AOTContext</a></dt>
 <dd>
 <div class="block">Registers a class as needed at compile time (where compile time
