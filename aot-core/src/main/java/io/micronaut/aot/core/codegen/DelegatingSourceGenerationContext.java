@@ -29,6 +29,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -111,6 +112,11 @@ public abstract class DelegatingSourceGenerationContext implements AOTContext {
     }
 
     @Override
+    public void registerBuildTimeInit(String className) {
+        delegate.registerBuildTimeInit(className);
+    }
+
+    @Override
     @NonNull
     public JavaFile javaFile(TypeSpec typeSpec) {
         return delegate.javaFile(typeSpec);
@@ -143,5 +149,15 @@ public abstract class DelegatingSourceGenerationContext implements AOTContext {
     @NonNull
     public Runtime getRuntime() {
         return delegate.getRuntime();
+    }
+
+    @Override
+    public Set<String> getBuildTimeInitClasses() {
+        return delegate.getBuildTimeInitClasses();
+    }
+
+    @Override
+    public void finish() {
+        delegate.finish();
     }
 }

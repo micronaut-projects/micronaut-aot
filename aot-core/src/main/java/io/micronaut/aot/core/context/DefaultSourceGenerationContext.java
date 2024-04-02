@@ -77,6 +77,8 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     private final List<JavaFile> generatedJavaFiles = new ArrayList<>();
     private final List<MethodSpec> initializers = new ArrayList<>();
     private final Path generatedResourcesDirectory;
+    private final Set<String> buildTimeInitClasses = new HashSet<>();
+    private final List<Runnable> deferredOperations = new ArrayList<>();
 
     public DefaultSourceGenerationContext(String packageName,
                                           ApplicationContextAnalyzer analyzer,
@@ -163,6 +165,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
                 .addSuperinterface(ParameterizedTypeName.get(StaticOptimizations.Loader.class, optimizationKind))
                 .addMethod(method)
                 .build();
+        registerBuildTimeInit(optimizationKind.getName());
         registerGeneratedSourceFile(javaFile(generatedType));
         registerServiceImplementation(StaticOptimizations.Loader.class, className);
     }
@@ -190,14 +193,16 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     @Override
     public void registerGeneratedResource(@NonNull String path, Consumer<? super File> consumer) {
         LOGGER.debug("Registering generated resource file: {}", path);
-        Path relative = generatedResourcesDirectory.resolve(path);
-        File resourceFile = relative.toFile();
-        File parent = resourceFile.getParentFile();
-        if (parent.exists() || parent.mkdirs()) {
-            consumer.accept(resourceFile);
-        } else {
-            throw new RuntimeException("Unable to create parent file " + parent + " for resource " + path);
-        }
+        deferredOperations.add(() -> {
+            Path relative = generatedResourcesDirectory.resolve(path);
+            File resourceFile = relative.toFile();
+            File parent = resourceFile.getParentFile();
+            if (parent.exists() || parent.mkdirs()) {
+                consumer.accept(resourceFile);
+            } else {
+                throw new RuntimeException("Unable to create parent file " + parent + " for resource " + path);
+            }
+        });
     }
 
     @NonNull
@@ -215,6 +220,11 @@ public final class DefaultSourceGenerationContext implements AOTContext {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void registerBuildTimeInit(String className) {
+        buildTimeInitClasses.add(className);
     }
 
     /**
@@ -257,5 +267,15 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     @Override
     public Map<String, List<String>> getDiagnostics() {
         return diagnostics;
+    }
+
+    @Override
+    public Set<String> getBuildTimeInitClasses() {
+        return Collections.unmodifiableSet(buildTimeInitClasses);
+    }
+
+    @Override
+    public void finish() {
+        deferredOperations.forEach(Runnable::run);
     }
 }

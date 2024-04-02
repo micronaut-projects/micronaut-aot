@@ -69,6 +69,7 @@ public class ApplicationContextConfigurerGenerator extends AbstractCodeGenerator
         optimizedEntryPoint.addStaticBlock(staticInitializer.build());
         context.registerGeneratedSourceFile(context.javaFile(optimizedEntryPoint.build()));
         context.registerServiceImplementation(ApplicationContextConfigurer.class, CUSTOMIZER_CLASS_NAME);
+        context.finish();
     }
 
     private void addDiagnostics(AOTContext context, TypeSpec.Builder optimizedEntryPoint) {
