@@ -1,0 +1,495 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+    <title>Micronaut AOT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="../css/main.css" type="text/css" media="screen, print" title="Style" charset="utf-8" />
+    <link rel="stylesheet" href="../css/custom.css" type="text/css" media="screen, print" title="Style" charset="utf-8" />
+    <link rel="stylesheet" href="../css/pdf.css" type="text/css" media="print" title="PDF" charset="utf-8" />
+    <link rel="stylesheet" href="../css/highlight/agate.css">
+    <script src="../js/highlight.pack.js"></script>
+    <script src="../js/guide.js"></script>
+    <script src="../js/multi-language-sample.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <link rel="stylesheet" href="../css/multi-language-sample.css"/>
+    <script src="../js/docs.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.13/clipboard.min.js"></script>
+    <script type="text/javascript">
+        function addJsClass(el) {
+            var classes = document.body.className.split(" ");
+            classes.push("js");
+            document.body.className = classes.join(" ");
+        }
+    </script>
+
+</head>
+
+<body class="body" id="docs" onload="addJsClass();" onhashchange="highlightMenu()">
+
+<div id="table-of-content-nav-link" class="desktop">
+    <a id="theme-switcher" title="Switch to dark theme" href="javascript:switchTheme(true)"><i class="fa fa-moon-o"></i></a>
+    <a title="Collapse/Open Table of contents" title="Hide Table of Contents" href="javascript:hideTableOfContents();" class="button">[ + ]</a>
+</div>
+
+<div id="main">
+    <div id="navigation" class="no-print">
+        <div class="navTitle">
+            <span id="logo"><a href="http://micronaut.io" title="Go to Micronaut Website"><img src="../img/micronaut-logo-white.svg" alt="Micronaut"/></a></span>
+        </div>
+        <div class="navLinks">
+            <ul>
+                    <li><div id="nav-summary" onmouseover="toggleNavSummary(false)" onmouseout="toggleNavSummary(true)" class="desktop">
+                            <a href="../guide/index.html" class="button">Table of contents</a>
+                            <div id="nav-summary-childs" style="display:none;">
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#introduction"><strong>1</strong><span>Introduction</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#releaseHistory"><strong>2</strong><span>Release History</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#quickStart"><strong>3</strong><span>Quick Start</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>4</strong><span>Repository</span></a></div>
+                                
+                            </div>
+                        </div>
+                    </li>
+
+                <li id="table-of-content-nav-link-mobile" class="mobile">
+                    <a title="Scroll to Table of contents" href="javascript:scrollToTop();" class="button">Toc</a>
+                </li>
+                <li class="desktop">
+                    <a title="Go to API documentation" href="../api/index.html" class="button">API Reference</a>
+                </li>
+                <li class="mobile">
+                    <a title="Go to API documentation" href="../api/index.html" class="button">API</a>
+                </li>
+                <li class="desktop">
+                    <a title="Go to Configuration Reference documentation" href="../guide/configurationreference.html" class="button">Configuration Reference</a>
+                </li>
+                <li class="mobile">
+                    <a title="Go to Configuration Reference documentation" href="../guide/configurationreference.html" class="button">Conf</a>
+                </li>
+            </ul>
+
+        </div>
+    </div>
+    
+    <div id="table-of-content">
+        <div class="toc-content">
+
+        <h2>Table of Contents</h2>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-introduction"><a href="#introduction"><strong>1</strong><span>Introduction</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-releaseHistory"><a href="#releaseHistory"><strong>2</strong><span>Release History</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-quickStart"><a href="#quickStart"><strong>3</strong><span>Quick Start</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>4</strong><span>Repository</span></a></div>
+        
+        </div>
+    </div>
+    
+    <div class="docs-content">
+    <div class="project">
+        <h1>Micronaut AOT</h1>
+        <p></p>
+        <p>Build time optimizations for Micronaut</p>
+        <p><strong>Version:</strong> 2.4.0 </p>
+    </div>
+    
+<h1 id="introduction"><a class="anchor" href="#introduction"></a>1 Introduction</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/2.4.x/src/main/docs/guide/introduction.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Unlike other Micronaut modules, Micronaut AOT is not a dependency which needs to be added to your application: it&#8217;s a framework which requires integration with your build process: it is typically aimed at being integrated into build tool plugins. If you are looking into documentation about how to configure Micronaut AOT, you should look into the corresponding build tool documentation.
+Micronaut AOT support is implemented by the <a href="https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#_micronaut_aot_plugin">Micronaut Gradle plugin</a> and <a href="https://micronaut-projects.github.io/micronaut-maven-plugin/latest/examples/aot.html">Micronaut Maven plugin</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Micronaut AOT is a framework which implements <em>ahead-of-time</em> (AOT) optimizations for Micronaut application and libraries.
+Those optimizations consist of computing <em>at build time</em> things which would normally be done at runtime.
+This includes, but is not limited to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>pre-parsing configuration files (yaml, properties, &#8230;&#8203;)</p>
+</li>
+<li>
+<p>pre-computing bean requirements in order to reduce startup time</p>
+</li>
+<li>
+<p>performing substitution of classes with "optimized" versions for a particular environment</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Micronaut AOT can generate specific optimizations for different environments, in particular, it can make a difference between optimizations needed in JIT mode (traditional JVM applications) and native mode (application compiled with GraalVM <code>native-image</code>).</p>
+</div>
+
+<h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>2 Release History</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/2.4.x/src/main/docs/guide/releaseHistory.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>For this project, you can find a list of releases (with release notes) here:</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/micronaut-projects/micronaut-aot/releases">https://github.com/micronaut-projects/micronaut-aot/releases</a></p>
+</div>
+
+<h1 id="quickStart"><a class="anchor" href="#quickStart"></a>3 Quick Start</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/2.4.x/src/main/docs/guide/quickStart.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="sect1">
+<h2 id="_applicability">Applicability</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The goal of Micronaut AOT is to create an optimized "binary" for a particular deployment environment.
+It is <strong>not</strong> to make development experience faster: because build time optimizations require deep analysis of the application, it will actually make the local development slower if you use optimized binaries.</p>
+</div>
+<div class="paragraph">
+<p>You should consider Micronaut AOT similarly to what GraalVM&#8217;s <code>native-image</code> tool is: a "compiler" which generates a <em>different</em> application, aimed at a particular <em>runtime</em>. That is, depending on the optimizations which are enabled, a binary optimized by AOT may, or may not, work in a specific deployment environment.</p>
+</div>
+<div class="paragraph">
+<p>As a consequence, it is recommended to build your Micronaut AOT optimized application on the same environment as the deployment one.
+Please refer to the documentation of your build tool for configuration options.</p>
+</div>
+<div class="paragraph">
+<p>The following documentation is for users who want to implement their own AOT optimizers.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_micronaut_aot_projects">Micronaut AOT projects</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Micronaut AOT project consists of 4 main modules:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>micronaut-aot-core</code> provides the APIs for implementing "AOT optimizers", or code generators.</p>
+</li>
+<li>
+<p><code>micronaut-aot-api</code> exposes the public API for interacting with the AOT compiler. It mostly consists of the <code>MicronautAotOptimizer</code> class which is responsible for loading the different AOT modules via <em>service loading</em>, then driving the AOT process.</p>
+</li>
+<li>
+<p><code>micronaut-aot-std-optimizers</code> implements a number of standard Micronaut AOT optimizers.</p>
+</li>
+<li>
+<p><code>micronaut-cli</code> is the command line tool responsible for calling the AOT compiler. It is recommended to integrate with Micronaut AOT via the CLI tool, so that the process is properly isolated.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_it_works">How it works</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_optimization_process">Optimization process</h3>
+<div class="paragraph">
+<p>Micronaut AOT is a <em>post-processing</em> tool.
+By that, we mean that it takes the output of regular Micronaut application compilation, then performs an analysis of this and generates new classes, resources, etc. which are then used to create a <em>new binary</em> (jar, native binary, &#8230;&#8203;).</p>
+</div>
+<div class="paragraph">
+<p>In a nutshell, the inputs of Micronaut AOT are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the application runtime classpath</p>
+</li>
+<li>
+<p>the Micronaut AOT runtime (including the AOT optimizers)</p>
+</li>
+<li>
+<p>the AOT optimizer configuration (including the target runtime, e.g JIT vs native)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>And its outputs are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>generated of source files and their compiled (<code>.class</code>) versions</p>
+</li>
+<li>
+<p>generated resource files</p>
+</li>
+<li>
+<p>a list of resources which should be removed from the final binary (for example, if a YAML file is replaced with Java configuration, a class would be generated, but then we know we don&#8217;t need the YAML file anymore in the final binary)</p>
+</li>
+<li>
+<p>log files (to diagnose what happened during the AOT process)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The <code>MicronautAotOptimizer</code> class is a special case of code generator which integrates the dynamically loaded AOT optimizers, and generates an <code>ApplicationContextConfigurer</code> which will initialize the optimizations.</p>
+</div>
+<div class="paragraph">
+<p>It&#8217;s then the responsibility of integrators to take those outputs to generate different binaries.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_user_code_loading">User-code loading</h3>
+<div class="paragraph">
+<p>In order to perform optimizations, so called <em>optimizers</em> (or AOT modules) are used.
+Those modules need access to the <em>application context</em>, so that they can, for example, determine if a bean is going to be needed in a particular deployment environment.
+Or, they may need access to the configuration which is dynamically loaded from an external source (think of distributed configuration) to generate <em>static</em> configuration instead.</p>
+</div>
+<div class="paragraph">
+<p>Therefore, the AOT compiler needs to be executed in the <em>same classloader</em> as the application code itself.
+This is why there are 2 different classpaths for the AOT compiler:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the <em>application</em> classpath corresponds to the application runtime classpath. It is, technically speaking, the result of previous compilation plus all transitive dependencies needed by the application (or library).</p>
+</li>
+<li>
+<p>the <em>AOT</em> classpath, which is the classpath of the AOT compiler and the AOT optimizers.</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_the_role_of_the_application_context_configurers">The role of the application context configurers</h4>
+<div class="paragraph">
+<p>Given the application classpath, the AOT compiler will instantiate an <code>ApplicationContext</code>, which will have all the <em>context configurers</em> (classes implementing the <code>ApplicationContextConfigurer</code> interface and annotated with <code>@ContextConfigurer</code>) applied automatically.
+This is how the AOT compiler will "know" about particular application context customizations which can be done by a user.</p>
+</div>
+<div class="paragraph">
+<p>Therefore, it is critical to understand that the AOT compiler cannot figure out arbitrary application context customizations.
+For example, in the following code:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">class Application {
+    public static void main(String...args) {
+        Micronaut.build()
+            .deduceEnvironment(false)
+            .mainClass(Application.class)
+            .start();
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>there&#8217;s a <code>deduceEnvironment()</code> call which is <em>opaque</em> to the AOT compiler: it cannot know that the application is configured that way (for this it would actually have to <em>start</em> the application and perform runtime interception which would be too expensive or impossible).</p>
+</div>
+<div class="paragraph">
+<p>Therefore, all customizations need to be done using a different pattern:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">class Application {
+    @ContextConfigurer
+    public static class MyConfigurer implements ApplicationContextConfigurer {
+        @Override
+        public void configure(ApplicationContextBuilder context) {
+            context.deduceEnvironment(false);
+        }
+    }
+
+    public static void main(String... args) {
+        Micronaut.run(Application.class, args);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Because <code>@ContextConfigurer</code> makes sure that <em>any</em> application context created will see the customizer applied, the application context created by the AOT compiler for its internal use <em>will</em> see the customizations.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_implementing_an_aot_optimizer">Implementing an AOT optimizer</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_current_capabilities">Current capabilities</h3>
+<div class="paragraph">
+<p>Now that we understand how the AOT optimization environment is bootstrapped, we can start implementing an AOT optimizer.</p>
+</div>
+<div class="paragraph">
+<p>An optimizer can do one or more of the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>generate static initializers which will automatically be loaded thanks to the <code>ApplicationContextConfigurer</code> mechanism</p>
+</li>
+<li>
+<p>generate new source files</p>
+</li>
+<li>
+<p>generate new resource files</p>
+</li>
+<li>
+<p>perform substitutions of one class with another</p>
+</li>
+<li>
+<p>filter out resources</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>New capabilities will be included as part of AOT development.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_code_generators">Code generators</h3>
+<div class="paragraph">
+<p>At the core of AOT optimizations is a <em>code generator</em>.
+A code generator needs to implement the <code>AOTCodeGenerator</code> interface and be annotated with <code>@AOTModule</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>AOTModule</code> annotation is responsible for giving metadata about the code generators, including:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>an <code>id</code> is used to identify the code generator, and enable/disable it via configuration</p>
+</li>
+<li>
+<p>a number of options (<code>@Option</code>) which are used to describe the parameters that the code generator takes (those are provided via configuration)</p>
+</li>
+<li>
+<p>possibly dependencies to other code generators (for example, some code generators may only work properly if they execute <em>after</em> another one)</p>
+</li>
+<li>
+<p>the target runtimes it applies to</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Code generators contribute code via the <code>AOTContext</code> interface, which allows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>getting the name of the package of generated classes</p>
+</li>
+<li>
+<p>registering generated code (source files, &#8230;&#8203;)</p>
+</li>
+<li>
+<p>getting access to the <code>ApplicationContext</code></p>
+</li>
+<li>
+<p>sharing state</p>
+</li>
+<li>
+<p>getting access to target runtime</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For example, a simple code generator which generates a resource file may be declared as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@AOTModule(
+    id = MyResourceGenerator.ID,
+    options = {
+        @Option(name = "greeter.message", sampleValue = "Hello, world!", description = "The message to write")
+    }
+)
+public class MyResourceGenerator implements AOTCodeGenerator {
+    public static final String ID = "my.resource.generator";
+
+    @Override
+    public void generate(AOTContext context) {
+        context.registerResource("/hello.txt", file -&gt; {
+            try (PrintWriter writer = new PrintWriter(file)) {
+                String message = context.getConfiguration()
+                    .mandatoryValue("greeter.message");
+                writer.println(context.getOption("greeter.message"));
+            }
+        });
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then in a configuration file, the code generator would be configured this way:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">my.resource.generator.enabled=true
+greeter.message=Hello, world!</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Different code generators may share the same option values: it is legal, but often simply required (for example if there&#8217;s a different implementation of a specific optimization based on the target runtime).
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+<h1 id="repository"><a class="anchor" href="#repository"></a>4 Repository</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/2.4.x/src/main/docs/guide/repository.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>You can find the source code of this project in this repository:</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/micronaut-projects/micronaut-aot">https://github.com/micronaut-projects/micronaut-aot</a></p>
+</div>
+
+    </div>
+</div>
+
+<script type="text/javascript">
+
+</script>
+</body>
+</html>
