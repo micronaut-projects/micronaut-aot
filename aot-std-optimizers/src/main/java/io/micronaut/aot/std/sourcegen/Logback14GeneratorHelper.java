@@ -21,6 +21,7 @@ import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.classic.model.ConfigurationModel;
+import ch.qos.logback.classic.model.LoggerContextListenerModel;
 import ch.qos.logback.classic.model.LoggerModel;
 import ch.qos.logback.classic.model.RootLoggerModel;
 import ch.qos.logback.classic.spi.Configurator;
@@ -218,9 +219,7 @@ class Logback14GeneratorHelper {
                 if (className == null && parent instanceof ComponentModel) {
                     generateSetterCode(model, parent);
                 } else if (className != null) {
-                    String varName = varNameOf(model);
-                    ClassName elementType = ClassName.bestGuess(className);
-                    codeBuilder.addStatement("$T $L = new $T()", elementType, varName, elementType);
+                    generateNewInstanceCode(model, className);
                 }
             }
 
@@ -260,6 +259,21 @@ class Logback14GeneratorHelper {
                 }
             }
 
+            @Override
+            public void visitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+                String className = model.getClassName();
+                if (className == null) {
+                    throw new IllegalStateException("LoggerContextListenerModel must have a class name");
+                }
+                generateNewInstanceCode(model, className);
+            }
+
+            @Override
+            public void postVisitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+                String loggerContextListenerVarName = varNameOf(model);
+                codeBuilder.addStatement("loggerContext.addListener($L)", loggerContextListenerVarName);
+            }
+
             private void collectAppenders(Model model, String loggerVarName) {
                 Set<String> appenders = model.getSubModels().stream()
                         .filter(AppenderRefModel.class::isInstance)
@@ -273,6 +287,12 @@ class Logback14GeneratorHelper {
                 if (!maybeGenerateAddOrSet(model, parent, BeanDescription::getSetter)) {
                     maybeGenerateAddOrSet(model, parent, BeanDescription::getAdder);
                 }
+            }
+
+            private void generateNewInstanceCode(ComponentModel model, String className) {
+                String varName = varNameOf(model);
+                ClassName elementType = ClassName.bestGuess(className);
+                codeBuilder.addStatement("$T $L = new $T()", elementType, varName, elementType);
             }
 
             private boolean maybeGenerateAddOrSet(ImplicitModel model, Model parent, BiFunction<BeanDescription, String, Method> methodFinder) {
@@ -372,6 +392,9 @@ class Logback14GeneratorHelper {
             if (model instanceof ConfigurationModel) {
                 visitConfiguration((ConfigurationModel) model, parent);
             }
+            if (model instanceof LoggerContextListenerModel) {
+                visitLoggerContextListener((LoggerContextListenerModel) model, parent);
+            }
         }
 
         default void postVisit(Model model, Model parent) {
@@ -389,6 +412,9 @@ class Logback14GeneratorHelper {
             }
             if (model instanceof ConfigurationModel) {
                 postVisitConfiguration((ConfigurationModel) model, parent);
+            }
+            if (model instanceof LoggerContextListenerModel) {
+                postVisitLoggerContextListener((LoggerContextListenerModel) model, parent);
             }
         }
 
@@ -420,6 +446,12 @@ class Logback14GeneratorHelper {
         }
 
         default void postVisitConfiguration(ConfigurationModel model, Model parent) {
+        }
+
+        default void visitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+        }
+
+        default void postVisitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
         }
 
     }
