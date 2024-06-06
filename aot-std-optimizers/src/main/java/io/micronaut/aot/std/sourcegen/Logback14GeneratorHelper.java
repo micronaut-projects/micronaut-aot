@@ -21,6 +21,7 @@ import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.classic.model.ConfigurationModel;
+import ch.qos.logback.classic.model.LoggerContextListenerModel;
 import ch.qos.logback.classic.model.LoggerModel;
 import ch.qos.logback.classic.model.RootLoggerModel;
 import ch.qos.logback.classic.spi.Configurator;
@@ -174,68 +175,6 @@ class Logback14GeneratorHelper {
             }
 
             @Override
-            public void visitRootLogger(RootLoggerModel model, Model parent) {
-                codeBuilder.addStatement("$T _rootLogger = loggerContext.getLogger($T.ROOT_LOGGER_NAME)", ch.qos.logback.classic.Logger.class, ch.qos.logback.classic.Logger.class);
-                String level = model.getLevel();
-                if (level != null) {
-                    codeBuilder.addStatement("_rootLogger.setLevel($T.$L)", ClassName.get(Level.class), toLevel(level));
-                }
-                collectAppenders(model, "_rootLogger");
-            }
-
-            @Override
-            public void visitLogger(LoggerModel model, Model parent) {
-                String loggerVarName = varNameOf(model);
-                codeBuilder.addStatement("$T $L = loggerContext.getLogger($S)", ch.qos.logback.classic.Logger.class, loggerVarName, model.getName());
-                String level = model.getLevel();
-                if (level != null) {
-                    codeBuilder.addStatement("$L.setLevel($T.$L)", loggerVarName, ClassName.get(Level.class), toLevel(level));
-                }
-                String additivity = model.getAdditivity();
-                if (additivity != null) {
-                    codeBuilder.addStatement("$L.setAdditive($L)", loggerVarName, Boolean.valueOf(additivity));
-                }
-                collectAppenders(model, loggerVarName);
-            }
-
-            private void collectAppenders(Model model, String loggerVarName) {
-                Set<String> appenders = model.getSubModels().stream()
-                        .filter(AppenderRefModel.class::isInstance)
-                        .map(AppenderRefModel.class::cast)
-                        .map(AppenderRefModel::getRef)
-                        .collect(Collectors.toSet());
-                loggerToAppenders.put(loggerVarName, appenders);
-            }
-
-            @Override
-            public void visitAppender(AppenderModel model, Model parent) {
-                ClassName appenderName = ClassName.bestGuess(model.getClassName());
-                String varName = varNameOf(model);
-                appenderRefToAppenderVarName.put(model.getName(), varName);
-                codeBuilder.addStatement("$T $L = new $T()", appenderName, varName, appenderName);
-            }
-
-            @Override
-            public void visitImplicit(ImplicitModel model, Model parent) {
-                String className = model.getClassName();
-                if (className == null && parent instanceof ComponentModel) {
-                    generateSetterCode(model, parent);
-                } else if (className != null) {
-                    String varName = varNameOf(model);
-                    ClassName elementType = ClassName.bestGuess(className);
-                    codeBuilder.addStatement("$T $L = new $T()", elementType, varName, elementType);
-                }
-            }
-
-            @Override
-            public void postVisitImplicit(ImplicitModel model, Model parent) {
-                String className = model.getClassName();
-                if (className != null) {
-                    generateSetterCode(model, parent);
-                }
-            }
-
-            @Override
             public void postVisit(Model model, Model parent) {
                 if (model instanceof ComponentModel) {
                     String className = ((ComponentModel) model).getClassName();
@@ -256,10 +195,104 @@ class Logback14GeneratorHelper {
                 ModelVisitor.super.postVisit(model, parent);
             }
 
+            @Override
+            public void visitRootLogger(RootLoggerModel model, Model parent) {
+                codeBuilder.addStatement("$T _rootLogger = loggerContext.getLogger($T.ROOT_LOGGER_NAME)", ch.qos.logback.classic.Logger.class, ch.qos.logback.classic.Logger.class);
+                String level = model.getLevel();
+                if (level != null) {
+                    codeBuilder.addStatement("_rootLogger.setLevel($T.$L)", ClassName.get(Level.class), toLevel(level));
+                }
+                collectAppenders(model, "_rootLogger");
+            }
+
+            @Override
+            public void visitAppender(AppenderModel model, Model parent) {
+                ClassName appenderName = ClassName.bestGuess(model.getClassName());
+                String varName = varNameOf(model);
+                appenderRefToAppenderVarName.put(model.getName(), varName);
+                codeBuilder.addStatement("$T $L = new $T()", appenderName, varName, appenderName);
+            }
+
+            @Override
+            public void visitImplicit(ImplicitModel model, Model parent) {
+                String className = model.getClassName();
+                if (className == null && parent instanceof ComponentModel) {
+                    generateSetterCode(model, parent);
+                } else if (className != null) {
+                    generateNewInstanceCode(model, className);
+                }
+            }
+
+            @Override
+            public void postVisitImplicit(ImplicitModel model, Model parent) {
+                String className = model.getClassName();
+                if (className != null) {
+                    generateSetterCode(model, parent);
+                }
+            }
+
+            @Override
+            public void visitLogger(LoggerModel model, Model parent) {
+                String loggerVarName = varNameOf(model);
+                codeBuilder.addStatement("$T $L = loggerContext.getLogger($S)", ch.qos.logback.classic.Logger.class, loggerVarName, model.getName());
+                String level = model.getLevel();
+                if (level != null) {
+                    codeBuilder.addStatement("$L.setLevel($T.$L)", loggerVarName, ClassName.get(Level.class), toLevel(level));
+                }
+                String additivity = model.getAdditivity();
+                if (additivity != null) {
+                    codeBuilder.addStatement("$L.setAdditive($L)", loggerVarName, Boolean.valueOf(additivity));
+                }
+                collectAppenders(model, loggerVarName);
+            }
+
+            @Override
+            public void postVisitConfiguration(ConfigurationModel model, Model parent) {
+                for (Map.Entry<String, Set<String>> entry : loggerToAppenders.entrySet()) {
+                    String loggerName = entry.getKey();
+                    for (String appenderRef : entry.getValue()) {
+                        String varName = appenderRefToAppenderVarName.get(appenderRef);
+                        if (varName != null) {
+                            codeBuilder.addStatement("$L.addAppender($L)", loggerName, varName);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void visitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+                String className = model.getClassName();
+                if (className == null) {
+                    throw new IllegalStateException("LoggerContextListenerModel must have a class name");
+                }
+                generateNewInstanceCode(model, className);
+            }
+
+            @Override
+            public void postVisitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+                String loggerContextListenerVarName = varNameOf(model);
+                codeBuilder.addStatement("loggerContext.addListener($L)", loggerContextListenerVarName);
+            }
+
+            private void collectAppenders(Model model, String loggerVarName) {
+                Set<String> appenders = model.getSubModels().stream()
+                        .filter(AppenderRefModel.class::isInstance)
+                        .map(AppenderRefModel.class::cast)
+                        .map(AppenderRefModel::getRef)
+                        .collect(Collectors.toSet());
+                loggerToAppenders.put(loggerVarName, appenders);
+            }
+
             private void generateSetterCode(ImplicitModel model, Model parent) {
                 if (!maybeGenerateAddOrSet(model, parent, BeanDescription::getSetter)) {
                     maybeGenerateAddOrSet(model, parent, BeanDescription::getAdder);
                 }
+            }
+
+            private void generateNewInstanceCode(ComponentModel model, String className) {
+                String varName = varNameOf(model);
+                ClassName elementType = ClassName.bestGuess(className);
+                codeBuilder.addStatement("$T $L = new $T()", elementType, varName, elementType);
             }
 
             private boolean maybeGenerateAddOrSet(ImplicitModel model, Model parent, BiFunction<BeanDescription, String, Method> methodFinder) {
@@ -320,19 +353,6 @@ class Logback14GeneratorHelper {
                 }
                 return value;
             }
-
-            @Override
-            public void postVisitConfiguration(ConfigurationModel model, Model parent) {
-                for (Map.Entry<String, Set<String>> entry : loggerToAppenders.entrySet()) {
-                    String loggerName = entry.getKey();
-                    for (String appenderRef : entry.getValue()) {
-                        String varName = appenderRefToAppenderVarName.get(appenderRef);
-                        if (varName != null) {
-                            codeBuilder.addStatement("$L.addAppender($L)", loggerName, varName);
-                        }
-                    }
-                }
-            }
         };
         visitor.visit(model);
         codeBuilder.addStatement(CodeBlock.of("return $T.DO_NOT_INVOKE_NEXT_IF_ANY", Configurator.ExecutionStatus.class));
@@ -351,12 +371,12 @@ class Logback14GeneratorHelper {
         }
 
         default void visit(Model model, Model parent) {
-            previsit(model, parent);
+            preVisit(model, parent);
             model.getSubModels().forEach(m -> visit(m, model));
             postVisit(model, parent);
         }
 
-        default void previsit(Model model, Model parent) {
+        default void preVisit(Model model, Model parent) {
             if (model instanceof RootLoggerModel) {
                 visitRootLogger((RootLoggerModel) model, parent);
             }
@@ -372,14 +392,9 @@ class Logback14GeneratorHelper {
             if (model instanceof ConfigurationModel) {
                 visitConfiguration((ConfigurationModel) model, parent);
             }
-        }
-
-        default void visitConfiguration(ConfigurationModel model, Model parent) {
-
-        }
-
-        default void postVisitConfiguration(ConfigurationModel model, Model parent) {
-
+            if (model instanceof LoggerContextListenerModel) {
+                visitLoggerContextListener((LoggerContextListenerModel) model, parent);
+            }
         }
 
         default void postVisit(Model model, Model parent) {
@@ -398,6 +413,9 @@ class Logback14GeneratorHelper {
             if (model instanceof ConfigurationModel) {
                 postVisitConfiguration((ConfigurationModel) model, parent);
             }
+            if (model instanceof LoggerContextListenerModel) {
+                postVisitLoggerContextListener((LoggerContextListenerModel) model, parent);
+            }
         }
 
         default void visitRootLogger(RootLoggerModel model, Model parent) {
@@ -406,26 +424,36 @@ class Logback14GeneratorHelper {
         default void postVisitRootLogger(RootLoggerModel model, Model parent) {
         }
 
+        default void visitAppender(AppenderModel model, Model parent) {
+        }
+
+        default void postVisitAppender(AppenderModel model, Model parent) {
+        }
+
+        default void visitImplicit(ImplicitModel model, Model parent) {
+        }
+
+        default void postVisitImplicit(ImplicitModel model, Model parent) {
+        }
+
         default void visitLogger(LoggerModel model, Model parent) {
         }
 
         default void postVisitLogger(LoggerModel model, Model parent) {
         }
 
-        default void visitAppender(AppenderModel model, Model parent) {
-
+        default void visitConfiguration(ConfigurationModel model, Model parent) {
         }
 
-        default void postVisitAppender(AppenderModel model, Model parent) {
-
+        default void postVisitConfiguration(ConfigurationModel model, Model parent) {
         }
 
-        default void visitImplicit(ImplicitModel model, Model parent) {
-
+        default void visitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
         }
 
-        default void postVisitImplicit(ImplicitModel model, Model parent) {
-
+        default void postVisitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
         }
+
     }
+
 }

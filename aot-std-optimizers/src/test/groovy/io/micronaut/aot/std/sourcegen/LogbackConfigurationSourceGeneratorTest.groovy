@@ -386,6 +386,102 @@ public class StaticLogbackConfiguration implements Configurator {
         }
     }
 
+    def "converts configuration with logger context listener - jul LevelChangePropagator"() {
+        configFileName = "logback-test5.xml"
+
+        when:
+        generate()
+
+        then:
+        excludesResources("logback-test5.xml")
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            hasClass("StaticLogbackConfiguration") {
+                withSources """package io.micronaut.test;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.jul.LevelChangePropagator;
+import ch.qos.logback.classic.spi.Configurator;
+import ch.qos.logback.core.ConsoleAppender;
+import ch.qos.logback.core.Context;
+import ch.qos.logback.core.status.Status;
+import java.lang.String;
+import java.lang.Throwable;
+
+public class StaticLogbackConfiguration implements Configurator {
+  private Context context;
+
+  public Configurator.ExecutionStatus configure(LoggerContext loggerContext) {
+    LevelChangePropagator contextlistener = new LevelChangePropagator();
+    contextlistener.setResetJUL(true);
+    contextlistener.setContext(context);
+    contextlistener.start();
+    loggerContext.addListener(contextlistener);
+    ConsoleAppender stdout = new ConsoleAppender();
+    stdout.setWithJansi(true);
+    PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+    encoder.setPattern("%cyan(%d{HH:mm:ss.SSS}) %gray([%thread]) %highlight(%-5level) %magenta(%logger{36}) - %msg%n");
+    encoder.setContext(context);
+    encoder.start();
+    stdout.setEncoder(encoder);
+    stdout.setContext(context);
+    stdout.start();
+    Logger _rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
+    _rootLogger.setLevel(Level.INFO);
+    Logger io_micronaut_core_optim_staticoptimizations = loggerContext.getLogger("io.micronaut.core.optim.StaticOptimizations");
+    io_micronaut_core_optim_staticoptimizations.setLevel(Level.DEBUG);
+    io_micronaut_core_optim_staticoptimizations.setAdditive(false);
+    Logger io_micronaut_aot = loggerContext.getLogger("io.micronaut.aot");
+    io_micronaut_aot.setLevel(Level.DEBUG);
+    io_micronaut_aot.setAdditive(false);
+    Logger io_micronaut_core_io_service_softserviceloader = loggerContext.getLogger("io.micronaut.core.io.service.SoftServiceLoader");
+    io_micronaut_core_io_service_softserviceloader.setLevel(Level.DEBUG);
+    io_micronaut_core_io_service_softserviceloader.setAdditive(false);
+    _rootLogger.addAppender(stdout);
+    io_micronaut_core_optim_staticoptimizations.addAppender(stdout);
+    io_micronaut_core_io_service_softserviceloader.addAppender(stdout);
+    io_micronaut_aot.addAppender(stdout);
+    return Configurator.ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
+  }
+
+  public void setContext(Context context) {
+    this.context = context;
+  }
+
+  public Context getContext() {
+    return context;
+  }
+
+  public void addStatus(Status status) {
+  }
+
+  public void addInfo(String info) {
+  }
+
+  public void addInfo(String info, Throwable ex) {
+  }
+
+  public void addWarn(String warn) {
+  }
+
+  public void addWarn(String warn, Throwable ex) {
+  }
+
+  public void addError(String error) {
+  }
+
+  public void addError(String error, Throwable ex) {
+  }
+}
+"""
+            }
+            compiles()
+        }
+    }
+
     class TestLogbackConfigurationSourceGenerator extends LogbackConfigurationSourceGenerator {
         @Override
         protected String getLogbackFileName() {
