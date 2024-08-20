@@ -35,15 +35,15 @@ import java.util.Set;
  * Missing classes will be recorded and injected at runtime as optimizations.
  */
 @AOTModule(
-        id = KnownMissingTypesSourceGenerator.ID,
-        description = KnownMissingTypesSourceGenerator.DESCRIPTION,
-        options = {
-                @Option(
-                        key = "known.missing.types.list",
-                        description = "A list of types that the AOT analyzer needs to check for existence (comma separated)",
-                        sampleValue = "io.reactivex.Observable,reactor.core.publisher.Flux,kotlinx.coroutines.flow.Flow,io.reactivex.rxjava3.core.Flowable,io.reactivex.rxjava3.core.Observable,io.reactivex.Single,reactor.core.publisher.Mono,io.reactivex.Maybe,io.reactivex.rxjava3.core.Single,io.reactivex.rxjava3.core.Maybe,io.reactivex.Completable,io.reactivex.rxjava3.core.Completable,io.methvin.watchservice.MacOSXListeningWatchService,io.micronaut.core.async.publisher.CompletableFuturePublisher,io.micronaut.core.async.publisher.Publishers.JustPublisher,io.micronaut.core.async.subscriber.Completable"
-                )
-        }
+    id = KnownMissingTypesSourceGenerator.ID,
+    description = KnownMissingTypesSourceGenerator.DESCRIPTION,
+    options = {
+        @Option(
+            key = "known.missing.types.list",
+            description = "A list of types that the AOT analyzer needs to check for existence (comma separated)",
+            sampleValue = "io.reactivex.Observable,reactor.core.publisher.Flux,kotlinx.coroutines.flow.Flow,io.reactivex.rxjava3.core.Flowable,io.reactivex.rxjava3.core.Observable,io.reactivex.Single,reactor.core.publisher.Mono,io.reactivex.Maybe,io.reactivex.rxjava3.core.Single,io.reactivex.rxjava3.core.Maybe,io.reactivex.Completable,io.reactivex.rxjava3.core.Completable,io.methvin.watchservice.MacOSXListeningWatchService,io.micronaut.core.async.publisher.CompletableFuturePublisher,io.micronaut.core.async.publisher.Publishers.JustPublisher,io.micronaut.core.async.subscriber.Completable"
+        )
+    }
 )
 public class KnownMissingTypesSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "known.missing.types";
@@ -51,7 +51,7 @@ public class KnownMissingTypesSourceGenerator extends AbstractCodeGenerator {
     public static final String DESCRIPTION = "Checks of existence of some types at build time instead of runtime";
 
     private List<String> findMissingClasses(List<String> classNames) {
-        List<String> knownMissingClasses = new ArrayList<>();
+        var knownMissingClasses = new ArrayList<String>();
         ClassLoader cl = this.getClass().getClassLoader();
         for (String name : classNames) {
             try {
@@ -67,11 +67,11 @@ public class KnownMissingTypesSourceGenerator extends AbstractCodeGenerator {
     public void generate(@NonNull AOTContext context) {
         context.registerStaticOptimization("KnownMissingTypesOptimizationLoader", ClassUtils.Optimizations.class, body -> {
             List<String> classNames = context.getConfiguration().stringList(OPTION.key());
-                body.addStatement("$T knownMissingTypes = new $T()", ParameterizedTypeName.get(Set.class, String.class), ParameterizedTypeName.get(HashSet.class, String.class));
-                for (String knownMissingClass : findMissingClasses(classNames)) {
-                    body.addStatement("knownMissingTypes.add($S)", knownMissingClass);
-                }
-                body.addStatement("return new $T(knownMissingTypes)", ClassUtils.Optimizations.class);
+            body.addStatement("$T knownMissingTypes = new $T()", ParameterizedTypeName.get(Set.class, String.class), ParameterizedTypeName.get(HashSet.class, String.class));
+            for (String knownMissingClass : findMissingClasses(classNames)) {
+                body.addStatement("knownMissingTypes.add($S)", knownMissingClass);
+            }
+            body.addStatement("return new $T(knownMissingTypes)", ClassUtils.Optimizations.class);
         });
 
     }

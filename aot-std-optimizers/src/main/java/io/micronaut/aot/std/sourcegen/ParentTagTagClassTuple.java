@@ -16,11 +16,9 @@
 package io.micronaut.aot.std.sourcegen;
 
 /**
- *
  * Represents default class name rules.
  *
  * @author Ceki G&uuml;c&uuml;
- *
  */
 public class ParentTagTagClassTuple {
 

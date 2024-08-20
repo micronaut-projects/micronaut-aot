@@ -19,9 +19,9 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
+import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Runtime;
-import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
 import io.micronaut.core.annotation.NonNull;
 
@@ -88,7 +88,8 @@ public abstract class DelegatingSourceGenerationContext implements AOTContext {
 
     /**
      * Registers a generated service type.
-     *  @param serviceType the type of the service
+     *
+     * @param serviceType the type of the service
      * @param simpleServiceName the simple name of the generated type
      */
     @Override

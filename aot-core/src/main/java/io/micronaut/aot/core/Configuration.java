@@ -33,6 +33,7 @@ public interface Configuration {
     /**
      * Returns true if the configuration contains an entry
      * for the specified key.
+     *
      * @param key the key to look for
      * @return true if the configuration contains an entry for the key
      */
@@ -98,10 +99,10 @@ public interface Configuration {
     @NonNull
     default List<String> stringList(@NonNull String key, @NonNull String separator) {
         return optionalValue(key, opt -> opt.map(string ->
-                Arrays.stream(string.split(separator))
-                        .filter(Objects::nonNull)
-                        .filter(s -> !s.trim().isEmpty())
-                        .collect(Collectors.toList())
+            Arrays.stream(string.split(separator))
+                .filter(Objects::nonNull)
+                .filter(s -> !s.trim().isEmpty())
+                .collect(Collectors.toList())
         ).orElse(Collections.emptyList()));
     }
 
@@ -131,6 +132,7 @@ public interface Configuration {
 
     /**
      * Returns the target runtime for optimizations.
+     *
      * @return the target runtime
      */
     @NonNull

@@ -21,18 +21,21 @@ package io.micronaut.aot.core;
 public @interface Option {
     /**
      * Returns the key used to configure this option.
+     *
      * @return the key, as found in properties
      */
     String key();
 
     /**
      * Returns a description of this configuration option.
+     *
      * @return the description
      */
     String description() default "";
 
     /**
      * Returns a sample value for this option, if any.
+     *
      * @return a sample value
      */
     String sampleValue() default "";

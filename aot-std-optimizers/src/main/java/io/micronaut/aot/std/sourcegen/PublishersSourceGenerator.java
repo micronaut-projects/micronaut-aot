@@ -27,15 +27,14 @@ import io.micronaut.core.async.publisher.PublishersOptimizations;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * An optimizer which is responsible for determining what reactive
  * types are found at build time.
  */
 @AOTModule(
-        id = PublishersSourceGenerator.ID,
-        description = PublishersSourceGenerator.DESCRIPTION
+    id = PublishersSourceGenerator.ID,
+    description = PublishersSourceGenerator.DESCRIPTION
 )
 public class PublishersSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "scan.reactive.types";
@@ -48,11 +47,11 @@ public class PublishersSourceGenerator extends AbstractCodeGenerator {
             List<String> knownSingleTypes = typeNamesOf(Publishers.getKnownSingleTypes());
             List<String> knownCompletableTypes = typeNamesOf(Publishers.getKnownCompletableTypes());
             body.addStatement(
-                    "return new $T($L, $L, $L)",
-                    PublishersOptimizations.class,
-                    asClassList(knownReactiveTypes),
-                    asClassList(knownSingleTypes),
-                    asClassList(knownCompletableTypes)
+                "return new $T($L, $L, $L)",
+                PublishersOptimizations.class,
+                asClassList(knownReactiveTypes),
+                asClassList(knownSingleTypes),
+                asClassList(knownCompletableTypes)
             );
         });
 
@@ -60,7 +59,7 @@ public class PublishersSourceGenerator extends AbstractCodeGenerator {
 
     private static CodeBlock asClassList(List<String> types) {
         CodeBlock.Builder knownReactiveBlock = CodeBlock.builder()
-                .add("$T.asList(", Arrays.class);
+            .add("$T.asList(", Arrays.class);
         for (int i = 0; i < types.size(); i++) {
             String knownReactiveType = types.get(i);
             knownReactiveBlock.add("$T.class", ClassName.bestGuess(knownReactiveType.replace('$', '.')));
@@ -73,7 +72,9 @@ public class PublishersSourceGenerator extends AbstractCodeGenerator {
     }
 
     private static List<String> typeNamesOf(Collection<Class<?>> classes) {
-        return classes.stream().map(Class::getName).collect(Collectors.toList());
+        return classes.stream()
+            .map(Class::getName)
+            .toList();
     }
 
 }

@@ -15,8 +15,8 @@
  */
 package io.micronaut.aot.std.sourcegen;
 
-import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.context.env.PropertySource;
@@ -34,11 +34,10 @@ import java.util.Optional;
  * A source generator which will generate a static {@link io.micronaut.context.env.PropertySource}
  * from a given YAML configuration file, in order to substitute the dynamic loader
  * with a static configuration.
- *
  */
 @AOTModule(
-        id = YamlPropertySourceGenerator.ID,
-        description = YamlPropertySourceGenerator.DESCRIPTION
+    id = YamlPropertySourceGenerator.ID,
+    description = YamlPropertySourceGenerator.DESCRIPTION
 )
 public class YamlPropertySourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "yaml.to.java.config";
@@ -53,7 +52,7 @@ public class YamlPropertySourceGenerator extends AbstractCodeGenerator {
 
     @Override
     public void generate(@NonNull AOTContext context) {
-        YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
+        var loader = new YamlPropertySourceLoader();
         for (String resource : resources) {
             createMapProperty(loader, context, resource);
         }
@@ -66,12 +65,11 @@ public class YamlPropertySourceGenerator extends AbstractCodeGenerator {
             context.registerExcludedResource(resource + ".yml");
             context.registerExcludedResource(resource + ".yaml");
             PropertySource ps = optionalSource.get();
-            if (ps instanceof MapPropertySource) {
-                MapPropertySource mps = (MapPropertySource) ps;
+            if (ps instanceof MapPropertySource mps) {
                 Map<String, Object> values = mps.asMap();
-                MapPropertySourceGenerator generator = new MapPropertySourceGenerator(
-                        resource,
-                        values);
+                var generator = new MapPropertySourceGenerator(
+                    resource,
+                    values);
                 generator.generate(context);
             } else {
                 throw new UnsupportedOperationException("Unknown property source type:" + ps.getClass());

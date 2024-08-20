@@ -16,7 +16,7 @@
 package io.micronaut.aot.core;
 
 /**
- * The targetted type of runtime.
+ * The targeted type of runtime.
  */
 public enum Runtime {
     JIT("JIT"),

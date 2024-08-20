@@ -32,15 +32,15 @@ public class VersionProvider implements CommandLine.IVersionProvider {
 
     static {
         String text = "unknown";
-       try (InputStream stream = VersionProvider.class.getResourceAsStream("/version.txt")) {
-           text = new BufferedReader(
-                   new InputStreamReader(stream, StandardCharsets.UTF_8))
-                   .lines()
-                   .collect(Collectors.joining("\n"));
-       } catch (Exception ex) {
-           // noop
-       }
-       VERSION = text;
+        try (InputStream stream = VersionProvider.class.getResourceAsStream("/version.txt")) {
+            text = new BufferedReader(
+                new InputStreamReader(stream, StandardCharsets.UTF_8))
+                .lines()
+                .collect(Collectors.joining("\n"));
+        } catch (Exception ex) {
+            // noop
+        }
+        VERSION = text;
     }
 
     @Override

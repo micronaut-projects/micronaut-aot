@@ -47,6 +47,7 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import io.micronaut.aot.core.AOTContext;
+import io.micronaut.core.util.StringUtils;
 import org.xml.sax.InputSource;
 
 import javax.lang.model.element.Modifier;
@@ -54,8 +55,6 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -71,17 +70,17 @@ class Logback14GeneratorHelper {
     private static final List<ParentTagTagClassTuple> TUPLE_LIST = createTuplesList();
 
     private static List<ParentTagTagClassTuple> createTuplesList() {
-        List<ParentTagTagClassTuple> tupleList = new ArrayList<>(9);
-        tupleList.add(new ParentTagTagClassTuple("appender", "encoder", PatternLayoutEncoder.class));
-        tupleList.add(new ParentTagTagClassTuple("appender", "layout", PatternLayout.class));
-        tupleList.add(new ParentTagTagClassTuple("receiver", "ssl", SSLConfiguration.class));
-        tupleList.add(new ParentTagTagClassTuple("ssl", "parameters", SSLParametersConfiguration.class));
-        tupleList.add(new ParentTagTagClassTuple("ssl", "keyStore", KeyStoreFactoryBean.class));
-        tupleList.add(new ParentTagTagClassTuple("ssl", "trustStore", KeyManagerFactoryFactoryBean.class));
-        tupleList.add(new ParentTagTagClassTuple("ssl", "keyManagerFactory", SSLParametersConfiguration.class));
-        tupleList.add(new ParentTagTagClassTuple("ssl", "trustManagerFactory", TrustManagerFactoryFactoryBean.class));
-        tupleList.add(new ParentTagTagClassTuple("ssl", "secureRandom", SecureRandomFactoryBean.class));
-        return Collections.unmodifiableList(tupleList);
+        return List.of(
+            new ParentTagTagClassTuple("appender", "encoder", PatternLayoutEncoder.class),
+            new ParentTagTagClassTuple("appender", "layout", PatternLayout.class),
+            new ParentTagTagClassTuple("receiver", "ssl", SSLConfiguration.class),
+            new ParentTagTagClassTuple("ssl", "parameters", SSLParametersConfiguration.class),
+            new ParentTagTagClassTuple("ssl", "keyStore", KeyStoreFactoryBean.class),
+            new ParentTagTagClassTuple("ssl", "trustStore", KeyManagerFactoryFactoryBean.class),
+            new ParentTagTagClassTuple("ssl", "keyManagerFactory", SSLParametersConfiguration.class),
+            new ParentTagTagClassTuple("ssl", "trustManagerFactory", TrustManagerFactoryFactoryBean.class),
+            new ParentTagTagClassTuple("ssl", "secureRandom", SecureRandomFactoryBean.class)
+        );
     }
 
     private static void injectDefaultComponentClasses(Model aModel, Model parent) {
@@ -105,7 +104,7 @@ class Logback14GeneratorHelper {
         }
     }
 
-    private static  void applyInjectionRules(Model aModel, Model parent) {
+    private static void applyInjectionRules(Model aModel, Model parent) {
         if (parent == null) {
             return;
         }
@@ -113,11 +112,10 @@ class Logback14GeneratorHelper {
         String parentTag = unifiedTag(parent);
         String modelTag = unifiedTag(aModel);
 
-        if (aModel instanceof ImplicitModel) {
-            ImplicitModel implicitModel = (ImplicitModel) aModel;
+        if (aModel instanceof ImplicitModel implicitModel) {
             String className = implicitModel.getClassName();
 
-            if (className == null || className.isEmpty()) {
+            if (StringUtils.isEmpty(className)) {
                 for (ParentTagTagClassTuple ruleTuple : TUPLE_LIST) {
                     if (ruleTuple.parentTag.equals(parentTag) && ruleTuple.tag.equals(modelTag)) {
                         implicitModel.setClassName(ruleTuple.aClass.getName());
@@ -129,8 +127,8 @@ class Logback14GeneratorHelper {
     }
 
     static MethodSpec configureMethod(String fileName, AOTContext aotContext) {
-        JoranConfigurator joranConfigurator = new JoranConfigurator();
-        LoggerContext context = new LoggerContext();
+        var joranConfigurator = new JoranConfigurator();
+        var context = new LoggerContext();
         joranConfigurator.setContext(context);
         Model model;
         try {
@@ -138,7 +136,7 @@ class Logback14GeneratorHelper {
             if (logbackFile == null) {
                 throw new IllegalStateException("Could not find " + fileName + " file on application classpath");
             }
-            InputSource inputSource = new InputSource(logbackFile.openStream());
+            var inputSource = new InputSource(logbackFile.openStream());
             SaxEventRecorder recorder = joranConfigurator.populateSaxEventRecorder(inputSource);
             model = joranConfigurator.buildModelFromSaxEventList(recorder.getSaxEventList());
             injectDefaultComponentClasses(model, null);
@@ -147,8 +145,8 @@ class Logback14GeneratorHelper {
         }
 
         CodeBlock.Builder codeBuilder = CodeBlock.builder();
-        BeanDescriptionCache beanDescriptionCache = new BeanDescriptionCache(context);
-        ModelVisitor visitor = new ModelVisitor() {
+        var beanDescriptionCache = new BeanDescriptionCache(context);
+        var visitor = new ModelVisitor() {
             private final Map<String, Set<String>> loggerToAppenders = new HashMap<>();
             private final Map<String, String> appenderRefToAppenderVarName = new HashMap<>();
             private final Map<Model, String> modelToVarName = new HashMap<>();
@@ -165,10 +163,10 @@ class Logback14GeneratorHelper {
 
             private String toVarName(Model model) {
                 String name;
-                if (model instanceof NamedComponentModel) {
-                    name = ((NamedComponentModel) model).getName();
-                } else if (model instanceof LoggerModel) {
-                    name = ((LoggerModel) model).getName();
+                if (model instanceof NamedComponentModel namedComponentModel) {
+                    name = namedComponentModel.getName();
+                } else if (model instanceof LoggerModel loggerModel) {
+                    name = loggerModel.getName();
                 } else {
                     name = model.getTag();
                 }
@@ -177,8 +175,8 @@ class Logback14GeneratorHelper {
 
             @Override
             public void postVisit(Model model, Model parent) {
-                if (model instanceof ComponentModel) {
-                    String className = ((ComponentModel) model).getClassName();
+                if (model instanceof ComponentModel componentModel) {
+                    String className = componentModel.getClassName();
                     if (className != null) {
                         try {
                             Class<?> clazz = Class.forName(className);
@@ -277,10 +275,10 @@ class Logback14GeneratorHelper {
 
             private void collectAppenders(Model model, String loggerVarName) {
                 Set<String> appenders = model.getSubModels().stream()
-                        .filter(AppenderRefModel.class::isInstance)
-                        .map(AppenderRefModel.class::cast)
-                        .map(AppenderRefModel::getRef)
-                        .collect(Collectors.toSet());
+                    .filter(AppenderRefModel.class::isInstance)
+                    .map(AppenderRefModel.class::cast)
+                    .map(AppenderRefModel::getRef)
+                    .collect(Collectors.toSet());
                 loggerToAppenders.put(loggerVarName, appenders);
             }
 
@@ -363,11 +361,11 @@ class Logback14GeneratorHelper {
         visitor.visit(model);
         codeBuilder.addStatement(CodeBlock.of("return $T.DO_NOT_INVOKE_NEXT_IF_ANY", Configurator.ExecutionStatus.class));
         return MethodSpec.methodBuilder("configure")
-                .addModifiers(Modifier.PUBLIC)
-                .returns(Configurator.ExecutionStatus.class)
-                .addParameter(LoggerContext.class, "loggerContext")
-                .addCode(codeBuilder.build())
-                .build();
+            .addModifiers(Modifier.PUBLIC)
+            .returns(Configurator.ExecutionStatus.class)
+            .addParameter(LoggerContext.class, "loggerContext")
+            .addCode(codeBuilder.build())
+            .build();
     }
 
     interface ModelVisitor {
@@ -383,44 +381,44 @@ class Logback14GeneratorHelper {
         }
 
         default void preVisit(Model model, Model parent) {
-            if (model instanceof RootLoggerModel) {
-                visitRootLogger((RootLoggerModel) model, parent);
+            if (model instanceof RootLoggerModel rootLoggerModel) {
+                visitRootLogger(rootLoggerModel, parent);
             }
-            if (model instanceof AppenderModel) {
-                visitAppender((AppenderModel) model, parent);
+            if (model instanceof AppenderModel appenderModel) {
+                visitAppender(appenderModel, parent);
             }
-            if (model instanceof ImplicitModel) {
-                visitImplicit((ImplicitModel) model, parent);
+            if (model instanceof ImplicitModel implicitModel) {
+                visitImplicit(implicitModel, parent);
             }
-            if (model instanceof LoggerModel) {
-                visitLogger((LoggerModel) model, parent);
+            if (model instanceof LoggerModel loggerModel) {
+                visitLogger(loggerModel, parent);
             }
-            if (model instanceof ConfigurationModel) {
-                visitConfiguration((ConfigurationModel) model, parent);
+            if (model instanceof ConfigurationModel configurationModel) {
+                visitConfiguration(configurationModel, parent);
             }
-            if (model instanceof LoggerContextListenerModel) {
-                visitLoggerContextListener((LoggerContextListenerModel) model, parent);
+            if (model instanceof LoggerContextListenerModel loggerContextListenerModel) {
+                visitLoggerContextListener(loggerContextListenerModel, parent);
             }
         }
 
         default void postVisit(Model model, Model parent) {
-            if (model instanceof RootLoggerModel) {
-                postVisitRootLogger((RootLoggerModel) model, parent);
+            if (model instanceof RootLoggerModel rootLoggerModel) {
+                postVisitRootLogger(rootLoggerModel, parent);
             }
-            if (model instanceof AppenderModel) {
-                postVisitAppender((AppenderModel) model, parent);
+            if (model instanceof AppenderModel appenderModel) {
+                postVisitAppender(appenderModel, parent);
             }
-            if (model instanceof ImplicitModel) {
-                postVisitImplicit((ImplicitModel) model, parent);
+            if (model instanceof ImplicitModel implicitModel) {
+                postVisitImplicit(implicitModel, parent);
             }
-            if (model instanceof LoggerModel) {
-                postVisitLogger((LoggerModel) model, parent);
+            if (model instanceof LoggerModel loggerModel) {
+                postVisitLogger(loggerModel, parent);
             }
-            if (model instanceof ConfigurationModel) {
-                postVisitConfiguration((ConfigurationModel) model, parent);
+            if (model instanceof ConfigurationModel configurationModel) {
+                postVisitConfiguration(configurationModel, parent);
             }
-            if (model instanceof LoggerContextListenerModel) {
-                postVisitLoggerContextListener((LoggerContextListenerModel) model, parent);
+            if (model instanceof LoggerContextListenerModel loggerContextListenerModel) {
+                postVisitLoggerContextListener(loggerContextListenerModel, parent);
             }
         }
 

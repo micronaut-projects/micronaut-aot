@@ -48,19 +48,18 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * The source generation context.
- *
- * Typically provides access to the application classloader or the name of
+ * <p>
+ * Typically, provides access to the application classloader or the name of
  * the package of classes which are going to be generated.
- *
+ * <p>
  * In addition, the context can be used to register resources which will need
- * to be excluded from the final binary (e.g if a configuration file is replaced
+ * to be excluded from the final binary (e.g. if a configuration file is replaced
  * with a class at build time, we need a way to explain that the resource file
  * needs to be excluded from the binary).
- *
+ * <p>
  * Last but not least, this context can be used to send diagnostic messages
  * which are written to log files during code generation.
  */
@@ -155,16 +154,16 @@ public final class DefaultSourceGenerationContext implements AOTContext {
         CodeBlock.Builder body = CodeBlock.builder();
         bodyBuilder.accept(body);
         MethodSpec method = MethodSpec.methodBuilder("load")
-                .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(Override.class)
-                .returns(optimizationKind)
-                .addCode(body.build())
-                .build();
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .returns(optimizationKind)
+            .addCode(body.build())
+            .build();
         TypeSpec generatedType = TypeSpec.classBuilder(className)
-                .addModifiers(Modifier.PUBLIC)
-                .addSuperinterface(ParameterizedTypeName.get(StaticOptimizations.Loader.class, optimizationKind))
-                .addMethod(method)
-                .build();
+            .addModifiers(Modifier.PUBLIC)
+            .addSuperinterface(ParameterizedTypeName.get(StaticOptimizations.Loader.class, optimizationKind))
+            .addMethod(method)
+            .build();
         registerBuildTimeInit(optimizationKind.getName());
         registerGeneratedSourceFile(javaFile(generatedType));
         registerServiceImplementation(StaticOptimizations.Loader.class, className);
@@ -172,13 +171,14 @@ public final class DefaultSourceGenerationContext implements AOTContext {
 
     /**
      * Registers a generated service type.
-     *  @param serviceType the type of the service
+     *
+     * @param serviceType the type of the service
      * @param simpleServiceName the simple name of the generated type
      */
     @Override
     public void registerServiceImplementation(Class<?> serviceType, String simpleServiceName) {
         registerGeneratedResource("META-INF/services/" + serviceType.getName(), serviceFile -> {
-            try (PrintWriter wrt = new PrintWriter(new FileWriter(serviceFile, true))) {
+            try (var wrt = new PrintWriter(new FileWriter(serviceFile, true))) {
                 wrt.println(getPackageName() + "." + simpleServiceName);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -208,18 +208,18 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     @NonNull
     public List<File> getExtraClasspath() {
         return classesRequiredAtCompilation.stream()
-                .map(Class::getProtectionDomain)
-                .map(ProtectionDomain::getCodeSource)
-                .map(CodeSource::getLocation)
-                .map(url -> {
-                    try {
-                        return new File(url.toURI());
-                    } catch (Exception e) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+            .map(Class::getProtectionDomain)
+            .map(ProtectionDomain::getCodeSource)
+            .map(CodeSource::getLocation)
+            .map(url -> {
+                try {
+                    return new File(url.toURI());
+                } catch (Exception e) {
+                    return null;
+                }
+            })
+            .filter(Objects::nonNull)
+            .toList();
     }
 
     @Override

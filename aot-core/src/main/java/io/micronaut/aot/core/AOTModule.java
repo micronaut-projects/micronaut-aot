@@ -28,6 +28,7 @@ import java.lang.annotation.Target;
 public @interface AOTModule {
     /**
      * A unique identifier for this source generator.
+     *
      * @return the id
      */
     String id();
@@ -36,6 +37,7 @@ public @interface AOTModule {
      * Returns a description for this source generator.
      * Description is optional because some code generators
      * are purely internal and not exposed to users.
+     *
      * @return a description or an empty options
      */
     String description() default "";
@@ -43,6 +45,7 @@ public @interface AOTModule {
     /**
      * Returns the identifiers of source generators which must
      * be executed before this generator is called.
+     *
      * @return the list of ids
      */
     String[] dependencies() default {};
@@ -60,14 +63,16 @@ public @interface AOTModule {
     /**
      * Returns the set of configuration keys which affect
      * the configuration of this source generator.
+     *
      * @return a set of configuration keys
      */
     Option[] options() default {};
 
     /**
      * Returns the runtimes this module is valid for.
+     *
      * @return the list of runtimes this module applies to.
      */
-    Runtime[] enabledOn() default { Runtime.JIT, Runtime.NATIVE };
+    Runtime[] enabledOn() default {Runtime.JIT, Runtime.NATIVE};
 
 }

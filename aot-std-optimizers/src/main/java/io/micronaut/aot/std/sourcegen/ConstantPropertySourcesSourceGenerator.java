@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Generates a "constant" property source, that is to say a
@@ -55,7 +54,7 @@ public class ConstantPropertySourcesSourceGenerator extends AbstractCodeGenerato
         List<String> substitutes = maybeSubstitutes.map(s -> s.findSubstitutesFor("io.micronaut.context.env.PropertySourceLoader")).orElse(Collections.emptyList())
                 .stream()
                 .map(javaFile -> javaFile.packageName + "." + javaFile.typeSpec.name)
-                .collect(Collectors.toList());
+                .toList();
 
         context.registerStaticOptimization("AotConstantPropertySources", ConstantPropertySources.class, initializer -> {
             EnvironmentProperties env = EnvironmentProperties.empty();

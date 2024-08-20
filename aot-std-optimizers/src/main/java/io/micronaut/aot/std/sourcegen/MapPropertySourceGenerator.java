@@ -38,14 +38,14 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * set of values at build time.
  */
 @AOTModule(
-        id = MapPropertySourceGenerator.BASE_ID,
-        options = {
-                @Option(
-                        key = BASE_ORDER_OPTION,
-                        description = "The order of the generated property source",
-                        sampleValue = "1000"
-                )
-        }
+    id = MapPropertySourceGenerator.BASE_ID,
+    options = {
+        @Option(
+            key = BASE_ORDER_OPTION,
+            description = "The order of the generated property source",
+            sampleValue = "1000"
+        )
+    }
 )
 public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator {
     public static final String BASE_ID = "map.property";
@@ -55,8 +55,8 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
     private final Map<String, Object> values;
 
     public MapPropertySourceGenerator(
-            String resourceName,
-            Map<String, Object> values) {
+        String resourceName,
+        Map<String, Object> values) {
         this.resourceName = resourceName;
         this.values = values;
     }
@@ -67,21 +67,21 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         String typeName = computeTypeName();
         String orderKey = BASE_ORDER_OPTION + "." + resourceName;
         int order = getContext().getConfiguration()
-                .optionalValue(orderKey, value ->
-                        value.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE));
+            .optionalValue(orderKey, value ->
+                value.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE));
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName)
-                .addModifiers(PUBLIC)
-                .superclass(MapPropertySource.class);
-        MapGenerator generator = new MapGenerator();
+            .addModifiers(PUBLIC)
+            .superclass(MapPropertySource.class);
+        var generator = new MapGenerator();
         typeBuilder.addMethod(MethodSpec.constructorBuilder()
-                        .addStatement("super($S, $L)", resourceName, generator.generateMap(typeBuilder, values))
-                        .build())
-                .addMethod(MethodSpec.methodBuilder("getOrder")
-                        .addModifiers(PUBLIC)
-                        .returns(int.class)
-                        .addStatement("return $L", order)
-                        .build())
-                .addAnnotation(Generated.class);
+                .addStatement("super($S, $L)", resourceName, generator.generateMap(typeBuilder, values))
+                .build())
+            .addMethod(MethodSpec.methodBuilder("getOrder")
+                .addModifiers(PUBLIC)
+                .returns(int.class)
+                .addStatement("return $L", order)
+                .build())
+            .addAnnotation(Generated.class);
         return javaFile(typeBuilder.build());
     }
 

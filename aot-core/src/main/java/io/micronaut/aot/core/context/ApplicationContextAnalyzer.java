@@ -47,12 +47,11 @@ import java.util.stream.Stream;
  * An application context analyzer is responsible for instantiating
  * an application context and inferring whether a bean should be
  * included in the application binaries.
- *
+ * <p>
  * It uses a {@code Predicate<Object>} as superinterface because it
  * needs to run in the same classloader as the optimizer, where the
  * Micronaut specific types are different from the ones loaded in
  * the analyzed classpath.
- *
  */
 @SuppressWarnings("unused")
 public final class ApplicationContextAnalyzer {
@@ -72,15 +71,18 @@ public final class ApplicationContextAnalyzer {
 
     /**
      * Instantiates an application context analyzer.
+     *
      * @return an analyzer
      */
     public static ApplicationContextAnalyzer create() {
-        return create(spec -> { });
+        return create(spec -> {
+        });
     }
 
     /**
      * Instantiates an application context analyzer with the ability to
      * customize the application context.
+     *
      * @param spec the spec to configure the application context
      * @return the analyzer
      */
@@ -106,7 +108,7 @@ public final class ApplicationContextAnalyzer {
                 method = DefaultBeanContext.class.getDeclaredMethod("readAllBeanDefinitionClasses");
                 method.setAccessible(true);
                 method.invoke(context);
-            }  catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
                 // ignore
             }
         }
@@ -118,6 +120,7 @@ public final class ApplicationContextAnalyzer {
     /**
      * Returns a predicate which can be used to determine, from annotation metadata,
      * if a bean matches requirements.
+     *
      * @return a predicate
      */
     public Predicate<AnnotationMetadataProvider> getAnnotationMetadataPredicate() {
@@ -143,7 +146,7 @@ public final class ApplicationContextAnalyzer {
         }
 
         @Override
-        public <T> Optional<T> getProperty(String name, ArgumentConversionContext<T> conversionContext) {
+        public <R> Optional<R> getProperty(String name, ArgumentConversionContext<R> conversionContext) {
             return applicationContext.getProperty(name, conversionContext);
         }
 
@@ -153,42 +156,42 @@ public final class ApplicationContextAnalyzer {
         }
 
         @Override
-        public <T> T getBean(BeanDefinition<T> definition) {
+        public <R> R getBean(BeanDefinition<R> definition) {
             return applicationContext.getBean(definition);
         }
 
         @Override
-        public <T> T getBean(Class<T> beanType, Qualifier<T> qualifier) {
+        public <R> R getBean(Class<R> beanType, Qualifier<R> qualifier) {
             return applicationContext.getBean(beanType, qualifier);
         }
 
         @Override
-        public <T> Optional<T> findBean(Argument<T> beanType, Qualifier<T> qualifier) {
+        public <R> Optional<R> findBean(Argument<R> beanType, Qualifier<R> qualifier) {
             return applicationContext.findBean(beanType, qualifier);
         }
 
         @Override
-        public <T> Optional<T> findBean(Class<T> beanType, Qualifier<T> qualifier) {
+        public <R> Optional<R> findBean(Class<R> beanType, Qualifier<R> qualifier) {
             return applicationContext.findBean(beanType, qualifier);
         }
 
         @Override
-        public <T> Collection<T> getBeansOfType(Class<T> beanType) {
+        public <R> Collection<R> getBeansOfType(Class<R> beanType) {
             return applicationContext.getBeansOfType(beanType);
         }
 
         @Override
-        public <T> Collection<T> getBeansOfType(Class<T> beanType, Qualifier<T> qualifier) {
+        public <R> Collection<R> getBeansOfType(Class<R> beanType, Qualifier<R> qualifier) {
             return applicationContext.getBeansOfType(beanType, qualifier);
         }
 
         @Override
-        public <T> Stream<T> streamOfType(Class<T> beanType, Qualifier<T> qualifier) {
+        public <R> Stream<R> streamOfType(Class<R> beanType, Qualifier<R> qualifier) {
             return applicationContext.streamOfType(beanType, qualifier);
         }
 
         @Override
-        public <T> T getProxyTargetBean(Class<T> beanType, Qualifier<T> qualifier) {
+        public <R> R getProxyTargetBean(Class<R> beanType, Qualifier<R> qualifier) {
             return applicationContext.getProxyTargetBean(beanType, qualifier);
         }
 
@@ -226,7 +229,7 @@ public final class ApplicationContextAnalyzer {
 
         @Override
         public boolean test(AnnotationMetadataProvider component) {
-            ShallowConditionContext<AnnotationMetadataProvider> context = new ShallowConditionContext<>(component);
+            var context = new ShallowConditionContext<>(component);
             return new RequiresCondition(component.getAnnotationMetadata()).matches(context);
         }
 

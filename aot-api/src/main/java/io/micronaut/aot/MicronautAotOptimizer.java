@@ -58,7 +58,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -73,13 +72,13 @@ import static io.micronaut.aot.core.config.MetadataUtils.toPropertiesSample;
  * generation at build time. Its role is to generate a bunch of
  * source code for various optimizations which can be computed
  * at build time.
- *
+ * <p>
  * Typically, generated code will involve the generation of an
  * "optimized" entry point for the application, which delegates
  * to the main entry point, but also performs some static
  * initialization by making calls to the
  * {@link io.micronaut.core.optim.StaticOptimizations} class.
- *
+ * <p>
  * The Micronaut AOT optimizer is experimental and won't do
  * anything by its own: it must be integrated in some form, for
  * example via a build plugin, which in turn will make the generated
@@ -87,7 +86,7 @@ import static io.micronaut.aot.core.config.MetadataUtils.toPropertiesSample;
  * call this class to generate the optimization code, and in addition
  * create an optimized jar, an optimized native binary or even a
  * full distribution.
- *
+ * <p>
  * The optimizer works by passing in the whole application runtime
  * classpath and a set of configuration options. It then analyzes
  * the classpath, for example to identify the services to be loaded,
@@ -119,9 +118,9 @@ public final class MicronautAotOptimizer implements ConfigKeys {
 
     private void compileGeneratedSources(List<File> extraClasspath, List<JavaFile> javaFiles) {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        DiagnosticCollector<JavaFileObject> ds = new DiagnosticCollector<>();
+        var ds = new DiagnosticCollector<JavaFileObject>();
         try (StandardJavaFileManager mgr = compiler.getStandardFileManager(ds, null, null)) {
-            List<File> fullClasspath = new ArrayList<>(classpath);
+            var fullClasspath = new ArrayList<>(classpath);
             fullClasspath.addAll(extraClasspath);
             List<String> options = compilerOptions(outputClassesDirectory, fullClasspath);
             List<File> filesToCompile = outputSourceFilesToSourceDir(outputSourcesDirectory, javaFiles);
@@ -134,8 +133,8 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             throw new RuntimeException("Unable to compile generated classes", e);
         }
         List<Diagnostic<? extends JavaFileObject>> diagnostics = ds.getDiagnostics().stream()
-                .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
-                .collect(Collectors.toList());
+            .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
+            .toList();
         if (!diagnostics.isEmpty()) {
             throwCompilationError(diagnostics);
         }
@@ -150,21 +149,21 @@ public final class MicronautAotOptimizer implements ConfigKeys {
      */
     public static void exportConfiguration(String runtime, File propertiesFile) {
         List<AOTModule> list = SourceGeneratorLoader.list(Runtime.valueOf(runtime.toUpperCase(Locale.ENGLISH)));
-        try (PrintWriter wrt = new PrintWriter(new FileOutputStream(propertiesFile))) {
-            Deque<AOTModule> queue = new ArrayDeque<>(list);
+        try (var wrt = new PrintWriter(new FileOutputStream(propertiesFile))) {
+            var queue = new ArrayDeque<>(list);
             while (!queue.isEmpty()) {
                 AOTModule generator = queue.pop();
                 if (!generator.description().isEmpty()) {
                     Arrays.stream(generator.description().split("\r?\n")).forEach(line ->
-                            wrt.println("# " + line));
+                        wrt.println("# " + line));
                 }
                 wrt.println(generator.id() + ".enabled = true");
                 Arrays.stream(generator.subgenerators())
-                        .map(MetadataUtils::findMetadata)
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .sorted(Collections.reverseOrder())
-                        .forEachOrdered(queue::addFirst);
+                    .map(MetadataUtils::findMetadata)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .sorted(Collections.reverseOrder())
+                    .forEachOrdered(queue::addFirst);
                 for (Option option : generator.options()) {
                     wrt.println(toPropertiesSample(option));
                 }
@@ -190,16 +189,16 @@ public final class MicronautAotOptimizer implements ConfigKeys {
      * @param props the configuration properties
      */
     public static void execute(Properties props) {
-        Configuration config = new DefaultConfiguration(props);
+        var config = new DefaultConfiguration(props);
         String pkg = config.mandatoryValue(GENERATED_PACKAGE);
-        File outputDir = new File(config.mandatoryValue(OUTPUT_DIRECTORY));
-        File sourcesDir = new File(outputDir, "sources");
-        File classesDir = new File(outputDir, "classes");
-        File logsDir = new File(outputDir, "logs");
+        var outputDir = new File(config.mandatoryValue(OUTPUT_DIRECTORY));
+        var sourcesDir = new File(outputDir, "sources");
+        var classesDir = new File(outputDir, "classes");
+        var logsDir = new File(outputDir, "logs");
 
         runner(pkg, sourcesDir, classesDir, logsDir, config)
-                .addClasspath(config.stringList(CLASSPATH).stream().map(File::new).collect(Collectors.toList()))
-                .execute();
+            .addClasspath(config.stringList(CLASSPATH).stream().map(File::new).collect(Collectors.toList()))
+            .execute();
     }
 
     public static Runner runner(String generatedPackage,
@@ -211,7 +210,7 @@ public final class MicronautAotOptimizer implements ConfigKeys {
     }
 
     private static List<File> outputSourceFilesToSourceDir(File srcDir, List<JavaFile> javaFiles) {
-        List<File> srcFiles = new ArrayList<>(javaFiles.size());
+        var srcFiles = new ArrayList<File>(javaFiles.size());
         if (srcDir.isDirectory() || srcDir.mkdirs()) {
             StreamHelper.trying(() -> {
                 for (JavaFile javaFile : javaFiles) {
@@ -230,7 +229,7 @@ public final class MicronautAotOptimizer implements ConfigKeys {
     }
 
     private static void throwCompilationError(List<Diagnostic<? extends JavaFileObject>> diagnostics) {
-        StringBuilder sb = new StringBuilder("Compilation errors:\n");
+        var sb = new StringBuilder("Compilation errors:\n");
         for (Diagnostic<? extends JavaFileObject> d : diagnostics) {
             JavaFileObject source = d.getSource();
             String srcFile = source == null ? "unknown" : new File(source.toUri()).getName();
@@ -242,11 +241,11 @@ public final class MicronautAotOptimizer implements ConfigKeys {
 
     private static List<String> compilerOptions(File dstDir,
                                                 List<File> classPath) {
-        List<String> options = new ArrayList<>();
+        var options = new ArrayList<String>();
         options.add("-source");
-        options.add("1.8");
+        options.add("17");
         options.add("-target");
-        options.add("1.8");
+        options.add("17");
         options.add("-classpath");
         String cp = classPath.stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
         options.add(cp);
@@ -259,15 +258,15 @@ public final class MicronautAotOptimizer implements ConfigKeys {
         if (logsDirectory.isDirectory() || logsDirectory.mkdirs()) {
             writeLines(new File(logsDirectory, OUTPUT_RESOURCES_FILE_NAME), context.getExcludedResources());
             context.getDiagnostics().forEach((key, messages) -> {
-                File logFile = new File(logsDirectory, key.toLowerCase(Locale.US) + ".log");
+                var logFile = new File(logsDirectory, key.toLowerCase(Locale.US) + ".log");
                 writeLines(logFile, messages);
             });
         }
     }
 
     private static void writeLines(File outputFile, Collection<String> lines) {
-        try (PrintWriter writer = new PrintWriter(
-                new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)
+        try (var writer = new PrintWriter(
+            new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)
         )) {
             lines.forEach(writer::println);
         } catch (FileNotFoundException e) {
@@ -318,13 +317,12 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             return this;
         }
 
-        @SuppressWarnings("unchecked")
         public Runner execute() {
-            MicronautAotOptimizer optimizer = new MicronautAotOptimizer(
-                    classpath,
-                    outputSourcesDirectory,
-                    outputClassesDirectory,
-                    logsDirectory);
+            var optimizer = new MicronautAotOptimizer(
+                classpath,
+                outputSourcesDirectory,
+                outputClassesDirectory,
+                logsDirectory);
             ApplicationContextAnalyzer analyzer = ApplicationContextAnalyzer.create(spec -> {
                 if (config.containsKey(Environments.TARGET_ENVIRONMENTS_NAMES)) {
                     List<String> targetEnvs = config.stringList(Environments.TARGET_ENVIRONMENTS_NAMES);
@@ -335,10 +333,10 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             });
             Set<String> environmentNames = analyzer.getEnvironmentNames();
             LOGGER.info("Analysis will be performed with active environments: {}", environmentNames);
-            DefaultSourceGenerationContext context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config, outputClassesDirectory.toPath());
+            var context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config, outputClassesDirectory.toPath());
             List<AOTCodeGenerator> sourceGenerators = SourceGeneratorLoader.load(config.getRuntime(), context);
             ApplicationContextConfigurerGenerator generator = new ApplicationContextConfigurerGenerator(
-                    sourceGenerators
+                sourceGenerators
             );
             generator.generate(context);
             optimizer.compileGeneratedSources(context.getExtraClasspath(), context.getGeneratedJavaFiles());

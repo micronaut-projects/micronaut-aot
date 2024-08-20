@@ -38,20 +38,20 @@ import static javax.lang.model.element.Modifier.STATIC;
  * A code generator which is responsible for setting up Netty properties.
  */
 @AOTModule(
-        id = NettyPropertiesSourceGenerator.ID,
-        description = NettyPropertiesSourceGenerator.DESCRIPTION,
-        options = {
-                @Option(
-                        key = NettyPropertiesSourceGenerator.MACHINE_ID,
-                        description = NettyPropertiesSourceGenerator.MACHINE_ID_DESCRIPTION,
-                        sampleValue = "random"
-                ),
-                @Option(
-                        key = NettyPropertiesSourceGenerator.PROCESS_ID,
-                        description = NettyPropertiesSourceGenerator.PROCESS_ID_DESCRIPTION,
-                        sampleValue = "random"
-                )
-        }
+    id = NettyPropertiesSourceGenerator.ID,
+    description = NettyPropertiesSourceGenerator.DESCRIPTION,
+    options = {
+        @Option(
+            key = NettyPropertiesSourceGenerator.MACHINE_ID,
+            description = NettyPropertiesSourceGenerator.MACHINE_ID_DESCRIPTION,
+            sampleValue = "random"
+        ),
+        @Option(
+            key = NettyPropertiesSourceGenerator.PROCESS_ID,
+            description = NettyPropertiesSourceGenerator.PROCESS_ID_DESCRIPTION,
+            sampleValue = "random"
+        )
+    }
 )
 public class NettyPropertiesSourceGenerator extends AbstractCodeGenerator {
     public static final String GENERATED_CLASS = "NettyPropertiesAOTContextConfigurer";
@@ -76,39 +76,39 @@ public class NettyPropertiesSourceGenerator extends AbstractCodeGenerator {
 
     private TypeSpec buildConfigurer(AOTContext context) {
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(GENERATED_CLASS)
-                .addSuperinterface(ApplicationContextConfigurer.class)
-                .addModifiers(PUBLIC);
+            .addSuperinterface(ApplicationContextConfigurer.class)
+            .addModifiers(PUBLIC);
         MethodSpec.Builder configure = MethodSpec.methodBuilder("configure")
-                .addModifiers(PUBLIC)
-                .addAnnotation(Override.class)
-                .addParameter(ApplicationContextBuilder.class, "builder");
+            .addModifiers(PUBLIC)
+            .addAnnotation(Override.class)
+            .addParameter(ApplicationContextBuilder.class, "builder");
         ifOptimizationEnabled(machineIdOptionOf(context), machineId ->
-                defineSystemProperty(classBuilder, configure, "io.netty.machineId", machineId, () -> MethodSpec.methodBuilder("randomMacAddress")
-                        .addModifiers(PRIVATE, STATIC)
-                        .returns(String.class)
-                        .addCode(CodeBlock.builder()
-                                .addStatement("$T rnd = new $T()", Random.class, Random.class)
-                                .addStatement("$T sb = new $T()", StringBuilder.class, StringBuilder.class)
-                                .beginControlFlow("for (int i = 0; i < 6; i++)")
-                                .addStatement("sb.append(String.format(\"%02x\", rnd.nextInt(256)))")
-                                .beginControlFlow("if (i < 5)")
-                                .addStatement("sb.append(\":\")")
-                                .endControlFlow()
-                                .endControlFlow()
-                                .addStatement("return sb.toString()")
-                                .build()
-                        ).build())
+            defineSystemProperty(classBuilder, configure, "io.netty.machineId", machineId, () -> MethodSpec.methodBuilder("randomMacAddress")
+                .addModifiers(PRIVATE, STATIC)
+                .returns(String.class)
+                .addCode(CodeBlock.builder()
+                    .addStatement("$T rnd = new $T()", Random.class, Random.class)
+                    .addStatement("$T sb = new $T()", StringBuilder.class, StringBuilder.class)
+                    .beginControlFlow("for (int i = 0; i < 6; i++)")
+                    .addStatement("sb.append(String.format(\"%02x\", rnd.nextInt(256)))")
+                    .beginControlFlow("if (i < 5)")
+                    .addStatement("sb.append(\":\")")
+                    .endControlFlow()
+                    .endControlFlow()
+                    .addStatement("return sb.toString()")
+                    .build()
+                ).build())
         );
 
         ifOptimizationEnabled(pidOf(context), pid ->
-                defineSystemProperty(classBuilder, configure, "io.netty.processId", pid, () -> MethodSpec.methodBuilder("randomPid")
-                        .addModifiers(PRIVATE, STATIC)
-                        .returns(String.class)
-                        .addStatement("return String.valueOf(new Random().nextInt(65536))")
-                        .build())
+            defineSystemProperty(classBuilder, configure, "io.netty.processId", pid, () -> MethodSpec.methodBuilder("randomPid")
+                .addModifiers(PRIVATE, STATIC)
+                .returns(String.class)
+                .addStatement("return String.valueOf(new Random().nextInt(65536))")
+                .build())
         );
         return classBuilder.addMethod(configure.build())
-                .build();
+            .build();
     }
 
     private static void ifOptimizationEnabled(String option, Consumer<? super String> consumer) {

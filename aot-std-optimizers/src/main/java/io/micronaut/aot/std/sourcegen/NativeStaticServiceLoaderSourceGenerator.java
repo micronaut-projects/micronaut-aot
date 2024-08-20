@@ -34,7 +34,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -44,32 +43,32 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * executing in native images, where classloading is basically free.
  */
 @AOTModule(
-        id = NativeStaticServiceLoaderSourceGenerator.ID,
-        description = AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION,
-        options = {
-                @Option(
-                        key = "service.types",
-                        description = "The list of service types to be scanned (comma separated)",
-                        sampleValue = AbstractStaticServiceLoaderSourceGenerator.DEFAULT_SERVICE_TYPES
-                ),
-                @Option(
-                        key = "serviceloading.rejected.impls",
-                        description = "A list of implementation types which shouldn't be included in the final application (comma separated)",
-                        sampleValue = "com.Misc,org.Bar"
-                ),
-                @Option(
-                        key = "serviceloading.force.include.impls",
-                        description = "A list of implementation types to include even if they don't match bean requirements (comma separated)",
-                        sampleValue = "com.Misc,org.Bar"
-                ),
-                @Option(
-                        key = Environments.POSSIBLE_ENVIRONMENTS_NAMES,
-                        description = Environments.POSSIBLE_ENVIRONMENTS_DESCRIPTION,
-                        sampleValue = Environments.POSSIBLE_ENVIRONMENTS_SAMPLE
-                )
-        },
-        enabledOn = Runtime.NATIVE,
-        subgenerators = {YamlPropertySourceGenerator.class}
+    id = NativeStaticServiceLoaderSourceGenerator.ID,
+    description = AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION,
+    options = {
+        @Option(
+            key = "service.types",
+            description = "The list of service types to be scanned (comma separated)",
+            sampleValue = AbstractStaticServiceLoaderSourceGenerator.DEFAULT_SERVICE_TYPES
+        ),
+        @Option(
+            key = "serviceloading.rejected.impls",
+            description = "A list of implementation types which shouldn't be included in the final application (comma separated)",
+            sampleValue = "com.Misc,org.Bar"
+        ),
+        @Option(
+            key = "serviceloading.force.include.impls",
+            description = "A list of implementation types to include even if they don't match bean requirements (comma separated)",
+            sampleValue = "com.Misc,org.Bar"
+        ),
+        @Option(
+            key = Environments.POSSIBLE_ENVIRONMENTS_NAMES,
+            description = Environments.POSSIBLE_ENVIRONMENTS_DESCRIPTION,
+            sampleValue = Environments.POSSIBLE_ENVIRONMENTS_SAMPLE
+        )
+    },
+    enabledOn = Runtime.NATIVE,
+    subgenerators = {YamlPropertySourceGenerator.class}
 )
 public class NativeStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
     public static final String ID = "serviceloading.native";
@@ -88,28 +87,28 @@ public class NativeStaticServiceLoaderSourceGenerator extends AbstractStaticServ
             }
         }
         List<Service> initializers = serviceClasses.map(clazz -> {
-                    for (Method method : clazz.getDeclaredMethods()) {
-                        if ("provider".equals(method.getName()) && Modifier.isStatic(method.getModifiers())) {
-                            return new Service(clazz.getName(), CodeBlock.of("$T::provider", clazz));
-                        }
+                for (Method method : clazz.getDeclaredMethods()) {
+                    if ("provider".equals(method.getName()) && Modifier.isStatic(method.getModifiers())) {
+                        return new Service(clazz.getName(), CodeBlock.of("$T::provider", clazz));
                     }
-                    for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
-                        if (constructor.getParameterCount() == 0 && Modifier.isPublic(constructor.getModifiers())) {
-                            return new Service(clazz.getName(), CodeBlock.of("$T::new", clazz));
-                        }
+                }
+                for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
+                    if (constructor.getParameterCount() == 0 && Modifier.isPublic(constructor.getModifiers())) {
+                        return new Service(clazz.getName(), CodeBlock.of("$T::new", clazz));
                     }
-                    return null;
-                })
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(s -> s.name))
-                .collect(Collectors.toList());
+                }
+                return null;
+            })
+            .filter(Objects::nonNull)
+            .sorted(Comparator.comparing(s -> s.name))
+            .toList();
         ParameterizedTypeName staticDefinitionType = ParameterizedTypeName.get(SoftServiceLoader.StaticDefinition.class, serviceType);
 
         MethodSpec.Builder method = MethodSpec.methodBuilder("findAll")
-                .addModifiers(PUBLIC)
-                .addParameter(ParameterizedTypeName.get(Predicate.class, String.class), "predicate")
-                .returns(ParameterizedTypeName.get(ClassName.get(Stream.class), staticDefinitionType));
-        if (initializers.size() == 0) {
+            .addModifiers(PUBLIC)
+            .addParameter(ParameterizedTypeName.get(Predicate.class, String.class), "predicate")
+            .returns(ParameterizedTypeName.get(ClassName.get(Stream.class), staticDefinitionType));
+        if (initializers.isEmpty()) {
             method.addStatement("return $T.empty()", Stream.class);
         } else {
             method.addStatement("$T list = new $T<>()", ParameterizedTypeName.get(ClassName.get(List.class), staticDefinitionType), ArrayList.class);

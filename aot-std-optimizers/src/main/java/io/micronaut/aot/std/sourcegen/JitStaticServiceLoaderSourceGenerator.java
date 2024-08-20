@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static javax.lang.model.element.Modifier.FINAL;
@@ -45,32 +44,32 @@ import static javax.lang.model.element.Modifier.STATIC;
  * at execution in JIT mode.
  */
 @AOTModule(
-        id = JitStaticServiceLoaderSourceGenerator.ID,
-        description = AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION,
-        options = {
-                @Option(
-                        key = "service.types",
-                        description = "The list of service types to be scanned (comma separated)",
-                        sampleValue = AbstractStaticServiceLoaderSourceGenerator.DEFAULT_SERVICE_TYPES
-                ),
-                @Option(
-                        key = "serviceloading.rejected.impls",
-                        description = "A list of implementation types which shouldn't be included in the final application (comma separated)",
-                        sampleValue = "com.Misc,org.Bar"
-                ),
-                @Option(
-                        key = "serviceloading.force.include.impls",
-                        description = "A list of implementation types to include even if they don't match bean requirements (comma separated)",
-                        sampleValue = "com.Misc,org.Bar"
-                ),
-                @Option(
-                        key = Environments.POSSIBLE_ENVIRONMENTS_NAMES,
-                        description = Environments.POSSIBLE_ENVIRONMENTS_DESCRIPTION,
-                        sampleValue = Environments.POSSIBLE_ENVIRONMENTS_SAMPLE
-                )
-        },
-        enabledOn = Runtime.JIT,
-        subgenerators = { YamlPropertySourceGenerator.class }
+    id = JitStaticServiceLoaderSourceGenerator.ID,
+    description = AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION,
+    options = {
+        @Option(
+            key = "service.types",
+            description = "The list of service types to be scanned (comma separated)",
+            sampleValue = AbstractStaticServiceLoaderSourceGenerator.DEFAULT_SERVICE_TYPES
+        ),
+        @Option(
+            key = "serviceloading.rejected.impls",
+            description = "A list of implementation types which shouldn't be included in the final application (comma separated)",
+            sampleValue = "com.Misc,org.Bar"
+        ),
+        @Option(
+            key = "serviceloading.force.include.impls",
+            description = "A list of implementation types to include even if they don't match bean requirements (comma separated)",
+            sampleValue = "com.Misc,org.Bar"
+        ),
+        @Option(
+            key = Environments.POSSIBLE_ENVIRONMENTS_NAMES,
+            description = Environments.POSSIBLE_ENVIRONMENTS_DESCRIPTION,
+            sampleValue = Environments.POSSIBLE_ENVIRONMENTS_SAMPLE
+        )
+    },
+    enabledOn = Runtime.JIT,
+    subgenerators = {YamlPropertySourceGenerator.class}
 )
 public class JitStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
     public static final String ID = "serviceloading.jit";
@@ -80,14 +79,14 @@ public class JitStaticServiceLoaderSourceGenerator extends AbstractStaticService
                                                Class<?> serviceType,
                                                TypeSpec.Builder factory) {
         List<String> initializers = serviceClasses
-                .map(Class::getName)
-                .sorted()
-                .collect(Collectors.toList());
+            .map(Class::getName)
+            .sorted()
+            .toList();
         ParameterizedTypeName staticDefinitionType = ParameterizedTypeName.get(SoftServiceLoader.StaticDefinition.class, serviceType);
         ParameterizedTypeName serviceTypeClassType = ParameterizedTypeName.get(Class.class, serviceType);
 
         CodeBlock.Builder fieldInit = CodeBlock.builder()
-                .beginControlFlow("new String[]");
+            .beginControlFlow("new String[]");
         for (int i = 0; i < initializers.size(); i++) {
             String initializer = initializers.get(i);
             fieldInit.add("$S", initializer);
@@ -98,42 +97,43 @@ public class JitStaticServiceLoaderSourceGenerator extends AbstractStaticService
         fieldInit.endControlFlow();
 
         factory.addField(FieldSpec.builder(String[].class, "SERVICE_TYPES")
-                .addModifiers(PRIVATE, STATIC, FINAL)
-                .initializer(fieldInit.build())
-                .build());
+            .addModifiers(PRIVATE, STATIC, FINAL)
+            .initializer(fieldInit.build())
+            .build());
         CodeBlock.Builder init = CodeBlock.builder()
-                .addStatement("$T cl = $T.class.getClassLoader()", ClassLoader.class, serviceType)
-                .addStatement("$T pool = $T.commonPool()", ForkJoinPool.class, ForkJoinPool.class);
+            .addStatement("$T cl = $T.class.getClassLoader()", ClassLoader.class, serviceType)
+            .addStatement("$T pool = $T.commonPool()", ForkJoinPool.class, ForkJoinPool.class);
         for (String initializer : initializers) {
             init.addStatement("pool.submit(() -> loadClass(cl, $S))", initializer);
         }
         factory.addStaticBlock(init.build());
 
         factory.addMethod(MethodSpec.methodBuilder("loadClass")
-                .addModifiers(PRIVATE, STATIC)
-                .returns(serviceTypeClassType)
-                .addParameter(ClassLoader.class, "cl")
-                .addParameter(String.class, "name")
-                .beginControlFlow("try")
-                .addStatement("return ($T) cl.loadClass(name)", serviceTypeClassType)
-                .endControlFlow()
-                .beginControlFlow("catch (Exception e)")
-                .addStatement("return null")
-                .endControlFlow()
-                .build());
+            .addModifiers(PRIVATE, STATIC)
+            .returns(serviceTypeClassType)
+            .addParameter(ClassLoader.class, "cl")
+            .addParameter(String.class, "name")
+            .beginControlFlow("try")
+            .addStatement("return ($T) cl.loadClass(name)", serviceTypeClassType)
+            .endControlFlow()
+            .beginControlFlow("catch (Exception e)")
+            .addStatement("return null")
+            .endControlFlow()
+            .build());
 
         MethodSpec.Builder method = MethodSpec.methodBuilder("findAll")
-                .addModifiers(PUBLIC)
-                .addParameter(ParameterizedTypeName.get(Predicate.class, String.class), "predicate")
-                .returns(ParameterizedTypeName.get(ClassName.get(Stream.class), staticDefinitionType));
+            .addModifiers(PUBLIC)
+            .addParameter(ParameterizedTypeName.get(Predicate.class, String.class), "predicate")
+            .returns(ParameterizedTypeName.get(ClassName.get(Stream.class), staticDefinitionType));
         method.addStatement("$T cl = $T.class.getClassLoader()", ClassLoader.class, serviceType);
-        method.addStatement("return $T.stream(SERVICE_TYPES)\n" +
-                        ".parallel()\n" +
-                        ".filter(predicate::test)\n" +
-                        ".map(s -> loadClass(cl, s))\n" +
-                        ".filter($T::nonNull)\n" +
-                        ".map(c -> $T.of(c.getName(), c))",
-                Arrays.class, Objects.class, SoftServiceLoader.StaticDefinition.class);
+        method.addStatement("""
+                return $T.stream(SERVICE_TYPES)
+                .parallel()
+                .filter(predicate::test)
+                .map(s -> loadClass(cl, s))
+                .filter($T::nonNull)
+                .map(c -> $T.of(c.getName(), c))""",
+            Arrays.class, Objects.class, SoftServiceLoader.StaticDefinition.class);
         factory.addMethod(method.build());
     }
 

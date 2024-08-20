@@ -63,9 +63,9 @@ public class Main implements Runnable, ConfigKeys {
     @Override
     public void run() {
         List<URL> classpath = toURLs(classpathString);
-        Properties props = new Properties();
+        var props = new Properties();
         if (config.exists()) {
-            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(config))) {
+            try (var reader = new InputStreamReader(new FileInputStream(config))) {
                 props.load(reader);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -97,7 +97,7 @@ public class Main implements Runnable, ConfigKeys {
      * @param ctxClassLoader the current context classloader
      */
     private void executeInIsolatedLoader(Properties props, URL[] urls, ClassLoader ctxClassLoader) {
-        URLClassLoader cl = new URLClassLoader(urls, new FilteringClassLoader(ctxClassLoader));
+        var cl = new URLClassLoader(urls, new FilteringClassLoader(ctxClassLoader));
         try {
             Thread.currentThread().setContextClassLoader(cl);
             Class<?> runnerClass = cl.loadClass("io.micronaut.aot.MicronautAotOptimizer");
@@ -127,7 +127,7 @@ public class Main implements Runnable, ConfigKeys {
                     }
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public static int execute(String[] args) {

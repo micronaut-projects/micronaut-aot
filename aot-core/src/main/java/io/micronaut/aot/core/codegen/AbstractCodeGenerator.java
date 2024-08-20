@@ -34,7 +34,7 @@ public abstract class AbstractCodeGenerator implements AOTCodeGenerator {
 
     protected static MethodSpec staticMethodBuilder(String name, Consumer<? super MethodSpec.Builder> consumer) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder(name)
-                .addModifiers(Modifier.PRIVATE, Modifier.STATIC);
+            .addModifiers(Modifier.PRIVATE, Modifier.STATIC);
         consumer.accept(builder);
         return builder.build();
     }
