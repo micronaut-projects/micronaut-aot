@@ -53,6 +53,7 @@ import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -315,8 +316,13 @@ class Logback14GeneratorHelper {
                             return true;
                         } else {
                             try {
-                                Method valueOf = parameterType.getDeclaredMethod("valueOf", String.class);
-                                codeBuilder.addStatement("$L.$L($T.valueOf($S))", parentVarName, method.getName(), ClassName.get(parameterType), model.getBodyText());
+                                if (Charset.class.equals(parameterType)) {
+                                    parameterType.getDeclaredMethod("forName", String.class);
+                                    codeBuilder.addStatement("$L.$L($T.forName($S))", parentVarName, method.getName(), ClassName.get(parameterType), model.getBodyText());
+                                } else {
+                                    parameterType.getDeclaredMethod("valueOf", String.class);
+                                    codeBuilder.addStatement("$L.$L($T.valueOf($S))", parentVarName, method.getName(), ClassName.get(parameterType), model.getBodyText());
+                                }
                                 return true;
                             } catch (NoSuchMethodException e) {
                                 throw new RuntimeException("Unable to convert type" + parameterType);
