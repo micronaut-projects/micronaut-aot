@@ -15,8 +15,8 @@
  */
 package io.micronaut.aot.std.sourcegen;
 
-import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.AOTContext;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
@@ -26,8 +26,8 @@ import io.micronaut.core.optim.StaticOptimizations;
  * properties caching in Micronaut.
  */
 @AOTModule(
-        id = CachedEnvironmentSourceGenerator.ID,
-        description = CachedEnvironmentSourceGenerator.DESCRIPTION
+    id = CachedEnvironmentSourceGenerator.ID,
+    description = CachedEnvironmentSourceGenerator.DESCRIPTION
 )
 public class CachedEnvironmentSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "cached.environment";
@@ -36,7 +36,7 @@ public class CachedEnvironmentSourceGenerator extends AbstractCodeGenerator {
     @Override
     public void generate(@NonNull AOTContext context) {
         context.registerStaticInitializer(staticMethod("enableEnvironmentCaching", body ->
-                body.addStatement("$T.cacheEnvironment()", StaticOptimizations.class)));
+            body.addStatement("$T.cacheEnvironment()", StaticOptimizations.class)));
     }
 
 }

@@ -31,7 +31,7 @@ import io.micronaut.core.annotation.NonNull;
  *     <li>one or more source files</li>
  *     <li>one or more resource files</li>
  * </ul>
- *
+ * <p>
  * Code generators must be annotated with {@link AOTModule}.
  */
 public interface AOTCodeGenerator {

@@ -15,13 +15,13 @@
  */
 package io.micronaut.aot.std.sourcegen;
 
+import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
-import io.micronaut.aot.core.AOTContext;
-import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.aot.core.codegen.ApplicationContextConfigurerGenerator;
+import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.core.annotation.NonNull;
 
 import java.io.FileWriter;
@@ -59,15 +59,14 @@ public class GraalVMOptimizationFeatureSourceGenerator extends AbstractCodeGener
     @Override
     public void generate(@NonNull AOTContext context) {
         List<String> serviceTypes = context.getConfiguration().stringList(OPTION.key());
-        String path =
-            "META-INF/native-image/" + context.getPackageName() + "/native-image.properties";
+        String path = "META-INF/native-image/" + context.getPackageName() + "/native-image.properties";
         context.registerGeneratedResource(path, propertiesFile -> {
             try (PrintWriter wrt = new PrintWriter(new FileWriter(propertiesFile))) {
                 wrt.print("Args=");
                 wrt.println("--initialize-at-build-time=io.micronaut.context.ApplicationContextConfigurer$1" + NEXT_LINE);
                 wrt.println("     --initialize-at-build-time=" + context.getPackageName() + "." +
-                            ApplicationContextConfigurerGenerator.CUSTOMIZER_CLASS_NAME +
-                            NEXT_LINE);
+                    ApplicationContextConfigurerGenerator.CUSTOMIZER_CLASS_NAME +
+                    NEXT_LINE);
                 var buildTimeInit = context.getBuildTimeInitClasses()
                     .stream()
                     .map(clazz -> "     --initialize-at-build-time=" + clazz)

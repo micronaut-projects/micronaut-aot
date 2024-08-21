@@ -57,8 +57,8 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
                 .addSuperinterface(Configurator.class)
                 .addField(contextField())
                 .addMethod(configureMethod(getLogbackFileName(), getContext()))
-                .addMethod(setcontextMethod())
-                .addMethod(getcontextMethod())
+                .addMethod(setContextMethod())
+                .addMethod(getContextMethod())
                 .addMethod(addStatusMethod())
                 .addMethod(addLogMethod("Info"))
                 .addMethod(addLog2Method("Info"))
@@ -109,7 +109,7 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
                 .build();
     }
 
-    private static MethodSpec getcontextMethod() {
+    private static MethodSpec getContextMethod() {
         return MethodSpec.methodBuilder("getContext")
                 .addModifiers(Modifier.PUBLIC)
                 .returns(Context.class)
@@ -117,7 +117,7 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
                 .build();
     }
 
-    private static MethodSpec setcontextMethod() {
+    private static MethodSpec setContextMethod() {
         return MethodSpec.methodBuilder("setContext")
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(Context.class, "context")

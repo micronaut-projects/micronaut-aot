@@ -26,8 +26,8 @@ import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.context.ApplicationContextBuilder;
 import io.micronaut.context.ApplicationContextConfigurer;
 import io.micronaut.core.annotation.NonNull;
+import io.micronaut.core.util.CollectionUtils;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,7 +40,7 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * it is responsible for generating a new entry point, which delegates
  * to the original entry point of the application, and injects a number
  * of optimizations before starting the application.
- *
+ * <p>
  * The list of optimizations to inject is determined by the list of
  * delegate optimizers which are passed to this generator.
  */
@@ -58,10 +58,10 @@ public class ApplicationContextConfigurerGenerator extends AbstractCodeGenerator
     @Override
     public void generate(@NonNull AOTContext context) {
         TypeSpec.Builder optimizedEntryPoint = TypeSpec.classBuilder(CUSTOMIZER_CLASS_NAME)
-                .addSuperinterface(ApplicationContextConfigurer.class)
-                .addModifiers(PUBLIC);
+            .addSuperinterface(ApplicationContextConfigurer.class)
+            .addModifiers(PUBLIC);
         CodeBlock.Builder staticInitializer = CodeBlock.builder();
-        StaticInitializerCapturingContext capturer = new StaticInitializerCapturingContext(context, optimizedEntryPoint, staticInitializer);
+        var capturer = new StaticInitializerCapturingContext(context, optimizedEntryPoint, staticInitializer);
         for (AOTCodeGenerator sourceGenerator : sourceGenerators) {
             sourceGenerator.generate(capturer);
         }
@@ -74,17 +74,17 @@ public class ApplicationContextConfigurerGenerator extends AbstractCodeGenerator
 
     private void addDiagnostics(AOTContext context, TypeSpec.Builder optimizedEntryPoint) {
         MethodSpec.Builder configure = MethodSpec.methodBuilder("configure")
-                .addModifiers(PUBLIC)
-                .addAnnotation(Override.class)
-                .addParameter(ApplicationContextBuilder.class, "builder");
-        MapGenerator mapGenerator = new MapGenerator();
+            .addModifiers(PUBLIC)
+            .addAnnotation(Override.class)
+            .addParameter(ApplicationContextBuilder.class, "builder");
+        var mapGenerator = new MapGenerator();
         CodeBlock mapBlock = mapGenerator.generateMap(optimizedEntryPoint, createDiagnosticsMap(context));
         configure.addStatement("builder.properties($L)", mapBlock);
         optimizedEntryPoint.addMethod(configure.build());
     }
 
     private Map<String, Object> createDiagnosticsMap(AOTContext context) {
-        Map<String, Object> values = new LinkedHashMap<>();
+        var values = CollectionUtils.<String, Object>newLinkedHashMap(3);
         values.put("micronaut.aot.enabled", true);
         values.put("micronaut.aot.runtime", context.getRuntime().toString());
         values.put("micronaut.aot.optimizations", buildOptimizationList());
@@ -93,12 +93,12 @@ public class ApplicationContextConfigurerGenerator extends AbstractCodeGenerator
 
     private List<String> buildOptimizationList() {
         return sourceGenerators.stream()
-                .map(Object::getClass)
-                .map(MetadataUtils::findMetadata)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(AOTModule::id)
-                .collect(Collectors.toList());
+            .map(Object::getClass)
+            .map(MetadataUtils::findMetadata)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(AOTModule::id)
+            .collect(Collectors.toList());
     }
 
     private static final class StaticInitializerCapturingContext extends DelegatingSourceGenerationContext {

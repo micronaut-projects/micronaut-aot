@@ -33,7 +33,7 @@ public class ConfigPropsGenerator {
             throw new IllegalArgumentException("A single argument, the path to the output file, is expected");
         }
         try (var writer = new PrintWriter(Files.newBufferedWriter(Path.of(args[0]), StandardCharsets.UTF_8))) {
-            var codegenerators = Stream.concat(
+            var codeGenerators = Stream.concat(
                     SourceGeneratorLoader.list(Runtime.JIT).stream(),
                     SourceGeneratorLoader.list(Runtime.NATIVE).stream()
                 ).distinct()
@@ -42,7 +42,7 @@ public class ConfigPropsGenerator {
                            "but properties to be added to the Micronaut AOT configuration, via your build plugin." +
                            "Please refer to the appropriate Maven or Gradle plugin for more details.");
             writer.println();
-            for (AOTModule module : codegenerators) {
+            for (AOTModule module : codeGenerators) {
                 writer.println("=== Module " + module.id());
                 writer.println();
                 writer.print("This module is available ");

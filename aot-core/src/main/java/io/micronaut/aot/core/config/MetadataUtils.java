@@ -15,8 +15,8 @@
  */
 package io.micronaut.aot.core.config;
 
-import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.AOTCodeGenerator;
+import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.Runtime;
 
@@ -29,6 +29,7 @@ import java.util.Optional;
 public class MetadataUtils {
     /**
      * Returns the AOT module annotation for a class, if present.
+     *
      * @param clazz the class to look for
      * @return the module annotation.
      */
@@ -40,6 +41,7 @@ public class MetadataUtils {
      * Returns the option with the corresponding name. If
      * the supplied class is not annotated with {@link AOTModule}
      * invocation will fail.
+     *
      * @param clazz the AOT module class
      * @param name the name of the option
      * @return the corresponding option
@@ -51,11 +53,12 @@ public class MetadataUtils {
     /**
      * Returns a string representation of the option, for
      * use in properties files.
+     *
      * @param option the option to convert to sample text.
      * @return a sample
      */
     public static String toPropertiesSample(Option option) {
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         String description = option.description();
         if (!description.isEmpty()) {
             sb.append("# ").append(description).append("\n");
@@ -69,8 +72,8 @@ public class MetadataUtils {
 
     public static boolean isEnabledOn(Runtime runtime, AOTCodeGenerator module) {
         return findMetadata(module.getClass())
-                .map(aotModule -> isEnabledOn(runtime, aotModule))
-                .orElse(false);
+            .map(aotModule -> isEnabledOn(runtime, aotModule))
+            .orElse(false);
     }
 
     public static boolean isEnabledOn(Runtime runtime, AOTModule module) {

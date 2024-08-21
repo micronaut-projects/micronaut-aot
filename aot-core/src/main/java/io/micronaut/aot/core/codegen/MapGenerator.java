@@ -51,19 +51,18 @@ public class MapGenerator {
     private String convertValueToSource(Object value, TypeSpec.Builder builder) {
         if (value == null) {
             return "null";
+        }
+        Class<?> valueClass = value.getClass();
+        if (CharSequence.class.isAssignableFrom(valueClass)) {
+            return CodeBlock.of("$S", value).toString();
+        } else if (Number.class.isAssignableFrom(valueClass) || Boolean.class.isAssignableFrom(valueClass)) {
+            return convertNumberOrBoolean(valueClass, value);
+        } else if (List.class.isAssignableFrom(valueClass)) {
+            return generateListMethod((List<?>) value, builder);
+        } else if (Map.class.isAssignableFrom(valueClass)) {
+            return generateMapMethod((Map<?, ?>) value, builder);
         } else {
-            Class<?> valueClass = value.getClass();
-            if (CharSequence.class.isAssignableFrom(valueClass)) {
-                return CodeBlock.of("$S", value).toString();
-            } else if (Number.class.isAssignableFrom(valueClass) || Boolean.class.isAssignableFrom(valueClass)) {
-                return convertNumberOrBoolean(valueClass, value);
-            } else if (List.class.isAssignableFrom(valueClass)) {
-                return generateListMethod((List<?>) value, builder);
-            } else if (Map.class.isAssignableFrom(valueClass)) {
-                return generateMapMethod((Map<?, ?>) value, builder);
-            } else {
-                throw new UnsupportedOperationException("Configuration map contains an entry of type " + valueClass + " which is not supported yet. Please file a bug report.");
-            }
+            throw new UnsupportedOperationException("Configuration map contains an entry of type " + valueClass + " which is not supported yet. Please file a bug report.");
         }
     }
 

@@ -56,42 +56,42 @@ public class SourceGeneratorLoader {
     public static List<AOTCodeGenerator> load(Runtime runtime, AOTContext context) {
         Configuration configuration = context.getConfiguration();
         return sourceGeneratorStream()
-                .map(sg -> new Object() {
-                    final AOTCodeGenerator generator = sg;
-                    final AOTModule module = MetadataUtils.findMetadata(sg.getClass()).orElse(null);
-                })
-                .filter(sg -> {
-                    if (sg.module != null) {
-                        boolean isEnabledOnRuntime = MetadataUtils.isEnabledOn(runtime, sg.module);
-                        if (!isEnabledOnRuntime) {
-                            LOGGER.debug("Skipping source generator {} as it is not enabled on runtime {}", sg.generator.getClass().getName(), runtime);
-                            return false;
-                        }
-                        boolean isEnabledByConfiguration = configuration.isFeatureEnabled(sg.module.id());
-                        if (!isEnabledByConfiguration) {
-                            LOGGER.debug("Skipping source generator {} as it is not enabled by configuration", sg.generator.getClass().getName());
-                            return false;
-                        }
-                        LOGGER.debug("Loading source generator {}", sg.generator.getClass().getName());
-                        return true;
+            .map(sg -> new Object() {
+                final AOTCodeGenerator generator = sg;
+                final AOTModule module = MetadataUtils.findMetadata(sg.getClass()).orElse(null);
+            })
+            .filter(sg -> {
+                if (sg.module != null) {
+                    boolean isEnabledOnRuntime = MetadataUtils.isEnabledOn(runtime, sg.module);
+                    if (!isEnabledOnRuntime) {
+                        LOGGER.debug("Skipping source generator {} as it is not enabled on runtime {}", sg.generator.getClass().getName(), runtime);
+                        return false;
                     }
-                    return false;
-                })
-                .sorted(Comparator.comparing(f -> f.module, EXECUTION_ORDER))
-                .map(sg -> sg.generator)
-                .collect(Collectors.toList());
+                    boolean isEnabledByConfiguration = configuration.isFeatureEnabled(sg.module.id());
+                    if (!isEnabledByConfiguration) {
+                        LOGGER.debug("Skipping source generator {} as it is not enabled by configuration", sg.generator.getClass().getName());
+                        return false;
+                    }
+                    LOGGER.debug("Loading source generator {}", sg.generator.getClass().getName());
+                    return true;
+                }
+                return false;
+            })
+            .sorted(Comparator.comparing(f -> f.module, EXECUTION_ORDER))
+            .map(sg -> sg.generator)
+            .collect(Collectors.toList());
     }
 
     @NonNull
     public static List<AOTModule> list(Runtime runtime) {
         return sourceGeneratorStream()
-                .map(Object::getClass)
-                .map(MetadataUtils::findMetadata)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .filter(aotModule -> MetadataUtils.isEnabledOn(runtime, aotModule))
-                .sorted(EXECUTION_ORDER)
-                .collect(Collectors.toList());
+            .map(Object::getClass)
+            .map(MetadataUtils::findMetadata)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .filter(aotModule -> MetadataUtils.isEnabledOn(runtime, aotModule))
+            .sorted(EXECUTION_ORDER)
+            .collect(Collectors.toList());
     }
 
     private static Stream<AOTCodeGenerator> sourceGeneratorStream() {

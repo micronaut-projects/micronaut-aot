@@ -41,8 +41,8 @@ import static javax.lang.model.element.Modifier.PUBLIC;
  * it will be done at build time instead of run time.
  */
 @AOTModule(
-        id = DeduceEnvironmentSourceGenerator.ID,
-        description = DeduceEnvironmentSourceGenerator.DESCRIPTION
+    id = DeduceEnvironmentSourceGenerator.ID,
+    description = DeduceEnvironmentSourceGenerator.DESCRIPTION
 )
 public class DeduceEnvironmentSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "deduce.environment";
@@ -54,13 +54,12 @@ public class DeduceEnvironmentSourceGenerator extends AbstractCodeGenerator {
         ApplicationContextAnalyzer analyzer = context.getAnalyzer();
         Set<String> environmentNames = analyzer.getEnvironmentNames();
         BeanContextConfiguration contextConfiguration = analyzer.getApplicationContext().getContextConfiguration();
-        if (contextConfiguration instanceof ApplicationContextConfiguration) {
-            ApplicationContextConfiguration applicationContextConfiguration = (ApplicationContextConfiguration) contextConfiguration;
+        if (contextConfiguration instanceof ApplicationContextConfiguration applicationContextConfiguration) {
             boolean deduceEnvironments = applicationContextConfiguration.getDeduceEnvironments().orElse(true);
             if (deduceEnvironments) {
                 Collection<String> packages = analyzer.getApplicationContext().getEnvironment().getPackages();
                 context.registerGeneratedSourceFile(
-                        context.javaFile(buildApplicationContextConfigurer(environmentNames, packages))
+                    context.javaFile(buildApplicationContextConfigurer(environmentNames, packages))
                 );
                 context.registerServiceImplementation(ApplicationContextConfigurer.class, DEDUCED_ENVIRONMENT_CONFIGURER);
             }
@@ -69,9 +68,9 @@ public class DeduceEnvironmentSourceGenerator extends AbstractCodeGenerator {
 
     private TypeSpec buildApplicationContextConfigurer(Set<String> environmentNames, Collection<String> packages) {
         MethodSpec.Builder bodyBuilder = MethodSpec.methodBuilder("configure")
-                .addModifiers(PUBLIC)
-                .addAnnotation(Override.class)
-                .addParameter(ApplicationContextBuilder.class, "builder");
+            .addModifiers(PUBLIC)
+            .addAnnotation(Override.class)
+            .addParameter(ApplicationContextBuilder.class, "builder");
         bodyBuilder.addStatement("builder.deduceEnvironment(false)");
         if (!environmentNames.isEmpty()) {
             bodyBuilder.addStatement("builder.defaultEnvironments($L)", toQuotedStringList(environmentNames));
@@ -80,17 +79,17 @@ public class DeduceEnvironmentSourceGenerator extends AbstractCodeGenerator {
             bodyBuilder.addStatement("builder.packages($L)", toQuotedStringList(packages));
         }
         return TypeSpec.classBuilder(DEDUCED_ENVIRONMENT_CONFIGURER)
-                .addSuperinterface(ApplicationContextConfigurer.class)
+            .addSuperinterface(ApplicationContextConfigurer.class)
+            .addModifiers(PUBLIC)
+            .addMethod(bodyBuilder.build())
+            .addMethod(MethodSpec.methodBuilder("getOrder")
                 .addModifiers(PUBLIC)
-                .addMethod(bodyBuilder.build())
-                .addMethod(MethodSpec.methodBuilder("getOrder")
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .returns(int.class)
-                        .addStatement("return LOWEST_PRECEDENCE")
-                        .build()
-                )
-                .build();
+                .addAnnotation(Override.class)
+                .returns(int.class)
+                .addStatement("return LOWEST_PRECEDENCE")
+                .build()
+            )
+            .build();
     }
 
     private static String toQuotedStringList(Collection<String> elements) {

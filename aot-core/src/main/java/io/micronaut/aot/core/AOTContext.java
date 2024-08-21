@@ -45,6 +45,7 @@ public interface AOTContext {
 
     /**
      * Returns the source generators configuration.
+     *
      * @return the configuration
      */
     @NonNull
@@ -52,6 +53,7 @@ public interface AOTContext {
 
     /**
      * Returns the application context analyzer.
+     *
      * @return the application context analyzer
      */
     @NonNull
@@ -59,6 +61,7 @@ public interface AOTContext {
 
     /**
      * Registers a generated source file.
+     *
      * @param javaFile the file to be added.
      */
     void registerGeneratedSourceFile(@NonNull JavaFile javaFile);
@@ -66,6 +69,7 @@ public interface AOTContext {
     /**
      * Registers a code block to be executed statically when
      * the optimized binary is loaded.
+     *
      * @param staticInitializer the static initializer method
      */
     void registerStaticInitializer(MethodSpec staticInitializer);
@@ -75,6 +79,7 @@ public interface AOTContext {
      * create a class which implements the {@link io.micronaut.core.optim.StaticOptimizations}
      * service type. The consumer should create a body which returns
      * an instance of the optimization type.
+     *
      * @param className the name of the class to generate
      * @param optimizationKind the type of the optimization
      * @param bodyBuilder the builder of the body of the load() method
@@ -84,6 +89,7 @@ public interface AOTContext {
 
     /**
      * Registers a generated service type.
+     *
      * @param serviceType the type of the service
      * @param simpleServiceName the simple name of the generated type
      */
@@ -91,6 +97,7 @@ public interface AOTContext {
 
     /**
      * Registers a new generated resource.
+     *
      * @param path the relative path to the resource (including file name)
      * @param consumer the consumer to be called when the resource is generated.
      */
@@ -118,12 +125,14 @@ public interface AOTContext {
 
     /**
      * Registers a type as a requiring initialization at build time.
+     *
      * @param className the type
      */
     void registerBuildTimeInit(@NonNull String className);
 
     /**
      * Generates a java file spec.
+     *
      * @param typeSpec the type spec of the main class
      * @return a java file
      */
@@ -144,6 +153,7 @@ public interface AOTContext {
     /**
      * Stores an entry in the context. The entry may be read by other
      * processors, as long as they are executed in the proper order.
+     *
      * @param type the class of the value to store
      * @param value the value to store
      * @param <T> the type of the value
@@ -152,6 +162,7 @@ public interface AOTContext {
 
     /**
      * Reads an entry from the context.
+     *
      * @param type the class of the entry
      * @param <T> the type of the entry
      * @return an empty value if absent
@@ -161,6 +172,7 @@ public interface AOTContext {
 
     /**
      * Returns the diagnostics map.
+     *
      * @return the diagnostics
      */
     @NonNull
@@ -168,13 +180,15 @@ public interface AOTContext {
 
     /**
      * Returns the target runtime environment.
+     *
      * @return target runtime
      */
     @NonNull
     Runtime getRuntime();
 
     /**
-     * Returns the set of classes which require build time initialization
+     * Returns the set of classes which require build time initialization.
+     *
      * @return the set of classes needing build time init
      */
     Set<String> getBuildTimeInitClasses();

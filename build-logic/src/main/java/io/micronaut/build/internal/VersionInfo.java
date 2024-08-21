@@ -39,9 +39,9 @@ public abstract class VersionInfo extends DefaultTask {
     @TaskAction
     void generateInfo() {
         File parentDir = getOutputDirectory().getAsFile().get();
-        File file = new File(parentDir, "version.txt");
+        var file = new File(parentDir, "version.txt");
         if (parentDir.isDirectory() || parentDir.mkdirs()) {
-            try (PrintWriter prn = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+            try (var prn = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
                 prn.println(getVersion().get());
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
