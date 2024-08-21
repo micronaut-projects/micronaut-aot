@@ -3,7 +3,7 @@ javapoet = "1.13.0"
 micronaut = "4.6.1"
 micronaut-logging = "1.4.0"
 micronaut-picocli = "5.5.0"
-micronaut-test = "4.1.1"
+micronaut-test = "4.5.0"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
