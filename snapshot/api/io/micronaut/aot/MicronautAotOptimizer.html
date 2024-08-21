@@ -86,13 +86,13 @@ implements <a href="ConfigKeys.html" title="interface in io.micronaut.aot">Confi
  generation at build time. Its role is to generate a bunch of
  source code for various optimizations which can be computed
  at build time.
-
+ <p>
  Typically, generated code will involve the generation of an
  "optimized" entry point for the application, which delegates
  to the main entry point, but also performs some static
  initialization by making calls to the
  <code>StaticOptimizations</code> class.
-
+ <p>
  The Micronaut AOT optimizer is experimental and won't do
  anything by its own: it must be integrated in some form, for
  example via a build plugin, which in turn will make the generated
@@ -100,7 +100,7 @@ implements <a href="ConfigKeys.html" title="interface in io.micronaut.aot">Confi
  call this class to generate the optimization code, and in addition
  create an optimized jar, an optimized native binary or even a
  full distribution.
-
+ <p>
  The optimizer works by passing in the whole application runtime
  classpath and a set of configuration options. It then analyzes
  the classpath, for example to identify the services to be loaded,
