@@ -46,6 +46,7 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.Configurator;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.Context;
+import ch.qos.logback.core.status.OnErrorConsoleStatusListener;
 import ch.qos.logback.core.status.Status;
 import java.lang.String;
 import java.lang.Throwable;
@@ -54,6 +55,10 @@ public class StaticLogbackConfiguration implements Configurator {
   private Context context;
 
   public Configurator.ExecutionStatus configure(LoggerContext loggerContext) {
+    OnErrorConsoleStatusListener statuslistener = new OnErrorConsoleStatusListener();
+    loggerContext.getStatusManager().add(statuslistener);
+    statuslistener.setContext(context);
+    statuslistener.start();
     ConsoleAppender stdout = new ConsoleAppender();
     stdout.setWithJansi(true);
     PatternLayoutEncoder encoder = new PatternLayoutEncoder();

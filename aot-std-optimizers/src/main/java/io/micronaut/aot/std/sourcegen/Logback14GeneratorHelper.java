@@ -35,6 +35,7 @@ import ch.qos.logback.core.model.ComponentModel;
 import ch.qos.logback.core.model.ImplicitModel;
 import ch.qos.logback.core.model.Model;
 import ch.qos.logback.core.model.NamedComponentModel;
+import ch.qos.logback.core.model.StatusListenerModel;
 import ch.qos.logback.core.net.ssl.KeyManagerFactoryFactoryBean;
 import ch.qos.logback.core.net.ssl.KeyStoreFactoryBean;
 import ch.qos.logback.core.net.ssl.SSLConfiguration;
@@ -273,6 +274,19 @@ class Logback14GeneratorHelper {
                 codeBuilder.addStatement("loggerContext.addListener($L)", loggerContextListenerVarName);
             }
 
+            @Override
+            public void visitStatusListener(StatusListenerModel model, Model parent) {
+                String varName = varNameOf(model); // Will always be "statuslistener"
+                Class<?> type;
+                try {
+                    type = Class.forName(model.getClassName());
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException("Could not find " + model.getClassName() + " on the AOT processor classpath", e);
+                }
+                codeBuilder.addStatement(CodeBlock.of("$T $L = new $T()", type, varName, type));
+                codeBuilder.addStatement("loggerContext.getStatusManager().add($L)", varName);
+            }
+
             private void collectAppenders(Model model, String loggerVarName) {
                 Set<String> appenders = model.getSubModels().stream()
                     .filter(AppenderRefModel.class::isInstance)
@@ -399,6 +413,9 @@ class Logback14GeneratorHelper {
             if (model instanceof LoggerContextListenerModel loggerContextListenerModel) {
                 visitLoggerContextListener(loggerContextListenerModel, parent);
             }
+            if (model instanceof StatusListenerModel statusListenerModel) {
+                visitStatusListener(statusListenerModel, parent);
+            }
         }
 
         default void postVisit(Model model, Model parent) {
@@ -456,6 +473,9 @@ class Logback14GeneratorHelper {
         }
 
         default void postVisitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+        }
+
+        default void visitStatusListener(StatusListenerModel model, Model parent) {
         }
 
     }
