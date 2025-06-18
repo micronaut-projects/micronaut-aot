@@ -1,8 +1,8 @@
 [versions]
 javapoet = "1.13.0"
 micronaut-logging = "1.4.0"
-micronaut-picocli = "5.7.0"
 micronaut = "4.9.3"
+micronaut-picocli = "5.8.0"
 micronaut-test = "4.7.0"
 
 [libraries]
