@@ -51,7 +51,7 @@ public class GraalVMOptimizationFeatureSourceGenerator extends AbstractCodeGener
     public static final String ID = "graalvm.config";
     public static final String DESCRIPTION =
         "Generates GraalVM configuration files required to load the AOT optimizations";
-    private static final String NEXT_LINE = " \\";
+    private static final String NEXT_LINE = " \\\n     ";
 
     private static final Option OPTION =
         MetadataUtils.findOption(GraalVMOptimizationFeatureSourceGenerator.class, "service.types");
@@ -63,27 +63,20 @@ public class GraalVMOptimizationFeatureSourceGenerator extends AbstractCodeGener
         context.registerGeneratedResource(path, propertiesFile -> {
             try (PrintWriter wrt = new PrintWriter(new FileWriter(propertiesFile))) {
                 wrt.print("Args=");
-                wrt.println("--initialize-at-build-time=io.micronaut.context.ApplicationContextConfigurer$1" + NEXT_LINE);
-                wrt.println("     --initialize-at-build-time=" + context.getPackageName() + "." +
-                    ApplicationContextConfigurerGenerator.CUSTOMIZER_CLASS_NAME +
-                    NEXT_LINE);
-                var buildTimeInit = context.getBuildTimeInitClasses()
-                    .stream()
-                    .map(clazz -> "     --initialize-at-build-time=" + clazz)
-                    .collect(Collectors.joining(NEXT_LINE + "\n"));
-                if (!buildTimeInit.isEmpty()) {
-                    wrt.println(buildTimeInit);
+                wrt.print("--initialize-at-build-time=io.micronaut.context.ApplicationContextConfigurer$1");
+                wrt.print(NEXT_LINE);
+                wrt.print("--initialize-at-build-time=" + context.getPackageName() + "." +
+                    ApplicationContextConfigurerGenerator.CUSTOMIZER_CLASS_NAME);
+                for (String buildTimeInitClass: context.getBuildTimeInitClasses()) {
+                    wrt.print(NEXT_LINE);
+                    wrt.print("--initialize-at-build-time=" + buildTimeInitClass);
                 }
                 if (context.getConfiguration()
                     .isFeatureEnabled(NativeStaticServiceLoaderSourceGenerator.ID)) {
                     for (int i = 0; i < serviceTypes.size(); i++) {
                         String serviceType = serviceTypes.get(i);
-                        wrt.print("     -H:ServiceLoaderFeatureExcludeServices=" + serviceType);
-                        if (i < serviceTypes.size() - 1) {
-                            wrt.println(NEXT_LINE);
-                        } else {
-                            wrt.println();
-                        }
+                        wrt.print(NEXT_LINE);
+                        wrt.print("-H:ServiceLoaderFeatureExcludeServices=" + serviceType);
                     }
                 }
                 wrt.println();
