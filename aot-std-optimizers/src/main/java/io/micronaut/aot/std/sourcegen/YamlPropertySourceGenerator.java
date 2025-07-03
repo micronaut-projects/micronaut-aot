@@ -68,8 +68,10 @@ public class YamlPropertySourceGenerator extends AbstractCodeGenerator {
             if (ps instanceof MapPropertySource mps) {
                 Map<String, Object> values = mps.asMap();
                 var generator = new MapPropertySourceGenerator(
+                    "",
                     resource,
-                    values);
+                    values,
+                    null);
                 generator.generate(context);
             } else {
                 throw new UnsupportedOperationException("Unknown property source type:" + ps.getClass());
