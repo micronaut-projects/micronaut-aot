@@ -52,23 +52,24 @@ import java.util.Optional;
     options = {@Option(
         key = "property-source-loader.types",
         description = "The PropertySourceLoader classnames to use for generating property sources",
-        sampleValue = "io.micronaut.context.env.PropertiesPropertySourceLoader"
+        sampleValue = "io.micronaut.context.env.PropertiesPropertySourceLoader,io.micronaut.context.env.yaml.YamlPropertySourceLoader"
     ), @Option(
         key = "property-source-loader.base-order",
         description = "The base order to use for the generated property sources. "
             + "Positive value will be added to base order for specific environments",
-        sampleValue = "-10000"
+        sampleValue = "-1073741824"
     )}
 )
 public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
+
     public static final String ID = "property-source-loader.generate";
     public static final String DESCRIPTION = "Converts configuration files supplied by property source loaders to Java configuration";
-    private static final Logger LOG = LoggerFactory.getLogger(GenericPropertySourceGenerator.class);
-
-    static final Option TYPES_OPTION =
+    public static final Option TYPES_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[0];
-    static final Option BASE_ORDER_OPTION =
+    public static final Option BASE_ORDER_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[1];
+
+    private static final Logger LOG = LoggerFactory.getLogger(GenericPropertySourceGenerator.class);
 
     private final Collection<String> resources;
     private final Collection<ActiveEnvironment> environments;
@@ -78,6 +79,7 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
      * A resource name and environment will form a property source name e.g.
      * {@code application} or {@code application-test}.
      * @param resources The resources
+     * @param environments The environments
      */
     public GenericPropertySourceGenerator(Collection<String> resources, Collection<ActiveEnvironment> environments) {
         this.resources = resources;

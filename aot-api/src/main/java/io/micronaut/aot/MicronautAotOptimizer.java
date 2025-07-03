@@ -158,14 +158,17 @@ public final class MicronautAotOptimizer implements ConfigKeys {
                         wrt.println("# " + line));
                 }
                 wrt.println(generator.id() + ".enabled = true");
-                Arrays.stream(generator.subgenerators())
-                    .map(MetadataUtils::findMetadata)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .sorted(Collections.reverseOrder())
-                    .forEachOrdered(queue::addFirst);
-                for (Option option : generator.options()) {
-                    wrt.println(toPropertiesSample(option));
+                try {
+                    for (int i = generator.subgenerators().length - 1; i >= 0; i--) {
+                        Class<? extends AOTCodeGenerator> subgenerator = generator.subgenerators()[i];
+                        MetadataUtils.findMetadata(subgenerator).ifPresent(queue::addFirst);
+                    }
+                    for (Option option : generator.options()) {
+                        wrt.println(toPropertiesSample(option));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("Generator: " + generator.id());
                 }
                 wrt.println();
             }
