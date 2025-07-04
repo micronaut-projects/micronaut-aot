@@ -26,6 +26,7 @@ import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.PropertySourceLoader;
+import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +56,7 @@ import java.util.Optional;
     options = {@Option(
         key = "property-source-loader.types",
         description = "The PropertySourceLoader classnames to use for generating property sources",
-        sampleValue = "io.micronaut.context.env.PropertiesPropertySourceLoader,io.micronaut.context.env.yaml.YamlPropertySourceLoader"
+        sampleValue = "io.micronaut.context.env.PropertiesPropertySourceLoader,"
     ), @Option(
         key = "property-source-loader.base-order",
         description = "The base order to use for the generated property sources. "
@@ -64,6 +66,11 @@ import java.util.Optional;
         key = "property-source-loader.resource-names",
         description = "The resource names to generate property sources for. By default, it is '" + Environment.DEFAULT_NAME + "'.",
         sampleValue = Environment.DEFAULT_NAME
+    ), @Option(
+        key = "yaml.to.java.config",
+        description = "Deprecated option to enable the yaml property source generation. " +
+            "Use property-source-loader.types=io.micronaut.context.env.yaml.YamlPropertySourceLoader instead",
+        sampleValue = "false"
     )}
 )
 @Internal
@@ -71,16 +78,21 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
 
     public static final String ID = "property-source-loader.generate";
     public static final String DESCRIPTION = "Converts configuration files supplied by property source loaders to Java configuration";
+
     public static final Option TYPES_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[0];
     public static final Option BASE_ORDER_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[1];
     public static final Option RESOURCE_NAMES_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[2];
+    public static final Option YAML_GENERATION_OPTION =
+        MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[3];
+
+    public static final String YAML_PROPERTY_SOURCE_LOADER = YamlPropertySourceLoader.class.getName();
 
     private static final Logger LOG = LoggerFactory.getLogger(GenericPropertySourceGenerator.class);
 
-    private final Collection<String> resources;
+    private final List<String> resources;
     private final List<String> propertySourceLoaderTypes;
     private final int baseOrder;
     private final Collection<ActiveEnvironment> environments;
@@ -89,6 +101,7 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
      * Create the generic property source generator from resource names.
      * A resource name and environment will form a property source name e.g.
      * {@code application} or {@code application-test}.
+     * @param context The AOT context to read properties from
      * @param environments The environments
      */
     public GenericPropertySourceGenerator(AOTContext context, Collection<ActiveEnvironment> environments) {
@@ -97,7 +110,15 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
             resources = List.of(Environment.DEFAULT_NAME);
         }
         this.resources = resources;
-        this.propertySourceLoaderTypes = context.getConfiguration().stringList(TYPES_OPTION.key());
+        // This option is deprecated
+        List<String> propertySourceLoaderTypes = context.getConfiguration().stringList(TYPES_OPTION.key());
+        if (context.getConfiguration().booleanValue(YAML_GENERATION_OPTION.key(), false)) {
+            if (!propertySourceLoaderTypes.contains(YAML_PROPERTY_SOURCE_LOADER)) {
+                propertySourceLoaderTypes = new ArrayList<>(propertySourceLoaderTypes);
+                propertySourceLoaderTypes.add(YAML_PROPERTY_SOURCE_LOADER);
+            }
+        }
+        this.propertySourceLoaderTypes = propertySourceLoaderTypes;
         this.baseOrder = context.getConfiguration().optionalValue(BASE_ORDER_OPTION.key(),
             v -> v.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE / 2));
         this.environments = environments;
