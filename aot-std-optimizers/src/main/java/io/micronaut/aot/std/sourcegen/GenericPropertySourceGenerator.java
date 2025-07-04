@@ -62,8 +62,8 @@ import java.util.Optional;
         sampleValue = "-1073741824"
     ), @Option(
         key = "property-source-loader.resource-names",
-        description = "The resource names to generate property sources for. By default, it is '" + Environment.DEFAULT_NAME + "'.",
-        sampleValue = Environment.DEFAULT_NAME
+        description = "The resource names to generate property sources for. By default, it is '" + Environment.DEFAULT_NAME + "," + Environment.BOOTSTRAP_NAME + "'.",
+        sampleValue = Environment.DEFAULT_NAME + "," + Environment.BOOTSTRAP_NAME
     )}
 )
 @Internal
@@ -94,7 +94,7 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
     public GenericPropertySourceGenerator(AOTContext context, Collection<ActiveEnvironment> environments) {
         List<String> resources = context.getConfiguration().stringList(RESOURCE_NAMES_OPTION.key());
         if (resources.isEmpty()) {
-            resources = List.of(Environment.DEFAULT_NAME);
+            resources = List.of(Environment.DEFAULT_NAME, Environment.BOOTSTRAP_NAME);
         }
         this.resources = resources;
         this.propertySourceLoaderTypes = context.getConfiguration().stringList(TYPES_OPTION.key());
