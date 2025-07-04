@@ -22,9 +22,11 @@ import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.context.env.ActiveEnvironment;
 import io.micronaut.context.env.EmptyPropertySource;
+import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.PropertySourceLoader;
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.io.scan.DefaultClassPathResourceLoader;
@@ -58,8 +60,13 @@ import java.util.Optional;
         description = "The base order to use for the generated property sources. "
             + "Positive value will be added to base order for specific environments",
         sampleValue = "-1073741824"
+    ), @Option(
+        key = "property-source-loader.resource-names",
+        description = "The resource names to generate property sources for. By default, it is '" + Environment.DEFAULT_NAME + "'.",
+        sampleValue = Environment.DEFAULT_NAME
     )}
 )
+@Internal
 public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
 
     public static final String ID = "property-source-loader.generate";
@@ -68,37 +75,43 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[0];
     public static final Option BASE_ORDER_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[1];
+    public static final Option RESOURCE_NAMES_OPTION =
+        MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[2];
 
     private static final Logger LOG = LoggerFactory.getLogger(GenericPropertySourceGenerator.class);
 
     private final Collection<String> resources;
+    private final List<String> propertySourceLoaderTypes;
+    private final int baseOrder;
     private final Collection<ActiveEnvironment> environments;
 
     /**
      * Create the generic property source generator from resource names.
      * A resource name and environment will form a property source name e.g.
      * {@code application} or {@code application-test}.
-     * @param resources The resources
      * @param environments The environments
      */
-    public GenericPropertySourceGenerator(Collection<String> resources, Collection<ActiveEnvironment> environments) {
+    public GenericPropertySourceGenerator(AOTContext context, Collection<ActiveEnvironment> environments) {
+        List<String> resources = context.getConfiguration().stringList(RESOURCE_NAMES_OPTION.key());
+        if (resources.isEmpty()) {
+            resources = List.of(Environment.DEFAULT_NAME);
+        }
         this.resources = resources;
+        this.propertySourceLoaderTypes = context.getConfiguration().stringList(TYPES_OPTION.key());
+        this.baseOrder = context.getConfiguration().optionalValue(BASE_ORDER_OPTION.key(),
+            v -> v.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE / 2));
         this.environments = environments;
     }
 
     @Override
     public void generate(@NonNull AOTContext context) {
-        List<String> propertySourceLoaderTypes = context.getConfiguration().stringList(TYPES_OPTION.key());
-        int baseOrder = context.getConfiguration().optionalValue(BASE_ORDER_OPTION.key(),
-            v -> v.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE / 2));
-
         for (String propertySourceLoaderType : propertySourceLoaderTypes) {
             Optional<PropertySourceLoader> loader = createLoader(propertySourceLoaderType);
             if (loader.isPresent()) {
                 for (String resource : resources) {
-                    createMapProperty(loader.get(), context, resource, null, baseOrder);
+                    createMapProperty(loader.get(), context, resource, null);
                     for (ActiveEnvironment environment : environments) {
-                        createMapProperty(loader.get(), context, resource, environment, baseOrder);
+                        createMapProperty(loader.get(), context, resource, environment);
                     }
                 }
             }
@@ -138,7 +151,7 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         }
     }
 
-    private void createMapProperty(PropertySourceLoader loader, AOTContext context, String resource, @Nullable ActiveEnvironment environment, int baseOrder) {
+    private void createMapProperty(PropertySourceLoader loader, AOTContext context, String resource, @Nullable ActiveEnvironment environment) {
         Optional<PropertySource> optionalSource;
         if (environment != null) {
             optionalSource = loader.loadEnv(resource, new DefaultClassPathResourceLoader(this.getClass().getClassLoader()), environment);

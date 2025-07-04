@@ -65,7 +65,8 @@ ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServic
 ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, Environments.POSSIBLE_ENVIRONMENTS_NAMES)}"""],
                 [GenericPropertySourceGenerator.DESCRIPTION, """property-source-loader.generate.enabled = true
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.types")}
-${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.base-order")}"""],
+${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.base-order")}
+${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.resource-names")}"""],
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
         ].findAll().collect { desc, c ->
             """# $desc

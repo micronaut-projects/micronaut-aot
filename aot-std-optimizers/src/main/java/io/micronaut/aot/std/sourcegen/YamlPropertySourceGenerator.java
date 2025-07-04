@@ -34,7 +34,9 @@ import java.util.Optional;
  * A source generator which will generate a static {@link io.micronaut.context.env.PropertySource}
  * from a given YAML configuration file, in order to substitute the dynamic loader
  * with a static configuration.
+ * @deprecated The {@link GenericPropertySourceGenerator} replaces logic from this generator.
  */
+@Deprecated(since = "2.9.x")
 @AOTModule(
     id = YamlPropertySourceGenerator.ID,
     description = YamlPropertySourceGenerator.DESCRIPTION
@@ -68,10 +70,8 @@ public class YamlPropertySourceGenerator extends AbstractCodeGenerator {
             if (ps instanceof MapPropertySource mps) {
                 Map<String, Object> values = mps.asMap();
                 var generator = new MapPropertySourceGenerator(
-                    "",
                     resource,
-                    values,
-                    null);
+                    values);
                 generator.generate(context);
             } else {
                 throw new UnsupportedOperationException("Unknown property source type:" + ps.getClass());

@@ -32,7 +32,7 @@ class GenericPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
     AOTCodeGenerator newGenerator() {
         props.put(GenericPropertySourceGenerator.TYPES_OPTION.key(),
                 [MyPropertySourceLoader.class.getName(), PropertiesPropertySourceLoader.class.getName()].join(","))
-        new GenericPropertySourceGenerator([Environment.DEFAULT_NAME], [ActiveEnvironment.of(Environment.TEST, 0)])
+        new GenericPropertySourceGenerator(context, [ActiveEnvironment.of(Environment.TEST, 0)])
     }
 
     def "generates classes from a configuration"() {

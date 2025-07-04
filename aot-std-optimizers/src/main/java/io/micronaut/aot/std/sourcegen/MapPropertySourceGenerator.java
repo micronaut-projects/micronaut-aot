@@ -68,6 +68,13 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         this.order = order;
     }
 
+    public MapPropertySourceGenerator(
+        String resourceName,
+        Map<String, Object> values
+    ) {
+        this("", resourceName, values, null);
+    }
+
     @Override
     @NonNull
     protected JavaFile generate() {

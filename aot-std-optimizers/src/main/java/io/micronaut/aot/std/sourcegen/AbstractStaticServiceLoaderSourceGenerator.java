@@ -108,7 +108,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                     ++i;
                 }
 
-                var propGen = new GenericPropertySourceGenerator(List.of(Environment.DEFAULT_NAME), environments);
+                var propGen = new GenericPropertySourceGenerator(context, environments);
                 propGen.generate(context);
                 if (MetadataUtils.isEnabledOn(context.getRuntime(), propGen)) {
                     LOGGER.debug("Substituting {} with {}", PropertySourceLoader.class.getName(), propGen.getClass().getName());
@@ -116,6 +116,7 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                 }
             }
             if (context.getConfiguration().isFeatureEnabled(YamlPropertySourceGenerator.ID)) {
+                LOGGER.warn("The " + YamlPropertySourceGenerator.ID + " is deprecated in favor of " + GenericPropertySourceGenerator.ID);
                 var resourceNames = new LinkedHashSet<String>();
                 resourceNames.add(Environment.DEFAULT_NAME);
                 environmentNames.stream().map(e -> Environment.DEFAULT_NAME + "-" + e).forEach(resourceNames::add);
