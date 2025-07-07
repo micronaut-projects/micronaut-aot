@@ -51,14 +51,28 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
     public static final String BASE_ID = "map.property";
     public static final String BASE_ORDER_OPTION = "map.property.order";
 
+    private final String namePrefix;
     private final String resourceName;
     private final Map<String, Object> values;
+    private final Integer order;
+
+    public MapPropertySourceGenerator(
+        String namePrefix,
+        String resourceName,
+        Map<String, Object> values,
+        Integer order
+    ) {
+        this.namePrefix = namePrefix;
+        this.resourceName = resourceName;
+        this.values = values;
+        this.order = order;
+    }
 
     public MapPropertySourceGenerator(
         String resourceName,
-        Map<String, Object> values) {
-        this.resourceName = resourceName;
-        this.values = values;
+        Map<String, Object> values
+    ) {
+        this("", resourceName, values, null);
     }
 
     @Override
@@ -68,7 +82,8 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         String orderKey = BASE_ORDER_OPTION + "." + resourceName;
         int order = getContext().getConfiguration()
             .optionalValue(orderKey, value ->
-                value.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE));
+                value.map(Integer::parseInt)
+                    .orElse(this.order != null ? this.order : Ordered.HIGHEST_PRECEDENCE));
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName)
             .addModifiers(PUBLIC)
             .superclass(MapPropertySource.class);
@@ -86,6 +101,6 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
     }
 
     private String computeTypeName() {
-        return StringUtils.capitalize(resourceName.replaceAll("[^A-Za-z0-9]", "_") + "StaticPropertySource");
+        return StringUtils.capitalize(resourceName.replaceAll("[^A-Za-z0-9]", "_") + namePrefix + "StaticPropertySource");
     }
 }

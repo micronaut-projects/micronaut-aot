@@ -8,6 +8,7 @@ import io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
 import io.micronaut.aot.std.sourcegen.DeduceEnvironmentSourceGenerator
 import io.micronaut.aot.std.sourcegen.EnvironmentPropertiesSourceGenerator
 import io.micronaut.aot.core.Environments
+import io.micronaut.aot.std.sourcegen.GenericPropertySourceGenerator
 import io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
 import io.micronaut.aot.std.sourcegen.JitStaticServiceLoaderSourceGenerator
 import io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
@@ -15,7 +16,6 @@ import io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
 import io.micronaut.aot.std.sourcegen.NettyPropertiesSourceGenerator
 import io.micronaut.aot.std.sourcegen.PublishersSourceGenerator
 import io.micronaut.aot.std.sourcegen.CachedEnvironmentSourceGenerator
-import io.micronaut.aot.std.sourcegen.YamlPropertySourceGenerator
 import spock.lang.Specification
 import spock.lang.TempDir
 import spock.lang.Unroll
@@ -63,7 +63,11 @@ ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServic
 ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.REJECTED_CLASSES)}
 ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.FORCE_INCLUDE)}
 ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, Environments.POSSIBLE_ENVIRONMENTS_NAMES)}"""],
-                [YamlPropertySourceGenerator.DESCRIPTION, 'yaml.to.java.config.enabled = true'],
+                [GenericPropertySourceGenerator.DESCRIPTION, """property-source-loader.generate.enabled = true
+${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.types")}
+${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.base-order")}
+${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.resource-names")}
+${toPropertiesSample(GenericPropertySourceGenerator, "yaml.to.java.config")}"""],
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
         ].findAll().collect { desc, c ->
             """# $desc

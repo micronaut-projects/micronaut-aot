@@ -69,7 +69,7 @@ import static javax.lang.model.element.Modifier.STATIC;
         )
     },
     enabledOn = Runtime.JIT,
-    subgenerators = {YamlPropertySourceGenerator.class}
+    subgenerators = {GenericPropertySourceGenerator.class}
 )
 public class JitStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
     public static final String ID = "serviceloading.jit";

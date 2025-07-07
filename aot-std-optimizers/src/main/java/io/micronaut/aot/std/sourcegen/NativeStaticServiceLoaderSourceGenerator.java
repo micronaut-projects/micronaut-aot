@@ -68,7 +68,7 @@ import static javax.lang.model.element.Modifier.PUBLIC;
         )
     },
     enabledOn = Runtime.NATIVE,
-    subgenerators = {YamlPropertySourceGenerator.class}
+    subgenerators = {GenericPropertySourceGenerator.class}
 )
 public class NativeStaticServiceLoaderSourceGenerator extends AbstractStaticServiceLoaderSourceGenerator {
     public static final String ID = "serviceloading.native";

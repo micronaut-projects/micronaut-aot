@@ -26,6 +26,7 @@ import io.micronaut.aot.core.Environments;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.aot.core.codegen.DelegatingSourceGenerationContext;
 import io.micronaut.aot.core.config.MetadataUtils;
+import io.micronaut.context.env.ActiveEnvironment;
 import io.micronaut.context.env.PropertySourceLoader;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
 import io.micronaut.core.annotation.AnnotationMetadataProvider;
@@ -91,24 +92,26 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
             serviceNames = context.getConfiguration().stringList(findOption(this.getClass(), SERVICE_TYPES).key());
         }
         if (substitutions == null) {
-            var resourceNames = new LinkedHashSet<String>();
-            resourceNames.add("application");
-            context.getAnalyzer().getEnvironmentNames()
+            var environmentNames = new LinkedHashSet<>(context.getAnalyzer().getEnvironmentNames());
+            environmentNames.addAll(
+                context.getConfiguration().stringList(Environments.POSSIBLE_ENVIRONMENTS_NAMES)
                 .stream()
-                .map(env -> "application-" + env)
-                .forEach(resourceNames::add);
-            context.getConfiguration().stringList(Environments.POSSIBLE_ENVIRONMENTS_NAMES)
-                .stream()
-                .filter(env -> !"default".equals(env))
-                .map(env -> "application-" + env)
-                .forEach(resourceNames::add);
+                .filter(env -> !"default".equals(env)).toList()
+            );
             substitutions = new HashMap<>();
-            if (context.getConfiguration().isFeatureEnabled(YamlPropertySourceGenerator.ID)) {
-                var yaml = new YamlPropertySourceGenerator(resourceNames);
-                yaml.generate(context);
-                if (MetadataUtils.isEnabledOn(context.getRuntime(), yaml)) {
-                    LOGGER.debug("Substituting {} with {}", PropertySourceLoader.class.getName(), yaml.getClass().getName());
-                    substitutions.put(YamlPropertySourceLoader.class.getName(), yaml);
+            if (context.getConfiguration().isFeatureEnabled(GenericPropertySourceGenerator.ID)) {
+                List<ActiveEnvironment> environments = new ArrayList<>();
+                int i = 0;
+                for (String name: environmentNames) {
+                    environments.add(ActiveEnvironment.of(name, i));
+                    ++i;
+                }
+
+                var propGen = new GenericPropertySourceGenerator(context, environments);
+                propGen.generate(context);
+                if (MetadataUtils.isEnabledOn(context.getRuntime(), propGen)) {
+                    LOGGER.debug("Substituting {} with {}", PropertySourceLoader.class.getName(), propGen.getClass().getName());
+                    substitutions.put(YamlPropertySourceLoader.class.getName(), propGen);
                 }
             }
         }

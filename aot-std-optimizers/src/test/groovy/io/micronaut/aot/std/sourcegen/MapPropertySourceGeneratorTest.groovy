@@ -25,7 +25,7 @@ class MapPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
 
     @Override
     AOTCodeGenerator newGenerator() {
-        new MapPropertySourceGenerator("test", values)
+        new MapPropertySourceGenerator("", "test", values, null)
     }
 
     def "supports generating an empty property source"() {
