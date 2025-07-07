@@ -113,6 +113,8 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         // This option is deprecated
         List<String> propertySourceLoaderTypes = context.getConfiguration().stringList(TYPES_OPTION.key());
         if (context.getConfiguration().booleanValue(YAML_GENERATION_OPTION.key(), false)) {
+            LOG.warn("Option {} is deprecated. Automatically using {}={} instead.",
+                YAML_GENERATION_OPTION, TYPES_OPTION.key(), YAML_PROPERTY_SOURCE_LOADER);
             if (!propertySourceLoaderTypes.contains(YAML_PROPERTY_SOURCE_LOADER)) {
                 propertySourceLoaderTypes = new ArrayList<>(propertySourceLoaderTypes);
                 propertySourceLoaderTypes.add(YAML_PROPERTY_SOURCE_LOADER);
