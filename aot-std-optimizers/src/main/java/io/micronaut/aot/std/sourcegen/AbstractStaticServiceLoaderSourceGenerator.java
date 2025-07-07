@@ -27,7 +27,6 @@ import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.aot.core.codegen.DelegatingSourceGenerationContext;
 import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.context.env.ActiveEnvironment;
-import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.PropertySourceLoader;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
 import io.micronaut.core.annotation.AnnotationMetadataProvider;
@@ -113,19 +112,6 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                 if (MetadataUtils.isEnabledOn(context.getRuntime(), propGen)) {
                     LOGGER.debug("Substituting {} with {}", PropertySourceLoader.class.getName(), propGen.getClass().getName());
                     substitutions.put(YamlPropertySourceLoader.class.getName(), propGen);
-                }
-            }
-            if (context.getConfiguration().isFeatureEnabled(YamlPropertySourceGenerator.ID)) {
-                LOGGER.warn("The " + YamlPropertySourceGenerator.ID + " is deprecated in favor of " + GenericPropertySourceGenerator.ID);
-                var resourceNames = new LinkedHashSet<String>();
-                resourceNames.add(Environment.DEFAULT_NAME);
-                environmentNames.stream().map(e -> Environment.DEFAULT_NAME + "-" + e).forEach(resourceNames::add);
-
-                var yaml = new YamlPropertySourceGenerator(resourceNames);
-                yaml.generate(context);
-                if (MetadataUtils.isEnabledOn(context.getRuntime(), yaml)) {
-                    LOGGER.debug("Substituting {} with {}", PropertySourceLoader.class.getName(), yaml.getClass().getName());
-                    substitutions.put(YamlPropertySourceLoader.class.getName(), yaml);
                 }
             }
         }
