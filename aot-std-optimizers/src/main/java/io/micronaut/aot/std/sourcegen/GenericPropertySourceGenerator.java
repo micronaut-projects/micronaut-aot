@@ -24,6 +24,7 @@ import io.micronaut.context.env.ActiveEnvironment;
 import io.micronaut.context.env.EmptyPropertySource;
 import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.MapPropertySource;
+import io.micronaut.context.env.PropertiesPropertySourceLoader;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.PropertySourceLoader;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
@@ -39,10 +40,12 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * A source generator which will generate a static {@link PropertySource}
@@ -56,7 +59,7 @@ import java.util.Optional;
     options = {@Option(
         key = "property-source-loader.types",
         description = "The PropertySourceLoader classnames to use for generating property sources",
-        sampleValue = "io.micronaut.context.env.PropertiesPropertySourceLoader,"
+        sampleValue = "io.micronaut.context.env.PropertiesPropertySourceLoader, io.micronaut.context.env.yaml.YamlPropertySourceLoader"
     ), @Option(
         key = "property-source-loader.base-order",
         description = "The base order to use for the generated property sources. "
@@ -119,6 +122,11 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
                 propertySourceLoaderTypes = new ArrayList<>(propertySourceLoaderTypes);
                 propertySourceLoaderTypes.add(YAML_PROPERTY_SOURCE_LOADER);
             }
+        }
+        if (propertySourceLoaderTypes.isEmpty()) {
+            LOG.info("Option {} has no value. Using default instead: {}", TYPES_OPTION.key(), TYPES_OPTION.sampleValue());
+            propertySourceLoaderTypes = Arrays.stream(TYPES_OPTION.sampleValue().split(","))
+                .map(String::trim).collect(Collectors.toList());
         }
         this.propertySourceLoaderTypes = propertySourceLoaderTypes;
         this.baseOrder = context.getConfiguration().optionalValue(BASE_ORDER_OPTION.key(),
