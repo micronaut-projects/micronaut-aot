@@ -67,6 +67,7 @@ ${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, Environments.POSSIBL
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.types")}
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.base-order")}
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.resource-names")}
+${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.service-loader-exclude")}
 ${toPropertiesSample(GenericPropertySourceGenerator, "yaml.to.java.config")}"""],
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
         ].findAll().collect { desc, c ->
