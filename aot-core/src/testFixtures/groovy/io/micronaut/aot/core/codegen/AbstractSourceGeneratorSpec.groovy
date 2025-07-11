@@ -283,6 +283,7 @@ abstract class AbstractSourceGeneratorSpec extends Specification {
                 println("EXPECTED")
                 println("========")
                 println(expectedSource)
+                println("========")
             }
             assert actualSources == expectedSource
         }

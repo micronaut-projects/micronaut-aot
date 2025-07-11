@@ -40,6 +40,9 @@ class GenericPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
         generate()
 
         then:
+        var excludedImpls = context.getExcludedServiceImplementations()
+        excludedImpls.keySet() == [MyPropertySourceLoader.class.getName(), PropertiesPropertySourceLoader.class.getName()] as Set
+
         assertThatGeneratedSources {
             doesNotCreateInitializer()
             hasClass("ApplicationMyStaticPropertySource") {

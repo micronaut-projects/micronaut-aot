@@ -69,6 +69,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     private final String packageName;
     private final ApplicationContextAnalyzer analyzer;
     private final Set<String> excludedResources = new TreeSet<>();
+    private final Map<String, String>  excludedServiceImplementations = new HashMap<>();
     private final Map<String, List<String>> diagnostics = new ConcurrentHashMap<>();
     private final Set<Class<?>> classesRequiredAtCompilation = new HashSet<>();
     private final Configuration configuration;
@@ -117,6 +118,16 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     public void registerExcludedResource(@NonNull String path) {
         LOGGER.debug("Registering excluded resource: {}", path);
         excludedResources.add(path);
+    }
+
+    @Override
+    public void registerExcludedServiceImpl(String className, String reason) {
+        excludedServiceImplementations.put(className, reason);
+    }
+
+    @Override
+    public Map<String, String> getExcludedServiceImplementations() {
+        return Collections.unmodifiableMap(excludedServiceImplementations);
     }
 
     @Override

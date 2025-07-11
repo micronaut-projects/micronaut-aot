@@ -114,6 +114,22 @@ public interface AOTContext {
     void registerExcludedResource(@NonNull String path);
 
     /**
+     * Register an excluded service implementation that is based on another generator and not user input.
+     * When static service loader is created, this implementation won't be added and therefore won't be loaded.
+     *
+     * @param className The service implementation classname
+     * @param reason The human-readable reason for exclusion
+     */
+    void registerExcludedServiceImpl(@NonNull String className, @NonNull String reason);
+
+    /**
+     * Get the excluded service implementations.
+     *
+     * @return The implementations with key being the classname and value being the reason for exclusion.
+     */
+    Map<String, String> getExcludedServiceImplementations();
+
+    /**
      * Registers a class as needed at compile time (where compile time
      * is the compile time of generated classes).
      * This will typically be used when source generators need classes
@@ -198,4 +214,5 @@ public interface AOTContext {
      * source generation.
      */
     void finish();
+
 }

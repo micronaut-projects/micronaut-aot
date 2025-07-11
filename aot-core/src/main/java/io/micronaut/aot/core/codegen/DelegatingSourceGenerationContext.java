@@ -67,6 +67,16 @@ public abstract class DelegatingSourceGenerationContext implements AOTContext {
     }
 
     @Override
+    public void registerExcludedServiceImpl(String className, String reason) {
+        delegate.registerExcludedServiceImpl(className, reason);
+    }
+
+    @Override
+    public Map<String, String> getExcludedServiceImplementations() {
+        return delegate.getExcludedServiceImplementations();
+    }
+
+    @Override
     public void registerStaticInitializer(MethodSpec staticInitializer) {
         delegate.registerStaticInitializer(staticInitializer);
     }

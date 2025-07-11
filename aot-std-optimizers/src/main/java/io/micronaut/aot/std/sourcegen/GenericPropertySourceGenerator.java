@@ -70,6 +70,10 @@ import java.util.stream.Collectors;
         description = "The resource names to generate property sources for. By default, it is '" + Environment.DEFAULT_NAME + "," + Environment.BOOTSTRAP_NAME + "'.",
         sampleValue = Environment.DEFAULT_NAME + "," + Environment.BOOTSTRAP_NAME
     ), @Option(
+        key = "property-source-loader.service-loader-exclude",
+        description = "Whether the property source loaders specified by types should be excluded in service loading",
+        sampleValue = StringUtils.TRUE
+    ), @Option(
         key = "yaml.to.java.config",
         description = "Deprecated option to enable the yaml property source generation. " +
             "Use property-source-loader.types=io.micronaut.context.env.yaml.YamlPropertySourceLoader instead",
@@ -88,8 +92,10 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[1];
     public static final Option RESOURCE_NAMES_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[2];
-    public static final Option YAML_GENERATION_OPTION =
+    public static final Option SERVICE_LOADER_EXCLUDE_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[3];
+    public static final Option YAML_GENERATION_OPTION =
+        MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[4];
 
     public static final String YAML_PROPERTY_SOURCE_LOADER = YamlPropertySourceLoader.class.getName();
 
@@ -99,6 +105,7 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
     private final List<String> propertySourceLoaderTypes;
     private final int baseOrder;
     private final Collection<ActiveEnvironment> environments;
+    private final boolean serviceLoaderExclude;
 
     /**
      * Create the generic property source generator from resource names.
@@ -132,6 +139,8 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         this.baseOrder = context.getConfiguration().optionalValue(BASE_ORDER_OPTION.key(),
             v -> v.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE / 2));
         this.environments = environments;
+        this.serviceLoaderExclude = context.getConfiguration().optionalValue(SERVICE_LOADER_EXCLUDE_OPTION.key(),
+            v -> v.map(Boolean::parseBoolean).orElse(true));
     }
 
     @Override
@@ -139,6 +148,14 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         for (String propertySourceLoaderType : propertySourceLoaderTypes) {
             Optional<PropertySourceLoader> loader = createLoader(propertySourceLoaderType);
             if (loader.isPresent()) {
+                if (serviceLoaderExclude) {
+                    context.registerExcludedServiceImpl(
+                        propertySourceLoaderType,
+                        "Excluded by %s because property sources are generated based on the loader as specified by %s"
+                            .formatted(this.getClass().getSimpleName(), TYPES_OPTION.key())
+                    );
+                }
+
                 for (String resource : resources) {
                     createMapProperty(loader.get(), context, resource, null);
                     for (ActiveEnvironment environment : environments) {

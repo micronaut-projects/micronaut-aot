@@ -184,6 +184,16 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
             if (rejectedClasses.test(className) || !seen.add(className)) {
                 return null;
             }
+            if (context.getExcludedServiceImplementations().containsKey(className)) {
+                if (forceInclude.contains(className)) {
+                    context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Forcing inclusion of %s even despite being excluded for reason: %s"
+                        .formatted(className, context.getExcludedServiceImplementations().get(className)));
+                } else {
+                    context.addDiagnostics(SERVICE_LOADING_CATEGORY, "Excluding service implementation %s for reason: %s"
+                        .formatted(className, context.getExcludedServiceImplementations().get(className)));
+                    return null;
+                }
+            }
             AbstractCodeGenerator substitution = substitutions.get(className);
             if (substitution != null) {
                 var javaFiles = new ArrayList<JavaFile>();
