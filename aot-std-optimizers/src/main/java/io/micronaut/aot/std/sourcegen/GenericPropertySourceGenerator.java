@@ -24,6 +24,7 @@ import io.micronaut.context.env.ActiveEnvironment;
 import io.micronaut.context.env.EmptyPropertySource;
 import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.MapPropertySource;
+import io.micronaut.context.env.PropertiesPropertySourceLoader;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.PropertySourceLoader;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
@@ -39,10 +40,12 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * A source generator which will generate a static {@link PropertySource}
@@ -56,7 +59,7 @@ import java.util.Optional;
     options = {@Option(
         key = "property-source-loader.types",
         description = "The PropertySourceLoader classnames to use for generating property sources",
-        sampleValue = "io.micronaut.context.env.PropertiesPropertySourceLoader,"
+        sampleValue = "io.micronaut.context.env.PropertiesPropertySourceLoader, io.micronaut.context.env.yaml.YamlPropertySourceLoader"
     ), @Option(
         key = "property-source-loader.base-order",
         description = "The base order to use for the generated property sources. "
@@ -66,6 +69,10 @@ import java.util.Optional;
         key = "property-source-loader.resource-names",
         description = "The resource names to generate property sources for. By default, it is '" + Environment.DEFAULT_NAME + "," + Environment.BOOTSTRAP_NAME + "'.",
         sampleValue = Environment.DEFAULT_NAME + "," + Environment.BOOTSTRAP_NAME
+    ), @Option(
+        key = "property-source-loader.service-loader-exclude",
+        description = "Whether the property source loaders specified by types should be excluded in service loading",
+        sampleValue = StringUtils.TRUE
     ), @Option(
         key = "yaml.to.java.config",
         description = "Deprecated option to enable the yaml property source generation. " +
@@ -85,8 +92,10 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[1];
     public static final Option RESOURCE_NAMES_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[2];
-    public static final Option YAML_GENERATION_OPTION =
+    public static final Option SERVICE_LOADER_EXCLUDE_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[3];
+    public static final Option YAML_GENERATION_OPTION =
+        MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[4];
 
     public static final String YAML_PROPERTY_SOURCE_LOADER = YamlPropertySourceLoader.class.getName();
 
@@ -96,6 +105,7 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
     private final List<String> propertySourceLoaderTypes;
     private final int baseOrder;
     private final Collection<ActiveEnvironment> environments;
+    private final boolean serviceLoaderExclude;
 
     /**
      * Create the generic property source generator from resource names.
@@ -120,10 +130,17 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
                 propertySourceLoaderTypes.add(YAML_PROPERTY_SOURCE_LOADER);
             }
         }
+        if (propertySourceLoaderTypes.isEmpty()) {
+            LOG.info("Option {} has no value. Using default instead: {}", TYPES_OPTION.key(), TYPES_OPTION.sampleValue());
+            propertySourceLoaderTypes = Arrays.stream(TYPES_OPTION.sampleValue().split(","))
+                .map(String::trim).collect(Collectors.toList());
+        }
         this.propertySourceLoaderTypes = propertySourceLoaderTypes;
         this.baseOrder = context.getConfiguration().optionalValue(BASE_ORDER_OPTION.key(),
             v -> v.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE / 2));
         this.environments = environments;
+        this.serviceLoaderExclude = context.getConfiguration().optionalValue(SERVICE_LOADER_EXCLUDE_OPTION.key(),
+            v -> v.map(Boolean::parseBoolean).orElse(true));
     }
 
     @Override
@@ -131,6 +148,14 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         for (String propertySourceLoaderType : propertySourceLoaderTypes) {
             Optional<PropertySourceLoader> loader = createLoader(propertySourceLoaderType);
             if (loader.isPresent()) {
+                if (serviceLoaderExclude) {
+                    context.registerExcludedServiceImpl(
+                        propertySourceLoaderType,
+                        "Excluded by %s because property sources are generated based on the loader as specified by %s"
+                            .formatted(this.getClass().getSimpleName(), TYPES_OPTION.key())
+                    );
+                }
+
                 for (String resource : resources) {
                     createMapProperty(loader.get(), context, resource, null);
                     for (ActiveEnvironment environment : environments) {

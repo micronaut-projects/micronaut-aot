@@ -142,4 +142,49 @@ public class TestServiceWithMoreThanOneImplFactory implements SoftServiceLoader.
             }
         }
     }
+
+
+    def "generates a service loader with excludes"() {
+        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES, TestServiceWithMoreThanOneImpl.name)
+        context.registerExcludedServiceImpl("io.micronaut.aot.std.sourcegen.TestServiceImpl2", "Excluded by another generator")
+
+        when:
+        generate()
+
+        then:
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            hasClass("StaticServicesLoader") {
+                containingSources('staticServices.put("io.micronaut.aot.std.sourcegen.TestServiceWithMoreThanOneImpl", new TestServiceWithMoreThanOneImplFactory());')
+            }
+
+            hasClass("TestServiceWithMoreThanOneImplFactory") {
+                withSources """
+                package io.micronaut.test;
+
+                import io.micronaut.aot.std.sourcegen.TestServiceImpl;
+                import io.micronaut.aot.std.sourcegen.TestServiceWithMoreThanOneImpl;
+                import io.micronaut.core.annotation.Generated;
+                import io.micronaut.core.io.service.SoftServiceLoader;
+                import java.lang.String;
+                import java.util.ArrayList;
+                import java.util.List;
+                import java.util.function.Predicate;
+                import java.util.stream.Stream;
+
+                @Generated
+                public class TestServiceWithMoreThanOneImplFactory implements SoftServiceLoader.StaticServiceLoader<TestServiceWithMoreThanOneImpl> {
+                  public Stream<SoftServiceLoader.StaticDefinition<TestServiceWithMoreThanOneImpl>> findAll(
+                      Predicate<String> predicate) {
+                    List<SoftServiceLoader.StaticDefinition<TestServiceWithMoreThanOneImpl>> list = new ArrayList<>();
+                    if (predicate.test("io.micronaut.aot.std.sourcegen.TestServiceImpl")) {
+                      list.add(SoftServiceLoader.StaticDefinition.of("io.micronaut.aot.std.sourcegen.TestServiceImpl", TestServiceImpl::new));
+                    }
+                    return list.stream();
+                  }
+                }
+                """.stripIndent()
+            }
+        }
+    }
 }
