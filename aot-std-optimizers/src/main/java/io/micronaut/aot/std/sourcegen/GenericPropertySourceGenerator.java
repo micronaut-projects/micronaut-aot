@@ -74,7 +74,7 @@ import java.util.stream.Collectors;
         description = "Whether the property source loaders specified by types should be excluded in service loading",
         sampleValue = StringUtils.TRUE
     ), @Option(
-        key = "yaml.to.java.config",
+        key = "yaml.to.java.config.enabled",
         description = "Deprecated option to enable the yaml property source generation. " +
             "Use property-source-loader.types=io.micronaut.context.env.yaml.YamlPropertySourceLoader instead",
         sampleValue = "false"

@@ -99,7 +99,8 @@ public abstract class AbstractStaticServiceLoaderSourceGenerator extends Abstrac
                 .filter(env -> !"default".equals(env)).toList()
             );
             substitutions = new HashMap<>();
-            if (context.getConfiguration().isFeatureEnabled(GenericPropertySourceGenerator.ID)) {
+            if (context.getConfiguration().isFeatureEnabled(GenericPropertySourceGenerator.ID)
+                    || context.getConfiguration().booleanValue(GenericPropertySourceGenerator.YAML_GENERATION_OPTION.key(), false)) {
                 List<ActiveEnvironment> environments = new ArrayList<>();
                 int i = 0;
                 for (String name: environmentNames) {
