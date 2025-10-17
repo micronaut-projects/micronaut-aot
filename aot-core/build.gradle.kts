@@ -38,8 +38,10 @@ dependencies {
     api(libs.javapoet)
 
     testFixturesImplementation(libs.javapoet)
+    testFixturesImplementation(platform(libs.groovy.bom))
     testFixturesApi(mnTest.micronaut.test.spock)
 
+    testImplementation(platform(libs.groovy.bom))
     testImplementation(mnTest.micronaut.test.spock)
 
     // Runtime libraries used to introspect Micronaut context

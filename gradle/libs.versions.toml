@@ -4,8 +4,10 @@ micronaut = "4.10.4"
 micronaut-logging = "1.7.1"
 micronaut-picocli = "5.8.0"
 micronaut-test = "4.9.0"
+groovy = "4.0.28"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 micronaut-picocli = { module = "io.micronaut.picocli:micronaut-picocli-bom", version.ref = "micronaut-picocli" }
+groovy-bom = { module = "org.apache.groovy:groovy-bom", version.ref = "groovy" }
