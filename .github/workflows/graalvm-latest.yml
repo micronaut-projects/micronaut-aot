@@ -29,7 +29,7 @@ jobs:
         uses: micronaut-projects/github-actions/graalvm/build-matrix@master
         id: build-matrix
         with:
-          java-version; '21
+          java-version: '21'
   build:
     needs: build_matrix
     if: github.repository != 'micronaut-projects/micronaut-project-template'
