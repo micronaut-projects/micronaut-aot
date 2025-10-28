@@ -1,9 +1,9 @@
 [versions]
 javapoet = "1.13.0"
-micronaut = "4.10.4"
+micronaut = "4.10.7"
 micronaut-logging = "1.7.1"
 micronaut-picocli = "5.8.0"
-micronaut-test = "4.9.0"
+micronaut-test = "4.10.1"
 groovy = "4.0.28"
 
 [libraries]
