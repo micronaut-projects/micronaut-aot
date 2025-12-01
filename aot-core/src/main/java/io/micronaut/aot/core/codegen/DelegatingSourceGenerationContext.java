@@ -23,7 +23,7 @@ import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Runtime;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.util.List;

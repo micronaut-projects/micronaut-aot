@@ -25,7 +25,7 @@ import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.context.ApplicationContextBuilder;
 import io.micronaut.context.ApplicationContextConfigurer;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 import io.micronaut.core.util.CollectionUtils;
 
 import java.util.List;

@@ -23,7 +23,7 @@ import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.env.CachedEnvironment;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.util.EnvironmentProperties;
 

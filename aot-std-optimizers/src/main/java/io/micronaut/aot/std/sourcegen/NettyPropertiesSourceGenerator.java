@@ -24,7 +24,7 @@ import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.ApplicationContextBuilder;
 import io.micronaut.context.ApplicationContextConfigurer;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Random;
 import java.util.function.Consumer;

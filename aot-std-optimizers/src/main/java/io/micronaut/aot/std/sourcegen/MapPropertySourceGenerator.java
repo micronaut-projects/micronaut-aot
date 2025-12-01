@@ -24,7 +24,7 @@ import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator;
 import io.micronaut.aot.core.codegen.MapGenerator;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.core.annotation.Generated;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 import io.micronaut.core.order.Ordered;
 import io.micronaut.core.util.StringUtils;
 

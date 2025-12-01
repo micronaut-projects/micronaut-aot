@@ -23,7 +23,7 @@ import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.env.CachedEnvironment;
 import io.micronaut.context.env.ConstantPropertySources;
 import io.micronaut.context.env.PropertySource;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 import io.micronaut.core.util.EnvironmentProperties;
 
 import java.util.ArrayList;

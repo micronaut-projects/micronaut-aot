@@ -22,7 +22,7 @@ import io.micronaut.aot.core.Runtime;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.aot.core.codegen.ApplicationContextConfigurerGenerator;
 import io.micronaut.aot.core.config.MetadataUtils;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 
 import java.io.FileWriter;
 import java.io.IOException;

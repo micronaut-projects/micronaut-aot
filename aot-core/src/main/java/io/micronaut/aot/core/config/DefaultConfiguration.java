@@ -17,7 +17,7 @@ package io.micronaut.aot.core.config;
 
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Runtime;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Locale;
 import java.util.Optional;
