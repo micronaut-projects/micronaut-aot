@@ -15,7 +15,7 @@
  */
 package io.micronaut.aot.core;
 
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 
 /**
  * A source generator is the main entity of the AOT project.

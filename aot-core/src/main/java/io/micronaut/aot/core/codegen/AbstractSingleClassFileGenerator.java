@@ -18,7 +18,7 @@ package io.micronaut.aot.core.codegen;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTContext;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Base class for source generators which generate a single class file.

@@ -21,7 +21,7 @@ import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.aot.core.config.MetadataUtils;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 import io.micronaut.core.reflect.ClassUtils;
 
 import java.util.ArrayList;
