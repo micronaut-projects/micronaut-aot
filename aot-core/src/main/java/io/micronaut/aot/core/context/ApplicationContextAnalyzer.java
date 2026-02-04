@@ -211,6 +211,13 @@ public final class ApplicationContextAnalyzer {
         }
 
         @Override
+        public <K> Collection<BeanDefinition<K>> findBeanDefinitions(Class<K> beanType) {
+            if (applicationContext instanceof DefaultBeanContext dbc) {
+                return dbc.getBeanDefinitions(beanType);
+            }
+            return Collections.emptyList();        }
+
+        @Override
         public List<Failure> getFailures() {
             return failures == null ? Collections.emptyList() : failures;
         }
