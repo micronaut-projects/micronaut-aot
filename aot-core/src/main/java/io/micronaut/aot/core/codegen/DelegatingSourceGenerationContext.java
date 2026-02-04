@@ -134,7 +134,6 @@ public abstract class DelegatingSourceGenerationContext implements AOTContext {
     }
 
     @Override
-    @NonNull
     public void addDiagnostics(String category, String message) {
         delegate.addDiagnostics(category, message);
     }

@@ -23,6 +23,10 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation(platform(mn.micronaut.core.bom)) // to resolve micronaut-module-info
+}
+
 micronautBuild {
     enableProcessing = false
     enableBom = false

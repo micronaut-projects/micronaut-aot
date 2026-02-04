@@ -163,7 +163,6 @@ public interface AOTContext {
      * to the source generator type
      * @param message a message to log
      */
-    @NonNull
     void addDiagnostics(String category, String message);
 
     /**

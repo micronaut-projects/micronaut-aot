@@ -33,14 +33,12 @@ class CliTest extends Specification {
         def classpath = System.getProperty('aot.runtime')
 
         when:
-        isolate {
-            Main.execute(
-                    '--classpath', classpath,
-                    '--runtime', runtime,
-                    '--package', 'dummy',
-                    '--config', configFile.toString()
-            )
-        }
+        Main.execute(
+                '--classpath', classpath,
+                '--runtime', runtime,
+                '--package', 'dummy',
+                '--config', configFile.toString()
+        )
 
         then:
         Files.exists(configFile)
