@@ -17,7 +17,7 @@ The Micronaut AOT project consists of 4 main modules:
 - `micronaut-aot-core` provides the APIs for implementing "AOT optimizers", or code generators.
 - `micronaut-aot-api` exposes the public API for interacting with the AOT compiler. It mostly consists of the `MicronautAotOptimizer` class which is responsible for loading the different AOT modules via _service loading_, then driving the AOT process.
 - `micronaut-aot-std-optimizers` implements a number of standard Micronaut AOT optimizers.
-- `micronaut-cli` is the command line tool responsible for calling the AOT compiler. It is recommended to integrate with Micronaut AOT via the CLI tool, so that the process is properly isolated.
+- `micronaut-aot-cli` is the command line tool responsible for invoking the AOT compiler. It is recommended to integrate with Micronaut AOT via this CLI to ensure proper classloader isolation.
 
 == How it works
 

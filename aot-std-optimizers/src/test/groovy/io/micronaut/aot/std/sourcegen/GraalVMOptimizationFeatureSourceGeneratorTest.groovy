@@ -25,39 +25,14 @@ Args=--initialize-at-build-time=io.micronaut.context.ApplicationContextConfigure
 
     def "generates a feature file excluding service loading"() {
         when:
-        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES, ['A', 'B', 'C'].join(','))
-        props.put("${NativeStaticServiceLoaderSourceGenerator.ID}.enabled".toString(), "true")
         generate()
 
         then:
         assertThatGeneratedSources {
             doesNotCreateInitializer()
-            generatesMetaInfResource("native-image/$packageName/native-image.properties", """
+generatesMetaInfResource("native-image/$packageName/native-image.properties", """
 Args=--initialize-at-build-time=io.micronaut.context.ApplicationContextConfigurer\$1 \\
-     --initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigurer \\
-     -H:ServiceLoaderFeatureExcludeServices=A \\
-     -H:ServiceLoaderFeatureExcludeServices=B \\
-     -H:ServiceLoaderFeatureExcludeServices=C
-""")
-        }
-    }
-
-    def "generates a feature file with build time init service"() {
-        when:
-        props.put("${NativeStaticServiceLoaderSourceGenerator.ID}.enabled".toString(), "true")
-        props.put(AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES, TestService.name)
-        context.registerBuildTimeInit(TestService.name)
-
-        generate()
-
-        then:
-        assertThatGeneratedSources {
-            doesNotCreateInitializer()
-            generatesMetaInfResource("native-image/$packageName/native-image.properties", """
-Args=--initialize-at-build-time=io.micronaut.context.ApplicationContextConfigurer\$1 \\
-     --initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigurer \\
-     --initialize-at-build-time=io.micronaut.aot.std.sourcegen.TestService \\
-     -H:ServiceLoaderFeatureExcludeServices=io.micronaut.aot.std.sourcegen.TestService
+     --initialize-at-build-time=io.micronaut.test.AOTApplicationContextConfigurer
 """)
         }
     }

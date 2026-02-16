@@ -3,14 +3,14 @@ package io.micronaut.aot.cli
 import groovy.transform.CompileStatic
 import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.config.MetadataUtils
-import io.micronaut.aot.std.sourcegen.AbstractStaticServiceLoaderSourceGenerator
+
 import io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
 import io.micronaut.aot.std.sourcegen.DeduceEnvironmentSourceGenerator
 import io.micronaut.aot.std.sourcegen.EnvironmentPropertiesSourceGenerator
 import io.micronaut.aot.core.Environments
 import io.micronaut.aot.std.sourcegen.GenericPropertySourceGenerator
 import io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
-import io.micronaut.aot.std.sourcegen.JitStaticServiceLoaderSourceGenerator
+
 import io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
 import io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
 import io.micronaut.aot.std.sourcegen.NettyPropertiesSourceGenerator
@@ -55,18 +55,13 @@ ${toPropertiesSample(KnownMissingTypesSourceGenerator)}"""],
 ${toPropertiesSample(NettyPropertiesSourceGenerator, NettyPropertiesSourceGenerator.MACHINE_ID)}
 ${toPropertiesSample(NettyPropertiesSourceGenerator, NettyPropertiesSourceGenerator.PROCESS_ID)}"""],
                 [EnvironmentPropertiesSourceGenerator.DESCRIPTION, 'precompute.environment.properties.enabled = true'],
-                [PublishersSourceGenerator.DESCRIPTION, 'scan.reactive.types.enabled = true'],
-                [AbstractStaticServiceLoaderSourceGenerator.DESCRIPTION, """serviceloading.${runtime}.enabled = true
-${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.SERVICE_TYPES)}
-${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.REJECTED_CLASSES)}
-${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, AbstractStaticServiceLoaderSourceGenerator.FORCE_INCLUDE)}
-${toPropertiesSample(JitStaticServiceLoaderSourceGenerator, Environments.POSSIBLE_ENVIRONMENTS_NAMES)}"""],
                 [GenericPropertySourceGenerator.DESCRIPTION, """property-source-loader.generate.enabled = true
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.types")}
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.base-order")}
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.resource-names")}
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.service-loader-exclude")}
 ${toPropertiesSample(GenericPropertySourceGenerator, "yaml.to.java.config")}"""],
+                [PublishersSourceGenerator.DESCRIPTION, 'scan.reactive.types.enabled = true'],
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
         ].findAll().collect { desc, c ->
             """# $desc

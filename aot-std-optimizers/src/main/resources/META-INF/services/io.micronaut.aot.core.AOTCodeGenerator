@@ -1,6 +1,4 @@
 io.micronaut.aot.std.sourcegen.KnownMissingTypesSourceGenerator
-io.micronaut.aot.std.sourcegen.JitStaticServiceLoaderSourceGenerator
-io.micronaut.aot.std.sourcegen.NativeStaticServiceLoaderSourceGenerator
 io.micronaut.aot.std.sourcegen.EnvironmentPropertiesSourceGenerator
 io.micronaut.aot.std.sourcegen.PublishersSourceGenerator
 io.micronaut.aot.std.sourcegen.ConstantPropertySourcesSourceGenerator
@@ -9,3 +7,4 @@ io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGenerator
 io.micronaut.aot.std.sourcegen.GraalVMOptimizationFeatureSourceGenerator
 io.micronaut.aot.std.sourcegen.DeduceEnvironmentSourceGenerator
 io.micronaut.aot.std.sourcegen.NettyPropertiesSourceGenerator
+io.micronaut.aot.std.sourcegen.GenericPropertySourceGenerator

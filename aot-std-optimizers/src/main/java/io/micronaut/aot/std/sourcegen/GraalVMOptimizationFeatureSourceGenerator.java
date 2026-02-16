@@ -70,14 +70,6 @@ public class GraalVMOptimizationFeatureSourceGenerator extends AbstractCodeGener
                     wrt.print(NEXT_LINE);
                     wrt.print("--initialize-at-build-time=" + buildTimeInitClass);
                 }
-                if (context.getConfiguration()
-                    .isFeatureEnabled(NativeStaticServiceLoaderSourceGenerator.ID)) {
-                    for (int i = 0; i < serviceTypes.size(); i++) {
-                        String serviceType = serviceTypes.get(i);
-                        wrt.print(NEXT_LINE);
-                        wrt.print("-H:ServiceLoaderFeatureExcludeServices=" + serviceType);
-                    }
-                }
                 wrt.println();
             } catch (IOException e) {
                 throw new RuntimeException(e);
