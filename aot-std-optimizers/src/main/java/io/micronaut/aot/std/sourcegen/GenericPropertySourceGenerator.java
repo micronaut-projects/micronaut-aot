@@ -24,7 +24,7 @@ import io.micronaut.context.env.ActiveEnvironment;
 import io.micronaut.context.env.EmptyPropertySource;
 import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.MapPropertySource;
-import io.micronaut.context.env.PropertiesPropertySourceLoader;
+
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.PropertySourceLoader;
 import io.micronaut.context.env.yaml.YamlPropertySourceLoader;
@@ -83,14 +83,6 @@ import java.util.stream.Collectors;
 @Internal
 public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
 
-    public GenericPropertySourceGenerator() {
-        this.resources = List.of(Environment.DEFAULT_NAME, Environment.BOOTSTRAP_NAME);
-        this.propertySourceLoaderTypes = Arrays.stream(TYPES_OPTION.sampleValue().split(",")).map(String::trim).collect(Collectors.toList());
-        this.baseOrder = Ordered.HIGHEST_PRECEDENCE / 2;
-        this.environments = List.of();
-        this.serviceLoaderExclude = true;
-    }
-
     public static final String ID = "property-source-loader.generate";
     public static final String DESCRIPTION = "Converts configuration files supplied by property source loaders to Java configuration";
 
@@ -114,6 +106,14 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
     private final int baseOrder;
     private final Collection<ActiveEnvironment> environments;
     private final boolean serviceLoaderExclude;
+
+    public GenericPropertySourceGenerator() {
+        this.resources = List.of(Environment.DEFAULT_NAME, Environment.BOOTSTRAP_NAME);
+        this.propertySourceLoaderTypes = Arrays.stream(TYPES_OPTION.sampleValue().split(",")).map(String::trim).collect(Collectors.toList());
+        this.baseOrder = Ordered.HIGHEST_PRECEDENCE / 2;
+        this.environments = List.of();
+        this.serviceLoaderExclude = true;
+    }
 
     /**
      * Create the generic property source generator from resource names.
