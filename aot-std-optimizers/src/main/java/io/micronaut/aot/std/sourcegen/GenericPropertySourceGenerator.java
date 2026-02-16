@@ -83,6 +83,14 @@ import java.util.stream.Collectors;
 @Internal
 public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
 
+    public GenericPropertySourceGenerator() {
+        this.resources = List.of(Environment.DEFAULT_NAME, Environment.BOOTSTRAP_NAME);
+        this.propertySourceLoaderTypes = Arrays.stream(TYPES_OPTION.sampleValue().split(",")).map(String::trim).collect(Collectors.toList());
+        this.baseOrder = Ordered.HIGHEST_PRECEDENCE / 2;
+        this.environments = List.of();
+        this.serviceLoaderExclude = true;
+    }
+
     public static final String ID = "property-source-loader.generate";
     public static final String DESCRIPTION = "Converts configuration files supplied by property source loaders to Java configuration";
 

@@ -15,8 +15,7 @@
  */
 package io.micronaut.aot.std.sourcegen
 
-import com.squareup.javapoet.JavaFile
-import com.squareup.javapoet.TypeSpec
+
 import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
 
@@ -24,11 +23,6 @@ class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGenerator
 
     @Override
     AOTCodeGenerator newGenerator() {
-        def substitutes = new AbstractStaticServiceLoaderSourceGenerator.Substitutes()
-        substitutes.putAll([
-                'io.micronaut.context.env.PropertySourceLoader': [JavaFile.builder(packageName, TypeSpec.classBuilder("Replacement").build()).build()]
-        ])
-        context.put(AbstractStaticServiceLoaderSourceGenerator.Substitutes, substitutes)
         new ConstantPropertySourcesSourceGenerator()
     }
 
@@ -53,7 +47,6 @@ public class AotConstantPropertySources implements StaticOptimizations.Loader<Co
   @Override
   public ConstantPropertySources load() {
     List<PropertySource> propertySources = new ArrayList<PropertySource>();
-    propertySources.add(new Replacement());
     return new ConstantPropertySources(propertySources);
   }
 }"""

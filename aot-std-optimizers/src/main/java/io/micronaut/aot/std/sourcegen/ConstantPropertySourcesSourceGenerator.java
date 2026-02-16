@@ -23,13 +23,11 @@ import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.context.env.CachedEnvironment;
 import io.micronaut.context.env.ConstantPropertySources;
 import io.micronaut.context.env.PropertySource;
-import org.jspecify.annotations.NonNull;
 import io.micronaut.core.util.EnvironmentProperties;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Generates a "constant" property source, that is to say a
@@ -38,11 +36,7 @@ import java.util.Optional;
  */
 @AOTModule(
         id = ConstantPropertySourcesSourceGenerator.ID,
-        description = ConstantPropertySourcesSourceGenerator.DESCRIPTION,
-        dependencies = {
-                JitStaticServiceLoaderSourceGenerator.ID,
-                NativeStaticServiceLoaderSourceGenerator.ID
-        }
+        description = ConstantPropertySourcesSourceGenerator.DESCRIPTION
 )
 public class ConstantPropertySourcesSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "sealed.property.source";
@@ -50,12 +44,6 @@ public class ConstantPropertySourcesSourceGenerator extends AbstractCodeGenerato
 
     @Override
     public void generate(@NonNull AOTContext context) {
-        Optional<AbstractStaticServiceLoaderSourceGenerator.Substitutes> maybeSubstitutes = context.get(AbstractStaticServiceLoaderSourceGenerator.Substitutes.class);
-        List<String> substitutes = maybeSubstitutes.map(s -> s.findSubstitutesFor("io.micronaut.context.env.PropertySourceLoader")).orElse(Collections.emptyList())
-                .stream()
-                .map(javaFile -> javaFile.packageName + "." + javaFile.typeSpec.name)
-                .toList();
-
         context.registerStaticOptimization("AotConstantPropertySources", ConstantPropertySources.class, initializer -> {
             EnvironmentProperties env = EnvironmentProperties.empty();
             CachedEnvironment.getenv().keySet().forEach(env::findPropertyNamesForEnvironmentVariable);
@@ -64,9 +52,6 @@ public class ConstantPropertySourcesSourceGenerator extends AbstractCodeGenerato
                     ParameterizedTypeName.get(ClassName.get(List.class), ClassName.get(PropertySource.class)),
                     ParameterizedTypeName.get(ClassName.get(ArrayList.class), ClassName.get(PropertySource.class))
             );
-            for (String substitute : substitutes) {
-                initializer.addStatement("propertySources.add(new $T())", ClassName.bestGuess(substitute));
-            }
             initializer.addStatement("return new $T(propertySources)", ConstantPropertySources.class);
         });
     }
