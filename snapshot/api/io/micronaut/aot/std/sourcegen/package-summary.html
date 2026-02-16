@@ -71,49 +71,40 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="AbstractStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">AbstractStaticServiceLoaderSourceGenerator</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="CachedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Base class for generation of service loader classes.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="CachedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Generates the code used to enable environment variables and system
 properties caching in Micronaut.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Generates a "constant" property source, that is to say a
 <code>PropertySource</code> which properties are known at build time
 (and constant).</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">This code generator is responsible for taking the result
 of the environment deduction, which is the set of active
 environment names and the package names, and inject is
 via a custom application context configurer.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A code generator which is responsible for precomputing the Micronaut property
 names from environment variable names at build time.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GenericPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GenericPropertySourceGenerator</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GenericPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GenericPropertySourceGenerator</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A source generator which will generate a static <code>PropertySource</code>
 from a given configuration file, in order to substitute the dynamic loader
 with a static configuration.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Generates the GraalVM configuration file which is going to configure
 the native image code generation, typically asking to initialize
 the optimized entry point at build time.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="JitStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">JitStaticServiceLoaderSourceGenerator</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">A specialized version of static service loader generator aimed
-at execution in JIT mode.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">KnownMissingTypesSourceGenerator</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
@@ -130,21 +121,16 @@ Java configuration.</div>
 <div class="block">A source generator which generates a map property source with a fixed
 set of values at build time.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NativeStaticServiceLoaderSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NativeStaticServiceLoaderSourceGenerator</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">A specialized version of service loader generation which is aimed at
-executing in native images, where classloading is basically free.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A code generator which is responsible for setting up Netty properties.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ParentTagTagClassTuple.html" title="class in io.micronaut.aot.std.sourcegen">ParentTagTagClassTuple</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ParentTagTagClassTuple.html" title="class in io.micronaut.aot.std.sourcegen">ParentTagTagClassTuple</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Represents default class name rules.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">An optimizer which is responsible for determining what reactive
 types are found at build time.</div>
 </div>
