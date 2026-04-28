@@ -44,6 +44,9 @@ import java.util.stream.Collectors;
         versionProvider = VersionProvider.class,
         description = "Generates classes for Micronaut AOT (build time optimizations)")
 public class Main implements Runnable, ConfigKeys {
+    static final String SLF4J_INTERNAL_VERBOSITY = "slf4j.internal.verbosity";
+    static final String SLF4J_PROVIDER = "slf4j.provider";
+    static final String LOGBACK_SERVICE_PROVIDER = "ch.qos.logback.classic.spi.LogbackServiceProvider";
 
     @Option(names = {"--classpath", "-cp"}, description = "The Micronaut application classpath", required = true)
     private String classpathString;
@@ -62,6 +65,7 @@ public class Main implements Runnable, ConfigKeys {
 
     @Override
     public void run() {
+        configureSlf4j();
         List<URL> classpath = toURLs(classpathString);
         var props = new Properties();
         if (config.exists()) {
@@ -113,6 +117,17 @@ public class Main implements Runnable, ConfigKeys {
             throw new RuntimeException(e);
         } finally {
             Thread.currentThread().setContextClassLoader(ctxClassLoader);
+        }
+    }
+
+    static void configureSlf4j() {
+        setSystemPropertyIfMissing(SLF4J_INTERNAL_VERBOSITY, "WARN");
+        setSystemPropertyIfMissing(SLF4J_PROVIDER, LOGBACK_SERVICE_PROVIDER);
+    }
+
+    private static void setSystemPropertyIfMissing(String key, String value) {
+        if (System.getProperty(key) == null) {
+            System.setProperty(key, value);
         }
     }
 
