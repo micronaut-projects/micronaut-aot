@@ -41,6 +41,8 @@ import static java.util.stream.StreamSupport.stream;
  */
 public class SourceGeneratorLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceGeneratorLoader.class);
+    private static final String PROPERTY_SOURCE_LOADER_GENERATOR_ID = "property-source-loader.generate";
+    private static final String DEPRECATED_YAML_TO_JAVA_CONFIG_ENABLED = "yaml.to.java.config.enabled";
 
     private static final Comparator<AOTModule> EXECUTION_ORDER = (first, second) -> {
         if (Arrays.asList(first.dependencies()).contains(second.id())) {
@@ -76,7 +78,7 @@ public class SourceGeneratorLoader {
                         LOGGER.debug("Skipping source generator {} as it is not enabled on runtime {}", sg.generator.getClass().getName(), runtime);
                         return new SourceGeneratorSelection(sg.generator, sg.module, false, SourceGeneratorSelection.NOT_ENABLED_ON_RUNTIME);
                     }
-                    boolean isEnabledByConfiguration = configuration.isFeatureEnabled(sg.module.id());
+                    boolean isEnabledByConfiguration = isEnabledByConfiguration(configuration, sg.module);
                     if (!isEnabledByConfiguration) {
                         LOGGER.debug("Skipping source generator {} as it is not enabled by configuration", sg.generator.getClass().getName());
                         return new SourceGeneratorSelection(sg.generator, sg.module, false, SourceGeneratorSelection.DISABLED_BY_CONFIGURATION);
@@ -119,6 +121,12 @@ public class SourceGeneratorLoader {
             return 1;
         }
         return first.getGenerator().getClass().getName().compareTo(second.getGenerator().getClass().getName());
+    }
+
+    private static boolean isEnabledByConfiguration(Configuration configuration, AOTModule module) {
+        return configuration.isFeatureEnabled(module.id()) ||
+            PROPERTY_SOURCE_LOADER_GENERATOR_ID.equals(module.id()) &&
+                configuration.booleanValue(DEPRECATED_YAML_TO_JAVA_CONFIG_ENABLED, false);
     }
 
 }

@@ -74,7 +74,7 @@ import java.util.stream.Collectors;
         description = "Whether the property source loaders specified by types should be excluded in service loading",
         sampleValue = StringUtils.TRUE
     ), @Option(
-        key = "yaml.to.java.config",
+        key = "yaml.to.java.config.enabled",
         description = "Deprecated option to enable the yaml property source generation. " +
             "Use property-source-loader.types=io.micronaut.context.env.yaml.YamlPropertySourceLoader instead",
         sampleValue = "false"
@@ -106,6 +106,7 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
     private final int baseOrder;
     private final Collection<ActiveEnvironment> environments;
     private final boolean serviceLoaderExclude;
+    private final boolean configured;
 
     public GenericPropertySourceGenerator() {
         this.resources = List.of(Environment.DEFAULT_NAME, Environment.BOOTSTRAP_NAME);
@@ -113,6 +114,7 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         this.baseOrder = Ordered.HIGHEST_PRECEDENCE / 2;
         this.environments = List.of();
         this.serviceLoaderExclude = true;
+        this.configured = false;
     }
 
     /**
@@ -149,10 +151,15 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         this.environments = environments;
         this.serviceLoaderExclude = context.getConfiguration().optionalValue(SERVICE_LOADER_EXCLUDE_OPTION.key(),
             v -> v.map(Boolean::parseBoolean).orElse(true));
+        this.configured = true;
     }
 
     @Override
     public void generate(@NonNull AOTContext context) {
+        if (!configured) {
+            new GenericPropertySourceGenerator(context, activeEnvironments(context)).generate(context);
+            return;
+        }
         for (String propertySourceLoaderType : propertySourceLoaderTypes) {
             Optional<PropertySourceLoader> loader = createLoader(propertySourceLoaderType);
             if (loader.isPresent()) {
@@ -172,6 +179,19 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
                 }
             }
         }
+    }
+
+    private static Collection<ActiveEnvironment> activeEnvironments(AOTContext context) {
+        List<ActiveEnvironment> environments = new ArrayList<>();
+        int priority = 0;
+        List<String> environmentNames = context.getAnalyzer().getEnvironmentNames().stream()
+            .filter(name -> !Environment.DEFAULT_NAME.equals(name))
+            .sorted()
+            .collect(Collectors.toList());
+        for (String name : environmentNames) {
+            environments.add(ActiveEnvironment.of(name, priority++));
+        }
+        return environments;
     }
 
     private Optional<PropertySourceLoader> createLoader(String className) {
