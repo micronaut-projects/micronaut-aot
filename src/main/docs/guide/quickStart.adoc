@@ -117,6 +117,10 @@ New capabilities will be included as part of AOT development.
 At the core of AOT optimizations is a _code generator_.
 A code generator needs to implement the `AOTCodeGenerator` interface and be annotated with `@AOTModule`.
 
+The implementation class should be compiled from the regular Java source root of an AOT optimizer module, for example `src/main/java`.
+Register the generator with Java's `ServiceLoader` mechanism by adding its fully qualified class name to `src/main/resources/META-INF/services/io.micronaut.aot.core.AOTCodeGenerator`.
+Build tool integrations load optimizer modules from the AOT optimizer classpath; for example, Gradle users can add the optimizer artifact or project dependency to the `aotPlugins` configuration.
+
 The `AOTModule` annotation is responsible for giving metadata about the code generators, including:
 
 - an `id` is used to identify the code generator, and enable/disable it via configuration
