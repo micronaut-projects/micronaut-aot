@@ -38,8 +38,12 @@ public class ConfigPropsGenerator {
                     SourceGeneratorLoader.list(Runtime.NATIVE).stream()
                 ).distinct()
                 .toList();
+            writer.println("WARNING: These are not configuration properties to add in your regular Micronaut configuration files," +
+                           "but properties to be added to the Micronaut AOT configuration, via your build plugin." +
+                           "Please refer to the appropriate Maven or Gradle plugin for more details.");
+            writer.println();
             for (AOTModule module : codeGenerators) {
-                writer.println("=== `" + module.id() + "`");
+                writer.println("=== Module " + module.id());
                 writer.println();
                 writer.print("This module is available ");
                 var runtimes = module.enabledOn();
@@ -49,11 +53,11 @@ public class ConfigPropsGenerator {
                     writer.println("in JIT and native modes.");
                 }
                 writer.println();
-                writer.println(".Configuration properties for `" + module.id() + "`");
+                writer.println(".Configuration Properties for " + module.id());
                 writer.println("[cols=\"1,3,3\"]");
                 writer.println("|===");
                 writer.println("|Property|Description|Example value");
-                writer.println("| `" + module.id() + ".enabled` |Enables this optimization. " + module.description() + "|`true`");
+                writer.println("| `" + module.id() + ".enabled` |Enables the " + module.description() + " optimization|`true`");
                 for (Option option : module.options()) {
                     // Add 0-width space so that text wrapping works
                     var sample = option.sampleValue().replace(",", ",\u200B");
