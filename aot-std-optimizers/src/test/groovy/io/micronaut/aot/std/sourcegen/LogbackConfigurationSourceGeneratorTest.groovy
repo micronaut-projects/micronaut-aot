@@ -121,6 +121,20 @@ public class StaticLogbackConfiguration implements Configurator {
         }
     }
 
+    def "does not generate configuration when logback file is not present"() {
+        configFileName = "logback-missing.xml"
+
+        when:
+        generate()
+
+        then:
+        excludesResources()
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            doesNotGenerateClasses()
+        }
+    }
+
     def "converts configuration using file logger"() {
         configFileName = "logback-test2.xml"
 

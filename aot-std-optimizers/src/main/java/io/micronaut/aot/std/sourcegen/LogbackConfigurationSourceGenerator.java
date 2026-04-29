@@ -47,11 +47,7 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
     @Override
     @NonNull
     protected JavaFile generate() {
-        try {
-            Class.forName("ch.qos.logback.core.model.Model");
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("The logback.xml conversion feature requires logback 1.4 on the AOT optimizer classpath.");
-        }
+        checkLogback14Present();
         TypeSpec typeSpec = TypeSpec.classBuilder("StaticLogbackConfiguration")
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(Configurator.class)
@@ -70,6 +66,14 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
         return javaFile(typeSpec);
     }
 
+    private static void checkLogback14Present() {
+        try {
+            Class.forName("ch.qos.logback.core.model.Model");
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("The logback.xml conversion feature requires logback 1.4 on the AOT optimizer classpath.");
+        }
+    }
+
     /**
      * Returns the name of the logback configuration file.
      * Can be overridden in tests.
@@ -82,8 +86,14 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
 
     @Override
     public void generate(@NonNull AOTContext context) {
+        String logbackFileName = getLogbackFileName();
+        ClassLoader classLoader = context.getAnalyzer().getApplicationContext().getClass().getClassLoader();
+        if (classLoader.getResource(logbackFileName) == null) {
+            context.addDiagnostics(ID, "Skipping logback configuration conversion because " + logbackFileName + " was not found on the application classpath.");
+            return;
+        }
         super.generate(context);
-        context.registerExcludedResource(getLogbackFileName());
+        context.registerExcludedResource(logbackFileName);
         context.registerServiceImplementation(Configurator.class, "StaticLogbackConfiguration");
     }
 
