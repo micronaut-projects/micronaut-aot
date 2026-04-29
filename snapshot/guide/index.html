@@ -379,6 +379,11 @@ For example, in the following code:</p>
 A code generator needs to implement the <code>AOTCodeGenerator</code> interface and be annotated with <code>@AOTModule</code>.</p>
 </div>
 <div class="paragraph">
+<p>The implementation class should be compiled from the regular Java source root of an AOT optimizer module, for example <code>src/main/java</code>.
+Register the generator with Java&#8217;s <code>ServiceLoader</code> mechanism by adding its fully qualified class name to <code>src/main/resources/META-INF/services/io.micronaut.aot.core.AOTCodeGenerator</code>.
+Build tool integrations load optimizer modules from the AOT optimizer classpath; for example, Gradle users can add the optimizer artifact or project dependency to the <code>aotPlugins</code> configuration.</p>
+</div>
+<div class="paragraph">
 <p>The <code>AOTModule</code> annotation is responsible for giving metadata about the code generators, including:</p>
 </div>
 <div class="ulist">
