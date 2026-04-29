@@ -27,6 +27,44 @@ class CliTest extends Specification {
     @TempDir
     Path testDirectory
 
+    def "configures slf4j to use logback without provider lookup"() {
+        given:
+        def existingVerbosity = System.getProperty(Main.SLF4J_INTERNAL_VERBOSITY)
+        def existingProvider = System.getProperty(Main.SLF4J_PROVIDER)
+        System.clearProperty(Main.SLF4J_INTERNAL_VERBOSITY)
+        System.clearProperty(Main.SLF4J_PROVIDER)
+
+        when:
+        Main.configureSlf4j()
+
+        then:
+        System.getProperty(Main.SLF4J_INTERNAL_VERBOSITY) == 'WARN'
+        System.getProperty(Main.SLF4J_PROVIDER) == Main.LOGBACK_SERVICE_PROVIDER
+
+        cleanup:
+        restoreSystemProperty(Main.SLF4J_INTERNAL_VERBOSITY, existingVerbosity)
+        restoreSystemProperty(Main.SLF4J_PROVIDER, existingProvider)
+    }
+
+    def "keeps user provided slf4j system properties"() {
+        given:
+        def existingVerbosity = System.getProperty(Main.SLF4J_INTERNAL_VERBOSITY)
+        def existingProvider = System.getProperty(Main.SLF4J_PROVIDER)
+        System.setProperty(Main.SLF4J_INTERNAL_VERBOSITY, 'ERROR')
+        System.setProperty(Main.SLF4J_PROVIDER, 'example.CustomServiceProvider')
+
+        when:
+        Main.configureSlf4j()
+
+        then:
+        System.getProperty(Main.SLF4J_INTERNAL_VERBOSITY) == 'ERROR'
+        System.getProperty(Main.SLF4J_PROVIDER) == 'example.CustomServiceProvider'
+
+        cleanup:
+        restoreSystemProperty(Main.SLF4J_INTERNAL_VERBOSITY, existingVerbosity)
+        restoreSystemProperty(Main.SLF4J_PROVIDER, existingProvider)
+    }
+
     @Unroll
     def "can export a dummy configuration file"() {
         def configFile = testDirectory.resolve("${runtime}.properties")
@@ -97,6 +135,14 @@ ${Environments.TARGET_ENVIRONMENTS_NAMES} = ${Environments.TARGET_ENVIRONMENTS_S
         return MetadataUtils.toPropertiesSample(
                 MetadataUtils.findOption(clazz, name)
         )
+    }
+
+    private static void restoreSystemProperty(String key, String value) {
+        if (value == null) {
+            System.clearProperty(key)
+        } else {
+            System.setProperty(key, value)
+        }
     }
 
     @CompileStatic
