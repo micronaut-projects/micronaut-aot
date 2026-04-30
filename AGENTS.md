@@ -20,8 +20,9 @@ that owns the behavior.
 
 ## Coding Notes
 
-- Micronaut AOT currently targets JDK 8 compatibility. Do not introduce newer
-  Java language features unless the project baseline changes.
+- `CONTRIBUTING.md` currently says Micronaut AOT requires JDK 8. Keep source
+  changes compatible with the documented baseline unless the baseline changes
+  and the contributor guidance is updated in the same PR.
 - AOT analysis runs against user application classpaths. Avoid dependency or
   classloader changes that cause the optimizer to see Micronaut customizations
   from the wrong classloader.
