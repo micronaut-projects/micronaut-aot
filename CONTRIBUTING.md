@@ -1,36 +1,39 @@
 # Contributing Code or Documentation to Micronaut
 
+Sign the [Contributor License Agreement (CLA)](https://cla-assistant.io/micronaut-projects/micronaut-aot).
+This is required before any of your code or pull requests are accepted.
+
 ## Finding Issues to Work on
 
 If you are interested in contributing to Micronaut and are looking for issues to work on, take a look at the issues tagged with [help wanted](https://github.com/micronaut-projects/micronaut-aot/issues?q=is%3Aopen+is%3Aissue+label%3A%22status%3A+help+wanted%22).
 
 ## JDK Setup
 
-Micronaut AOT currently requires JDK 8
+Micronaut AOT currently requires JDK 25.
 
 ## IDE Setup
 
-Micronaut AOT can be imported into IntelliJ IDEA by opening the `build.gradle` file.
+Micronaut AOT can be imported into IntelliJ IDEA by opening the `settings.gradle` file.
 
 ## Docker Setup
 
-Micronaut AOT tests currently require docker to be installed.
+Micronaut AOT tests currently require Docker to be installed.
 
 ## Running Tests
 
-To run the tests use `./gradlew check`.
+To run the tests, use `./gradlew check`.
 
 ## Building Documentation
 
 The documentation sources are located at `src/main/docs/guide`.
 
-To build the documentation run `./gradlew publishGuide` or `./gradlew pG` then open `build/docs/index.html`  
+To build the documentation, run `./gradlew publishGuide` (or `./gradlew pG`), then open `build/docs/index.html`.
 
-To also build the javadocs instead run `./gradlew docs`.
+To also build the Javadocs, run `./gradlew docs`.
 
 ## Working on the code base
 
-If you are working with the IntelliJ IDEA development environment, you can import the project using the Intellij Gradle Tooling ( "File / Import Project" and select the "settings.gradle" file).
+If you use IntelliJ IDEA, you can import the project using the IntelliJ Gradle Tooling ("File / Import Project" and selecting the `settings.gradle` file).
 
 To get a local development version of Micronaut AOT working, first run the `publishToMavenLocal` task.
 
@@ -50,16 +53,15 @@ Once you are satisfied with your changes:
 
 ## Checkstyle
 
-We want to keep the code clean, following good practices about organization, javadoc and style as much as possible.
+We want to keep the code clean, following good practices about organization, Javadoc, and style as much as possible.
 
-Micronaut AOT uses [Checkstyle](https://checkstyle.sourceforge.io/) to make sure that all the code follows those standards. The configuration file is defined in `config/checkstyle/checkstyle.xml` and to execute the Checkstyle you
-need to run:
+Micronaut AOT uses [Checkstyle](https://checkstyle.sourceforge.io/) to make sure that the code follows those standards. The configuration is defined in `config/checkstyle/checkstyle.xml`. To execute Checkstyle, run:
 
 ```
 ./gradlew <module-name>:checkstyleMain
 ```
 
-Before start contributing with new code it is recommended to install IntelliJ [CheckStyle-IDEA](https://plugins.jetbrains.com/plugin/1065-checkstyle-idea) plugin and configure it to use Micronaut's checkstyle configuration file.
+Before starting to contribute new code, we recommend that you install the IntelliJ [CheckStyle-IDEA](https://plugins.jetbrains.com/plugin/1065-checkstyle-idea) plugin and configure it to use Micronaut's checkstyle configuration file.
 
 IntelliJ will mark in red the issues Checkstyle finds. For example:
 
@@ -69,7 +71,7 @@ In this case, to fix the issues, we need to:
 
 - Add one empty line before `package` in line 16
 - Add the Javadoc for the constructor in line 27
-- Add an space after `if` in line 34
+- Add a space after `if` in line 34
 
-The plugin also adds a new tab in the bottom to run checkstyle report and see all the errors and warnings. It is recommended
-to run the report and fixing all the issues before submitting a pull request.
+The plugin also adds a new tab in the bottom to run checkstyle report and see all the errors and warnings. We recommend
+running the report and fixing all the issues before submitting a pull request.

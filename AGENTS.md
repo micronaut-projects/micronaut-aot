@@ -20,9 +20,8 @@ that owns the behavior.
 
 ## Coding Notes
 
-- `CONTRIBUTING.md` currently says Micronaut AOT requires JDK 8. Keep source
-  changes compatible with the documented baseline unless the baseline changes
-  and the contributor guidance is updated in the same PR.
+- `.sdkmanrc` and CI use Java 25. Keep contributor guidance, CI expectations,
+  and source/tooling changes aligned with that baseline.
 - AOT analysis runs against user application classpaths. Avoid dependency or
   classloader changes that cause the optimizer to see Micronaut customizations
   from the wrong classloader.
@@ -53,7 +52,8 @@ that owns the behavior.
 
 ## Verification
 
-- Documentation-only changes: run `./gradlew publishGuide`.
+- Root Markdown guidance changes: run `git diff --check`.
+- Guide changes under `src/main/docs/guide`: run `./gradlew publishGuide`.
 - Module code changes: run the affected module tests, for example
   `./gradlew :aot-core:test`, `./gradlew :aot-std-optimizers:test`, or
   `./gradlew :aot-cli:test`.
