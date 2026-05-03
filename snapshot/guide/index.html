@@ -52,7 +52,9 @@
                                 
                                 <div class="toc-item" style="margin-left:0"><a href="#quickStart"><strong>3</strong><span>Quick Start</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>4</strong><span>Repository</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#standardOptimizers"><strong>4</strong><span>Standard Optimizers</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>5</strong><span>Repository</span></a></div>
                                 
                             </div>
                         </div>
@@ -89,7 +91,9 @@
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-quickStart"><a href="#quickStart"><strong>3</strong><span>Quick Start</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>4</strong><span>Repository</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-standardOptimizers"><a href="#standardOptimizers"><strong>4</strong><span>Standard Optimizers</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>5</strong><span>Repository</span></a></div>
         
         </div>
     </div>
@@ -476,7 +480,356 @@ Different code generators may share the same option values: it is legal, but oft
 </div>
 </div>
 
-<h1 id="repository"><a class="anchor" href="#repository"></a>4 Repository</h1>
+<h1 id="standardOptimizers"><a class="anchor" href="#standardOptimizers"></a>4 Standard Optimizers</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/standardOptimizers.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="sect1">
+<h2 id="_available_optimizers">Available Optimizers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Micronaut AOT includes standard optimizers that can be enabled or disabled in the Micronaut AOT configuration.
+Each optimizer is identified by its module id.
+To enable an optimizer, set <code>&lt;module id&gt;.enabled=true</code>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+These properties belong in the Micronaut AOT configuration used by the build plugin, not in the regular Micronaut application configuration files.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+These are not configuration properties to add in your regular Micronaut configuration files,but properties to be added to the Micronaut AOT configuration, via your build plugin.Please refer to the appropriate Maven or Gradle plugin for more details.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_cached_environment">Module cached.environment</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Configuration Properties for cached.environment</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cached.environment.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Caches environment property values: environment properties will be deemed immutable after application startup. optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_deduce_environment">Module deduce.environment</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Configuration Properties for deduce.environment</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>deduce.environment.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Deduces the environment at build time instead of runtime optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_known_missing_types">Module known.missing.types</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. Configuration Properties for known.missing.types</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>known.missing.types.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Checks of existence of some types at build time instead of runtime optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>known.missing.types.list</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A list of types that the AOT analyzer needs to check for existence (comma separated)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.reactivex.Observable,​reactor.core.publisher.Flux,​kotlinx.coroutines.flow.Flow,​io.reactivex.rxjava3.core.Flowable,​io.reactivex.rxjava3.core.Observable,​io.reactivex.Single,​reactor.core.publisher.Mono,​io.reactivex.Maybe,​io.reactivex.rxjava3.core.Single,​io.reactivex.rxjava3.core.Maybe,​io.reactivex.Completable,​io.reactivex.rxjava3.core.Completable,​io.methvin.watchservice.MacOSXListeningWatchService,​io.micronaut.core.async.publisher.CompletableFuturePublisher,​io.micronaut.core.async.publisher.Publishers.JustPublisher,​io.micronaut.core.async.subscriber.Completable</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_logback_xml_to_java">Module logback.xml.to.java</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 4. Configuration Properties for logback.xml.to.java</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>logback.xml.to.java.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Replaces logback.xml with a pure Java configuration (Experimental) optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_netty_properties">Module netty.properties</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 5. Configuration Properties for netty.properties</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>netty.properties.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Defines some Netty system properties when starting the application which optimize startup times. optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>netty.machine.id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The machine id used by Netty. By default, generates a random value at runtime. Set it to a fixed MAC address to override, or use the value 'netty' to disable the optimization and get it at runtime.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>random</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>netty.process.id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The process id to use for Netty. Defaults to a random PID at runtime. Set it to a fixed value (not recommended) or use the value 'netty' to disable the optimization and get it at runtime.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>random</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_precompute_environment_properties">Module precompute.environment.properties</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 6. Configuration Properties for precompute.environment.properties</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>precompute.environment.properties.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Precomputes Micronaut configuration property keys from the current environment variables optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_property_source_loader_generate">Module property-source-loader.generate</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 7. Configuration Properties for property-source-loader.generate</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.generate.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Converts configuration files supplied by property source loaders to Java configuration optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.types</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The PropertySourceLoader classnames to use for generating property sources</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.micronaut.context.env.PropertiesPropertySourceLoader,​ io.micronaut.context.env.yaml.YamlPropertySourceLoader</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.base-order</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The base order to use for the generated property sources. Positive value will be added to base order for specific environments</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>-1073741824</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.resource-names</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The resource names to generate property sources for. By default, it is 'application,bootstrap'.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>application,​bootstrap</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.service-loader-exclude</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the property source loaders specified by types should be excluded in service loading</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>yaml.to.java.config</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deprecated option to enable the yaml property source generation. Use property-source-loader.types=io.micronaut.context.env.yaml.YamlPropertySourceLoader instead</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_scan_reactive_types">Module scan.reactive.types</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 8. Configuration Properties for scan.reactive.types</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>scan.reactive.types.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Scans reactive types at build time instead of runtime optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_sealed_property_source">Module sealed.property.source</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 9. Configuration Properties for sealed.property.source</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>sealed.property.source.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Precomputes property sources at build time optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_graalvm_config">Module graalvm.config</h3>
+<div class="paragraph">
+<p>This module is available in native mode.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 10. Configuration Properties for graalvm.config</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>graalvm.config.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Generates GraalVM configuration files required to load the AOT optimizations optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>service.types</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The list of service types to be scanned (comma separated)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.micronaut.Service1,​io.micronaut.Service2</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<h1 id="repository"><a class="anchor" href="#repository"></a>5 Repository</h1>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/repository.adoc"'>
