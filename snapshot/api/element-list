@@ -4,6 +4,5 @@ io.micronaut.aot.core
 io.micronaut.aot.core.codegen
 io.micronaut.aot.core.config
 io.micronaut.aot.core.context
-io.micronaut.aot.info
 io.micronaut.aot.internal
 io.micronaut.aot.std.sourcegen
