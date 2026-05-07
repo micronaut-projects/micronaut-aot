@@ -138,7 +138,7 @@ For example, a simple code generator which generates a resource file may be decl
 @AOTModule(
     id = MyResourceGenerator.ID,
     options = {
-        @Option(name = "greeter.message", sampleValue = "Hello, world!", description = "The message to write")
+        @Option(key = "greeter.message", sampleValue = "Hello, world!", description = "The message to write")
     }
 )
 public class MyResourceGenerator implements AOTCodeGenerator {
@@ -146,11 +146,13 @@ public class MyResourceGenerator implements AOTCodeGenerator {
 
     @Override
     public void generate(AOTContext context) {
-        context.registerResource("/hello.txt", file -> {
+        context.registerGeneratedResource("/hello.txt", file -> {
             try (PrintWriter writer = new PrintWriter(file)) {
                 String message = context.getConfiguration()
                     .mandatoryValue("greeter.message");
-                writer.println(context.getOption("greeter.message"));
+                writer.println(message);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         });
     }
