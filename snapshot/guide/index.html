@@ -436,7 +436,7 @@ Build tool integrations load optimizer modules from the AOT optimizer classpath;
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@AOTModule(
     id = MyResourceGenerator.ID,
     options = {
-        @Option(name = "greeter.message", sampleValue = "Hello, world!", description = "The message to write")
+        @Option(key = "greeter.message", sampleValue = "Hello, world!", description = "The message to write")
     }
 )
 public class MyResourceGenerator implements AOTCodeGenerator {
@@ -444,11 +444,13 @@ public class MyResourceGenerator implements AOTCodeGenerator {
 
     @Override
     public void generate(AOTContext context) {
-        context.registerResource("/hello.txt", file -&gt; {
+        context.registerGeneratedResource("/hello.txt", file -&gt; {
             try (PrintWriter writer = new PrintWriter(file)) {
                 String message = context.getConfiguration()
                     .mandatoryValue("greeter.message");
-                writer.println(context.getOption("greeter.message"));
+                writer.println(message);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         });
     }
