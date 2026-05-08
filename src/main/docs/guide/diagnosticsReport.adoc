@@ -1,0 +1,93 @@
+Micronaut AOT can write a structured diagnostics report for build tools and CI systems.
+The report is disabled by default and does not change generated sources, generated resources, or log files unless it is enabled.
+
+Enable the report with the following configuration property:
+
+[source,properties]
+----
+micronaut.aot.report.enabled=true
+----
+
+When the CLI is used for an AOT run, the same behavior can be enabled with:
+
+[source,bash]
+----
+micronaut-aot --classpath app.jar --runtime jit --package example.aot --config aot.properties --output build/aot --report
+----
+
+The default output file is:
+
+[source]
+----
+<output.directory>/reports/micronaut-aot-report.json
+----
+
+Use `micronaut.aot.report.output` or `--report-output` to select a different report directory.
+Micronaut AOT always writes the fixed file name `micronaut-aot-report.json` inside that directory.
+
+The only supported report format is JSON.
+The default value is:
+
+[source,properties]
+----
+micronaut.aot.report.format=json
+----
+
+Unsupported formats fail the AOT run with a configuration error.
+
+The JSON report uses a versioned schema.
+Version 1 includes:
+
+* `schemaVersion`
+* `generatedAt`
+* `micronautVersion`
+* `runtime`
+* `packageName`
+* `activeEnvironments`
+* `optimizers`, including optimizer id, implementation class, description, enabled state, disabled reason, option keys, dependency ids, and supported runtimes
+* `generatedSources`
+* `generatedResources`
+* `filteredResources`
+* `excludedServiceImplementations`
+* `buildTimeInitClasses`
+* `diagnostics`
+
+Example:
+
+[source,json]
+----
+{
+  "schemaVersion": 1,
+  "runtime": "JIT",
+  "packageName": "example.aot",
+  "optimizers": [
+    {
+      "id": "netty.properties",
+      "enabled": true,
+      "options": [
+        {
+          "key": "netty.machine.id",
+          "configured": true,
+          "redacted": true
+        }
+      ]
+    }
+  ],
+  "generatedSources": [
+    {
+      "className": "example.aot.AOTApplicationContextConfigurer",
+      "path": "example/aot/AOTApplicationContextConfigurer.java"
+    }
+  ],
+  "generatedResources": [
+    "META-INF/services/io.micronaut.context.ApplicationContextConfigurer"
+  ]
+}
+----
+
+Configuration values are not written to the report.
+Optimizer options only show the option key, whether the key was configured, and whether the value was redacted.
+This prevents common secrets such as passwords, tokens, credentials, and datasource values from being copied into diagnostics artifacts by default.
+
+Build-tool integrations can enable the report property for an AOT invocation and publish the printed report path or the JSON file as a build artifact.
+Existing log files remain available for human-readable diagnostics.

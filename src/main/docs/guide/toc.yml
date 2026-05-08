@@ -4,4 +4,6 @@ releaseHistory: Release History
 quickStart:
   title: Quick Start
 standardOptimizers: Standard Optimizers
+diagnosticsReport:
+  title: Diagnostics Report
 repository: Repository

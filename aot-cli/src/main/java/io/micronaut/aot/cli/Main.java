@@ -63,6 +63,15 @@ public class Main implements Runnable, ConfigKeys {
     @Option(names = {"--output", "-o"}, description = "The output directory", required = false)
     private File outputDirectory;
 
+    @Option(names = {"--report"}, description = "Generate the JSON diagnostics report")
+    private boolean report;
+
+    @Option(names = {"--report-output"}, description = "The diagnostics report output directory")
+    private File reportOutputDirectory;
+
+    @Option(names = {"--report-format"}, description = "The diagnostics report format. Supported values: json")
+    private String reportFormat;
+
     @Override
     public void run() {
         configureSlf4j();
@@ -86,9 +95,21 @@ public class Main implements Runnable, ConfigKeys {
         if (outputDirectory != null) {
             props.put(OUTPUT_DIRECTORY, outputDirectory.getAbsolutePath());
         }
+        if (report) {
+            props.put(REPORT_ENABLED, "true");
+        }
+        if (reportOutputDirectory != null) {
+            props.put(REPORT_OUTPUT, reportOutputDirectory.getAbsolutePath());
+        }
+        if (reportFormat != null) {
+            props.put(REPORT_FORMAT, reportFormat);
+        }
         props.put(RUNTIME, runtime);
         URL[] urls = classpath.toArray(new URL[0]);
         executeInIsolatedLoader(props, urls, Thread.currentThread().getContextClassLoader());
+        if (outputDirectory != null && Boolean.parseBoolean(props.getProperty(REPORT_ENABLED))) {
+            System.out.println("Micronaut AOT diagnostics report written to " + reportFile(props).getAbsolutePath());
+        }
     }
 
     /**
@@ -151,6 +172,14 @@ public class Main implements Runnable, ConfigKeys {
 
     public static void main(String[] args) {
         System.exit(execute(args));
+    }
+
+    private File reportFile(Properties props) {
+        String reportOutput = props.getProperty(REPORT_OUTPUT);
+        File reportDirectory = reportOutput == null || reportOutput.isEmpty()
+                ? new File(outputDirectory, "reports")
+                : new File(reportOutput);
+        return new File(reportDirectory, REPORT_FILE_NAME);
     }
 
     private static class FilteringClassLoader extends ClassLoader {

@@ -26,8 +26,10 @@ import io.micronaut.aot.core.codegen.ApplicationContextConfigurerGenerator;
 import io.micronaut.aot.core.config.DefaultConfiguration;
 import io.micronaut.aot.core.config.MetadataUtils;
 import io.micronaut.aot.core.config.SourceGeneratorLoader;
+import io.micronaut.aot.core.config.SourceGeneratorSelection;
 import io.micronaut.aot.core.context.ApplicationContextAnalyzer;
 import io.micronaut.aot.core.context.DefaultSourceGenerationContext;
+import io.micronaut.aot.core.report.AotDiagnosticReportWriter;
 import io.micronaut.aot.internal.StreamHelper;
 import io.micronaut.core.annotation.Experimental;
 import io.micronaut.core.version.SemanticVersion;
@@ -314,6 +316,7 @@ public final class MicronautAotOptimizer implements ConfigKeys {
         }
 
         public Runner execute() {
+            boolean reportEnabled = isReportEnabled();
             var optimizer = new MicronautAotOptimizer(
                 classpath,
                 outputSourcesDirectory,
@@ -330,15 +333,61 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             Set<String> environmentNames = analyzer.getEnvironmentNames();
             LOGGER.info("Analysis will be performed with active environments: {}", environmentNames);
             var context = new DefaultSourceGenerationContext(generatedPackage, analyzer, config, outputClassesDirectory.toPath());
-            List<AOTCodeGenerator> sourceGenerators = SourceGeneratorLoader.load(config.getRuntime(), context);
+            List<SourceGeneratorSelection> sourceGeneratorSelections = SourceGeneratorLoader.inspect(config.getRuntime(), config);
+            List<AOTCodeGenerator> sourceGenerators = sourceGeneratorSelections.stream()
+                .filter(SourceGeneratorSelection::isEnabled)
+                .map(SourceGeneratorSelection::getGenerator)
+                .collect(Collectors.toList());
             ApplicationContextConfigurerGenerator generator = new ApplicationContextConfigurerGenerator(
                 sourceGenerators
             );
             generator.generate(context);
             optimizer.compileGeneratedSources(context.getExtraClasspath(), context.getGeneratedJavaFiles());
             optimizer.writeLogs(context);
+            if (reportEnabled) {
+                optimizer.writeReport(context, sourceGeneratorSelections, environmentNames, reportDirectory());
+            }
             return this;
         }
+
+        private boolean isReportEnabled() {
+            if (!config.booleanValue(REPORT_ENABLED, false)) {
+                return false;
+            }
+            String format = config.optionalString(REPORT_FORMAT, REPORT_FORMAT_JSON);
+            if (!REPORT_FORMAT_JSON.equalsIgnoreCase(format)) {
+                throw new IllegalArgumentException("Unsupported AOT report format '" + format + "'. Supported formats: " + REPORT_FORMAT_JSON);
+            }
+            return true;
+        }
+
+        private File reportDirectory() {
+            String configuredReportDirectory = config.optionalString(REPORT_OUTPUT, null);
+            if (configuredReportDirectory != null && !configuredReportDirectory.isEmpty()) {
+                return new File(configuredReportDirectory);
+            }
+            File outputDirectory = outputSourcesDirectory.getParentFile();
+            if (outputDirectory == null) {
+                outputDirectory = new File(".");
+            }
+            return new File(outputDirectory, "reports");
+        }
+    }
+
+    private void writeReport(DefaultSourceGenerationContext context,
+                             List<SourceGeneratorSelection> sourceGeneratorSelections,
+                             Set<String> environmentNames,
+                             File reportDirectory) {
+        Path reportPath = AotDiagnosticReportWriter.write(
+            reportDirectory.toPath(),
+            context.getRuntime(),
+            context.getPackageName(),
+            environmentNames,
+            sourceGeneratorSelections,
+            context,
+            VersionUtils.getMicronautVersion()
+        );
+        LOGGER.info("Micronaut AOT diagnostics report written to {}", reportPath.toAbsolutePath());
     }
 
 }

@@ -55,30 +55,38 @@ public class SourceGeneratorLoader {
     @NonNull
     public static List<AOTCodeGenerator> load(Runtime runtime, AOTContext context) {
         Configuration configuration = context.getConfiguration();
+        return inspect(runtime, configuration)
+            .stream()
+            .filter(SourceGeneratorSelection::isEnabled)
+            .map(SourceGeneratorSelection::getGenerator)
+            .collect(Collectors.toList());
+    }
+
+    @NonNull
+    public static List<SourceGeneratorSelection> inspect(Runtime runtime, Configuration configuration) {
         return sourceGeneratorStream()
             .map(sg -> new Object() {
                 final AOTCodeGenerator generator = sg;
                 final AOTModule module = MetadataUtils.findMetadata(sg.getClass()).orElse(null);
             })
-            .filter(sg -> {
+            .map(sg -> {
                 if (sg.module != null) {
                     boolean isEnabledOnRuntime = MetadataUtils.isEnabledOn(runtime, sg.module);
                     if (!isEnabledOnRuntime) {
                         LOGGER.debug("Skipping source generator {} as it is not enabled on runtime {}", sg.generator.getClass().getName(), runtime);
-                        return false;
+                        return new SourceGeneratorSelection(sg.generator, sg.module, false, SourceGeneratorSelection.NOT_ENABLED_ON_RUNTIME);
                     }
                     boolean isEnabledByConfiguration = configuration.isFeatureEnabled(sg.module.id());
                     if (!isEnabledByConfiguration) {
                         LOGGER.debug("Skipping source generator {} as it is not enabled by configuration", sg.generator.getClass().getName());
-                        return false;
+                        return new SourceGeneratorSelection(sg.generator, sg.module, false, SourceGeneratorSelection.DISABLED_BY_CONFIGURATION);
                     }
                     LOGGER.debug("Loading source generator {}", sg.generator.getClass().getName());
-                    return true;
+                    return new SourceGeneratorSelection(sg.generator, sg.module, true, null);
                 }
-                return false;
+                return new SourceGeneratorSelection(sg.generator, null, false, SourceGeneratorSelection.MISSING_METADATA);
             })
-            .sorted(Comparator.comparing(f -> f.module, EXECUTION_ORDER))
-            .map(sg -> sg.generator)
+            .sorted(SourceGeneratorLoader::compareSelections)
             .collect(Collectors.toList());
     }
 
@@ -96,6 +104,21 @@ public class SourceGeneratorLoader {
 
     private static Stream<AOTCodeGenerator> sourceGeneratorStream() {
         return stream(ServiceLoader.load(AOTCodeGenerator.class).spliterator(), false);
+    }
+
+    static int compareSelections(SourceGeneratorSelection first, SourceGeneratorSelection second) {
+        AOTModule firstModule = first.getModule();
+        AOTModule secondModule = second.getModule();
+        if (firstModule != null && secondModule != null) {
+            return EXECUTION_ORDER.compare(firstModule, secondModule);
+        }
+        if (firstModule != null) {
+            return -1;
+        }
+        if (secondModule != null) {
+            return 1;
+        }
+        return first.getGenerator().getClass().getName().compareTo(second.getGenerator().getClass().getName());
     }
 
 }
