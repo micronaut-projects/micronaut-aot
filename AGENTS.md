@@ -34,6 +34,16 @@ that owns the behavior.
   JIT and native runtime paths when changing `Runtime`, GraalVM configuration,
   service loading, environment deduction, or application-context configuration.
 
+## Contributing Guidelines
+
+- Before opening or updating a pull request, read this repository's
+  `CONTRIBUTING.md` and follow every repo-specific PR requirement it names.
+- Treat contributor-checklist items as handoff requirements. If a requirement is
+  not applicable, state that explicitly in the PR description or handoff note.
+- For UI-visible changes, confirm whether screenshots or other visual evidence
+  are required and include them in the PR description; if screenshots cannot be
+  provided, explain why and describe the verification that was performed.
+
 ## Documentation
 
 - Guide files live under `src/main/docs/guide`.
