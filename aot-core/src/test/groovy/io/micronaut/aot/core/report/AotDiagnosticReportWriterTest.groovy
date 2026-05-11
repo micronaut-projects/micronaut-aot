@@ -71,6 +71,46 @@ class AotDiagnosticReportWriterTest extends Specification {
         report.contains('"message": "message with \\"quotes\\""')
     }
 
+    def "writes html report with escaped diagnostics and redacted option state"() {
+        given:
+        def props = new Properties()
+        props.put("sample.password", "super-secret")
+        def context = new DefaultSourceGenerationContext(
+                "example",
+                ApplicationContextAnalyzer.create {},
+                new DefaultConfiguration(props),
+                testDirectory.resolve("resources")
+        )
+        context.registerGeneratedSourceFile(context.javaFile(TypeSpec.classBuilder("GeneratedType").addModifiers(Modifier.PUBLIC).build()))
+        context.registerGeneratedResource("META-INF/example/resource.txt") {}
+        context.registerExcludedResource("application.yml")
+        context.registerBuildTimeInit("example.NativeType")
+        context.addDiagnostics("sample", "message with <markup> & \"quotes\"")
+        def module = MetadataGenerator.getAnnotation(AOTModule)
+        def selection = new SourceGeneratorSelection(new MetadataGenerator(), module, true, null)
+
+        when:
+        def report = AotDiagnosticReportWriter.toHtml(
+                Runtime.JIT,
+                "example",
+                ["test"] as Set,
+                [selection],
+                context,
+                "1.2.3"
+        )
+
+        then:
+        !report.contains("super-secret")
+        report.contains("<title>Micronaut AOT Diagnostics Report</title>")
+        report.contains("<td>JIT</td>")
+        report.contains("<td>example</td>")
+        report.contains("<td>metadata-generator</td>")
+        report.contains("sample.password (configured: true, redacted: true)")
+        report.contains("example/GeneratedType.java")
+        report.contains("META-INF/example/resource.txt")
+        report.contains("message with &lt;markup&gt; &amp; &quot;quotes&quot;")
+    }
+
     def "writes report file to requested directory"() {
         given:
         def context = new DefaultSourceGenerationContext(
@@ -95,6 +135,32 @@ class AotDiagnosticReportWriterTest extends Specification {
         reportFile.fileName.toString() == "micronaut-aot-report.json"
         Files.exists(reportFile)
         reportFile.toFile().text.contains('"runtime": "native"')
+    }
+
+    def "writes html report file to requested directory"() {
+        given:
+        def context = new DefaultSourceGenerationContext(
+                "example",
+                ApplicationContextAnalyzer.create {},
+                new DefaultConfiguration(new Properties()),
+                testDirectory.resolve("resources")
+        )
+
+        when:
+        def reportFile = AotDiagnosticReportWriter.writeHtml(
+                testDirectory.resolve("nested/reports"),
+                Runtime.NATIVE,
+                "example",
+                [] as Set,
+                [],
+                context,
+                null
+        )
+
+        then:
+        reportFile.fileName.toString() == "micronaut-aot-report.html"
+        Files.exists(reportFile)
+        reportFile.toFile().text.contains("<td>native</td>")
     }
 
     @AOTModule(

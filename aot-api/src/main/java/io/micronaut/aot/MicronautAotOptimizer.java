@@ -59,6 +59,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -279,6 +280,44 @@ public final class MicronautAotOptimizer implements ConfigKeys {
         }
     }
 
+    private void writeReports(DefaultSourceGenerationContext context,
+                              List<SourceGeneratorSelection> sourceGeneratorSelections,
+                              Set<String> environmentNames,
+                              File reportDirectory,
+                              Set<String> reportFormats) {
+        for (String reportFormat : reportFormats) {
+            Path reportPath = writeReport(context, sourceGeneratorSelections, environmentNames, reportDirectory, reportFormat);
+            LOGGER.info("Micronaut AOT diagnostics report written to {}", reportPath.toAbsolutePath());
+        }
+    }
+
+    private Path writeReport(DefaultSourceGenerationContext context,
+                             List<SourceGeneratorSelection> sourceGeneratorSelections,
+                             Set<String> environmentNames,
+                             File reportDirectory,
+                             String reportFormat) {
+        if (REPORT_FORMAT_HTML.equals(reportFormat)) {
+            return AotDiagnosticReportWriter.writeHtml(
+                reportDirectory.toPath(),
+                context.getRuntime(),
+                context.getPackageName(),
+                environmentNames,
+                sourceGeneratorSelections,
+                context,
+                VersionUtils.getMicronautVersion()
+            );
+        }
+        return AotDiagnosticReportWriter.write(
+            reportDirectory.toPath(),
+            context.getRuntime(),
+            context.getPackageName(),
+            environmentNames,
+            sourceGeneratorSelections,
+            context,
+            VersionUtils.getMicronautVersion()
+        );
+    }
+
     /**
      * The main AOT optimizer runner.
      */
@@ -316,7 +355,7 @@ public final class MicronautAotOptimizer implements ConfigKeys {
         }
 
         public Runner execute() {
-            boolean reportEnabled = isReportEnabled();
+            Set<String> reportFormats = reportFormats();
             var optimizer = new MicronautAotOptimizer(
                 classpath,
                 outputSourcesDirectory,
@@ -337,28 +376,36 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             List<AOTCodeGenerator> sourceGenerators = sourceGeneratorSelections.stream()
                 .filter(SourceGeneratorSelection::isEnabled)
                 .map(SourceGeneratorSelection::getGenerator)
-                .collect(Collectors.toList());
+                .toList();
             ApplicationContextConfigurerGenerator generator = new ApplicationContextConfigurerGenerator(
                 sourceGenerators
             );
             generator.generate(context);
             optimizer.compileGeneratedSources(context.getExtraClasspath(), context.getGeneratedJavaFiles());
             optimizer.writeLogs(context);
-            if (reportEnabled) {
-                optimizer.writeReport(context, sourceGeneratorSelections, environmentNames, reportDirectory());
+            if (!reportFormats.isEmpty()) {
+                optimizer.writeReports(context, sourceGeneratorSelections, environmentNames, reportDirectory(), reportFormats);
             }
             return this;
         }
 
-        private boolean isReportEnabled() {
+        private Set<String> reportFormats() {
             if (!config.booleanValue(REPORT_ENABLED, false)) {
-                return false;
+                return Set.of();
             }
-            String format = config.optionalString(REPORT_FORMAT, REPORT_FORMAT_JSON);
-            if (!REPORT_FORMAT_JSON.equalsIgnoreCase(format)) {
-                throw new IllegalArgumentException("Unsupported AOT report format '" + format + "'. Supported formats: " + REPORT_FORMAT_JSON);
+            List<String> configuredFormats = config.stringList(REPORT_FORMAT);
+            if (configuredFormats.isEmpty()) {
+                configuredFormats = List.of(REPORT_FORMAT_JSON);
             }
-            return true;
+            Set<String> reportFormats = new LinkedHashSet<>();
+            for (String configuredFormat : configuredFormats) {
+                String reportFormat = configuredFormat.toLowerCase(Locale.ENGLISH);
+                if (!REPORT_FORMAT_JSON.equals(reportFormat) && !REPORT_FORMAT_HTML.equals(reportFormat)) {
+                    throw new IllegalArgumentException("Unsupported AOT report format '" + configuredFormat + "'. Supported formats: " + REPORT_FORMAT_JSON + ", " + REPORT_FORMAT_HTML);
+                }
+                reportFormats.add(reportFormat);
+            }
+            return reportFormats;
         }
 
         private File reportDirectory() {
@@ -372,22 +419,6 @@ public final class MicronautAotOptimizer implements ConfigKeys {
             }
             return new File(outputDirectory, "reports");
         }
-    }
-
-    private void writeReport(DefaultSourceGenerationContext context,
-                             List<SourceGeneratorSelection> sourceGeneratorSelections,
-                             Set<String> environmentNames,
-                             File reportDirectory) {
-        Path reportPath = AotDiagnosticReportWriter.write(
-            reportDirectory.toPath(),
-            context.getRuntime(),
-            context.getPackageName(),
-            environmentNames,
-            sourceGeneratorSelections,
-            context,
-            VersionUtils.getMicronautVersion()
-        );
-        LOGGER.info("Micronaut AOT diagnostics report written to {}", reportPath.toAbsolutePath());
     }
 
 }

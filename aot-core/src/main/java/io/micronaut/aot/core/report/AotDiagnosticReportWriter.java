@@ -42,9 +42,24 @@ import java.util.TreeSet;
  */
 @Internal
 public final class AotDiagnosticReportWriter {
-    public static final String REPORT_FILE_NAME = "micronaut-aot-report.json";
+    /**
+     * The fixed JSON diagnostics report file name.
+     */
+    public static final String JSON_REPORT_FILE_NAME = "micronaut-aot-report.json";
+    /**
+     * The fixed HTML diagnostics report file name.
+     */
+    public static final String HTML_REPORT_FILE_NAME = "micronaut-aot-report.html";
+    /**
+     * Backward-compatible alias for the JSON diagnostics report file name.
+     */
+    public static final String REPORT_FILE_NAME = JSON_REPORT_FILE_NAME;
     private static final int SCHEMA_VERSION = 1;
     private static final String CLASS_NAME = "className";
+    private static final String HTML_TABLE_START = "  <table>\n";
+    private static final String HTML_TABLE_END = "  </table>\n";
+    private static final String HTML_ROW_START = "    <tr>";
+    private static final String HTML_ROW_END = "</tr>\n";
 
     private AotDiagnosticReportWriter() {
     }
@@ -58,7 +73,7 @@ public final class AotDiagnosticReportWriter {
                              @Nullable String micronautVersion) {
         try {
             Files.createDirectories(outputDirectory);
-            Path report = outputDirectory.resolve(REPORT_FILE_NAME);
+            Path report = outputDirectory.resolve(JSON_REPORT_FILE_NAME);
             Files.writeString(
                 report,
                 toJson(runtime, packageName, activeEnvironments, sourceGenerators, context, micronautVersion),
@@ -67,6 +82,27 @@ public final class AotDiagnosticReportWriter {
             return report;
         } catch (IOException e) {
             throw new RuntimeException("Unable to write AOT diagnostics report to " + outputDirectory, e);
+        }
+    }
+
+    public static Path writeHtml(Path outputDirectory,
+                                 Runtime runtime,
+                                 String packageName,
+                                 Set<String> activeEnvironments,
+                                 List<SourceGeneratorSelection> sourceGenerators,
+                                 DefaultSourceGenerationContext context,
+                                 @Nullable String micronautVersion) {
+        try {
+            Files.createDirectories(outputDirectory);
+            Path report = outputDirectory.resolve(HTML_REPORT_FILE_NAME);
+            Files.writeString(
+                report,
+                toHtml(runtime, packageName, activeEnvironments, sourceGenerators, context, micronautVersion),
+                StandardCharsets.UTF_8
+            );
+            return report;
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write AOT diagnostics HTML report to " + outputDirectory, e);
         }
     }
 
@@ -93,6 +129,47 @@ public final class AotDiagnosticReportWriter {
         appendDiagnostics(json, context.getDiagnostics());
         json.append("}\n");
         return json.toString();
+    }
+
+    public static String toHtml(Runtime runtime,
+                                String packageName,
+                                Set<String> activeEnvironments,
+                                List<SourceGeneratorSelection> sourceGenerators,
+                                DefaultSourceGenerationContext context,
+                                @Nullable String micronautVersion) {
+        var html = new StringBuilder(8192);
+        html.append("<!doctype html>\n");
+        html.append("<html lang=\"en\">\n<head>\n");
+        html.append("  <meta charset=\"utf-8\">\n");
+        html.append("  <title>Micronaut AOT Diagnostics Report</title>\n");
+        html.append("  <style>");
+        html.append("body{font-family:system-ui,sans-serif;margin:2rem;line-height:1.45;color:#1f2933}");
+        html.append("table{border-collapse:collapse;width:100%;margin:1rem 0 2rem}");
+        html.append("th,td{border:1px solid #d9e2ec;padding:.45rem;text-align:left;vertical-align:top}");
+        html.append("th{background:#f0f4f8}");
+        html.append("code{background:#f0f4f8;padding:.1rem .25rem;border-radius:3px}");
+        html.append(".muted{color:#52606d}");
+        html.append("</style>\n</head>\n<body>\n");
+        html.append("  <h1>Micronaut AOT Diagnostics Report</h1>\n");
+        html.append("  <p class=\"muted\">Configuration values are not included. Optimizer options show only keys and redaction state.</p>\n");
+        html.append("  <h2>Summary</h2>\n");
+        html.append(HTML_TABLE_START);
+        appendHtmlRow(html, "Schema version", String.valueOf(SCHEMA_VERSION));
+        appendHtmlRow(html, "Generated at", Instant.now().toString());
+        appendHtmlRow(html, "Micronaut version", micronautVersion);
+        appendHtmlRow(html, "Runtime", runtime.displayName());
+        appendHtmlRow(html, "Package", packageName);
+        appendHtmlRow(html, "Active environments", String.join(", ", new TreeSet<>(activeEnvironments)));
+        html.append(HTML_TABLE_END);
+        appendHtmlOptimizers(html, sourceGenerators, context);
+        appendHtmlGeneratedSources(html, context.getGeneratedJavaFiles());
+        appendHtmlList(html, "Generated Resources", context.getGeneratedResources());
+        appendHtmlList(html, "Filtered Resources", context.getExcludedResources());
+        appendHtmlExcludedServices(html, context.getExcludedServiceImplementations());
+        appendHtmlList(html, "Build-Time Initialization Classes", new TreeSet<>(context.getBuildTimeInitClasses()));
+        appendHtmlDiagnostics(html, context.getDiagnostics());
+        html.append("</body>\n</html>\n");
+        return html.toString();
     }
 
     private static void appendOptimizers(StringBuilder json,
@@ -203,6 +280,124 @@ public final class AotDiagnosticReportWriter {
             }
         }
         indent(json, 1).append("]\n");
+    }
+
+    private static void appendHtmlOptimizers(StringBuilder html,
+                                             List<SourceGeneratorSelection> sourceGenerators,
+                                             DefaultSourceGenerationContext context) {
+        html.append("  <h2>Optimizers</h2>\n");
+        html.append(HTML_TABLE_START);
+        html.append("    <tr><th>ID</th><th>Class</th><th>Description</th><th>Enabled</th><th>Disabled reason</th><th>Options</th><th>Dependencies</th><th>Runtimes</th></tr>\n");
+        for (SourceGeneratorSelection selection : sourceGenerators) {
+            AOTModule module = selection.getModule();
+            html.append(HTML_ROW_START);
+            appendHtmlCell(html, module == null ? null : module.id());
+            appendHtmlCell(html, selection.getGenerator().getClass().getName());
+            appendHtmlCell(html, module == null ? null : module.description());
+            appendHtmlCell(html, String.valueOf(selection.isEnabled()));
+            appendHtmlCell(html, selection.getDisabledReason());
+            appendHtmlCell(html, module == null ? "" : optionsSummary(module.options(), context));
+            appendHtmlCell(html, module == null ? "" : String.join(", ", module.dependencies()));
+            appendHtmlCell(html, module == null ? "" : String.join(", ", Arrays.stream(module.enabledOn()).map(Runtime::displayName).toList()));
+            html.append(HTML_ROW_END);
+        }
+        html.append(HTML_TABLE_END);
+    }
+
+    private static String optionsSummary(Option[] options, DefaultSourceGenerationContext context) {
+        return Arrays.stream(options)
+            .map(option -> option.key() + " (configured: " + context.getConfiguration().containsKey(option.key()) + ", redacted: " + context.getConfiguration().containsKey(option.key()) + ")")
+            .sorted()
+            .toList()
+            .toString();
+    }
+
+    private static void appendHtmlGeneratedSources(StringBuilder html, List<JavaFile> generatedJavaFiles) {
+        html.append("  <h2>Generated Sources</h2>\n");
+        html.append(HTML_TABLE_START);
+        html.append("    <tr><th>Class</th><th>Path</th></tr>\n");
+        for (JavaFile javaFile : generatedJavaFiles) {
+            String className = javaFile.packageName + "." + javaFile.typeSpec.name;
+            html.append(HTML_ROW_START);
+            appendHtmlCell(html, className);
+            appendHtmlCell(html, className.replace('.', '/') + ".java");
+            html.append(HTML_ROW_END);
+        }
+        html.append(HTML_TABLE_END);
+    }
+
+    private static void appendHtmlList(StringBuilder html, String title, Collection<String> values) {
+        html.append("  <h2>").append(escapeHtml(title)).append("</h2>\n");
+        html.append("  <ul>\n");
+        for (String value : values) {
+            html.append("    <li><code>").append(escapeHtml(value)).append("</code></li>\n");
+        }
+        html.append("  </ul>\n");
+    }
+
+    private static void appendHtmlExcludedServices(StringBuilder html, Map<String, String> excludedServiceImplementations) {
+        html.append("  <h2>Excluded Service Implementations</h2>\n");
+        html.append(HTML_TABLE_START);
+        html.append("    <tr><th>Class</th><th>Reason</th></tr>\n");
+        excludedServiceImplementations.entrySet()
+            .stream()
+            .sorted(Map.Entry.comparingByKey())
+            .forEach(entry -> {
+                html.append(HTML_ROW_START);
+                appendHtmlCell(html, entry.getKey());
+                appendHtmlCell(html, entry.getValue());
+                html.append(HTML_ROW_END);
+            });
+        html.append(HTML_TABLE_END);
+    }
+
+    private static void appendHtmlDiagnostics(StringBuilder html, Map<String, List<String>> diagnostics) {
+        html.append("  <h2>Diagnostics</h2>\n");
+        html.append(HTML_TABLE_START);
+        html.append("    <tr><th>Category</th><th>Message</th></tr>\n");
+        diagnostics.entrySet()
+            .stream()
+            .sorted(Map.Entry.comparingByKey())
+            .forEach(entry -> entry.getValue()
+                .stream()
+                .sorted(Comparator.naturalOrder())
+                .forEach(message -> {
+                    html.append(HTML_ROW_START);
+                    appendHtmlCell(html, entry.getKey());
+                    appendHtmlCell(html, message);
+                    html.append(HTML_ROW_END);
+                }));
+        html.append(HTML_TABLE_END);
+    }
+
+    private static void appendHtmlRow(StringBuilder html, String name, @Nullable String value) {
+        html.append("    <tr><th>");
+        html.append(escapeHtml(name));
+        html.append("</th>");
+        appendHtmlCell(html, value);
+        html.append(HTML_ROW_END);
+    }
+
+    private static void appendHtmlCell(StringBuilder html, @Nullable String value) {
+        html.append("<td>");
+        html.append(escapeHtml(value == null ? "" : value));
+        html.append("</td>");
+    }
+
+    private static String escapeHtml(String value) {
+        var escaped = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '&' -> escaped.append("&amp;");
+                case '<' -> escaped.append("&lt;");
+                case '>' -> escaped.append("&gt;");
+                case '"' -> escaped.append("&quot;");
+                case '\'' -> escaped.append("&#39;");
+                default -> escaped.append(c);
+            }
+        }
+        return escaped.toString();
     }
 
     private static void appendStringArray(StringBuilder json,

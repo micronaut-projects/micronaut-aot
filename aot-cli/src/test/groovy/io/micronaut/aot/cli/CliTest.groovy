@@ -85,17 +85,23 @@ datasources.default.password = super-secret
                 '--package', 'dummy',
                 '--config', configFile.toString(),
                 '--output', outputDirectory.toString(),
-                '--report'
+                '--report',
+                '--report-format', 'json,html'
         )
         System.out = oldOut
         def reportFile = outputDirectory.resolve("reports/micronaut-aot-report.json")
+        def htmlReportFile = outputDirectory.resolve("reports/micronaut-aot-report.html")
         def reportText = Files.readString(reportFile)
+        def htmlReportText = Files.readString(htmlReportFile)
 
         then:
         exitCode == 0
         stdout.toString().contains(reportFile.toFile().absolutePath)
+        stdout.toString().contains(htmlReportFile.toFile().absolutePath)
         Files.exists(reportFile)
+        Files.exists(htmlReportFile)
         !reportText.contains("super-secret")
+        !htmlReportText.contains("super-secret")
         reportText.contains('"schemaVersion": 1')
         reportText.contains('"runtime": "JIT"')
         reportText.contains('"packageName": "dummy"')
@@ -106,6 +112,10 @@ datasources.default.password = super-secret
         reportText.contains('"configured": true')
         reportText.contains('"className": "dummy.AOTApplicationContextConfigurer"')
         reportText.contains('"META-INF/services/io.micronaut.context.ApplicationContextConfigurer"')
+        htmlReportText.contains("<title>Micronaut AOT Diagnostics Report</title>")
+        htmlReportText.contains("<td>JIT</td>")
+        htmlReportText.contains("<td>cached.environment</td>")
+        htmlReportText.contains("netty.machine.id (configured: true, redacted: true)")
 
         cleanup:
         if (oldOut != null) {

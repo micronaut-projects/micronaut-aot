@@ -23,15 +23,22 @@ The default output file is:
 ----
 
 Use `micronaut.aot.report.output` or `--report-output` to select a different report directory.
-Micronaut AOT always writes the fixed file name `micronaut-aot-report.json` inside that directory.
+Micronaut AOT writes fixed file names inside that directory.
 
-The only supported report format is JSON.
+The default report format is JSON.
 The default value is:
 
 [source,properties]
 ----
 micronaut.aot.report.format=json
 ----
+
+Set `micronaut.aot.report.format=html` or `micronaut.aot.report.format=json,html` to write an HTML report.
+The CLI accepts the same values with `--report-format`.
+The fixed output file names are:
+
+* `micronaut-aot-report.json`
+* `micronaut-aot-report.html`
 
 Unsupported formats fail the AOT run with a configuration error.
 
@@ -90,4 +97,5 @@ Optimizer options only show the option key, whether the key was configured, and 
 This prevents common secrets such as passwords, tokens, credentials, and datasource values from being copied into diagnostics artifacts by default.
 
 Build-tool integrations can enable the report property for an AOT invocation and publish the printed report path or the JSON file as a build artifact.
-Existing log files remain available for human-readable diagnostics.
+When HTML is enabled, integrations can also publish `micronaut-aot-report.html` as a human-readable build artifact.
+Existing log files remain available for detailed diagnostics.

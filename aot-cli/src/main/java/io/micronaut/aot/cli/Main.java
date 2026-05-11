@@ -32,6 +32,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -63,13 +64,13 @@ public class Main implements Runnable, ConfigKeys {
     @Option(names = {"--output", "-o"}, description = "The output directory", required = false)
     private File outputDirectory;
 
-    @Option(names = {"--report"}, description = "Generate the JSON diagnostics report")
+    @Option(names = {"--report"}, description = "Generate diagnostics reports")
     private boolean report;
 
     @Option(names = {"--report-output"}, description = "The diagnostics report output directory")
     private File reportOutputDirectory;
 
-    @Option(names = {"--report-format"}, description = "The diagnostics report format. Supported values: json")
+    @Option(names = {"--report-format"}, description = "The diagnostics report format. Supported values: json, html")
     private String reportFormat;
 
     @Override
@@ -108,7 +109,9 @@ public class Main implements Runnable, ConfigKeys {
         URL[] urls = classpath.toArray(new URL[0]);
         executeInIsolatedLoader(props, urls, Thread.currentThread().getContextClassLoader());
         if (outputDirectory != null && Boolean.parseBoolean(props.getProperty(REPORT_ENABLED))) {
-            System.out.println("Micronaut AOT diagnostics report written to " + reportFile(props).getAbsolutePath());
+            for (File reportFile : reportFiles(props)) {
+                System.out.println("Micronaut AOT diagnostics report written to " + reportFile.getAbsolutePath());
+            }
         }
     }
 
@@ -174,12 +177,23 @@ public class Main implements Runnable, ConfigKeys {
         System.exit(execute(args));
     }
 
-    private File reportFile(Properties props) {
+    private List<File> reportFiles(Properties props) {
         String reportOutput = props.getProperty(REPORT_OUTPUT);
         File reportDirectory = reportOutput == null || reportOutput.isEmpty()
                 ? new File(outputDirectory, "reports")
                 : new File(reportOutput);
-        return new File(reportDirectory, REPORT_FILE_NAME);
+        return reportFormats(props).stream()
+                .map(format -> new File(reportDirectory, REPORT_FORMAT_HTML.equals(format) ? REPORT_HTML_FILE_NAME : REPORT_JSON_FILE_NAME))
+                .toList();
+    }
+
+    private static List<String> reportFormats(Properties props) {
+        String format = props.getProperty(REPORT_FORMAT, REPORT_FORMAT_JSON);
+        List<String> formats = Arrays.stream(format.split("[,;]\\s*"))
+                .filter(value -> !value.isBlank())
+                .map(value -> value.toLowerCase(Locale.ENGLISH))
+                .toList();
+        return formats.isEmpty() ? List.of(REPORT_FORMAT_JSON) : formats;
     }
 
     private static class FilteringClassLoader extends ClassLoader {
