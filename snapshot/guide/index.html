@@ -54,7 +54,9 @@
                                 
                                 <div class="toc-item" style="margin-left:0"><a href="#standardOptimizers"><strong>4</strong><span>Standard Optimizers</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>5</strong><span>Repository</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#diagnosticsReport"><strong>5</strong><span>Diagnostics Report</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>6</strong><span>Repository</span></a></div>
                                 
                             </div>
                         </div>
@@ -93,7 +95,9 @@
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-standardOptimizers"><a href="#standardOptimizers"><strong>4</strong><span>Standard Optimizers</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>5</strong><span>Repository</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-diagnosticsReport"><a href="#diagnosticsReport"><strong>5</strong><span>Diagnostics Report</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>6</strong><span>Repository</span></a></div>
         
         </div>
     </div>
@@ -831,7 +835,167 @@ These are not configuration properties to add in your regular Micronaut configur
 </div>
 </div>
 
-<h1 id="repository"><a class="anchor" href="#repository"></a>5 Repository</h1>
+<h1 id="diagnosticsReport"><a class="anchor" href="#diagnosticsReport"></a>5 Diagnostics Report</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/diagnosticsReport.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>Micronaut AOT can write a structured diagnostics report for build tools and CI systems.
+The report is disabled by default and does not change generated sources, generated resources, or log files unless it is enabled.</p>
+</div>
+<div class="paragraph">
+<p>Enable the report with the following configuration property:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.aot.report.enabled=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the CLI is used for an AOT run, the same behavior can be enabled with:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">micronaut-aot --classpath app.jar --runtime jit --package example.aot --config aot.properties --output build/aot --report</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The default output file is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">&lt;output.directory&gt;/reports/micronaut-aot-report.json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use <code>micronaut.aot.report.output</code> or <code>--report-output</code> to select a different report directory.
+Micronaut AOT writes fixed file names inside that directory.</p>
+</div>
+<div class="paragraph">
+<p>The default report format is JSON.
+The default value is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.aot.report.format=json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Set <code>micronaut.aot.report.format=html</code> or <code>micronaut.aot.report.format=json,html</code> to write an HTML report.
+The CLI accepts the same values with <code>--report-format</code>.
+The fixed output file names are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>micronaut-aot-report.json</code></p>
+</li>
+<li>
+<p><code>micronaut-aot-report.html</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Unsupported formats fail the AOT run with a configuration error.</p>
+</div>
+<div class="paragraph">
+<p>The JSON report uses a versioned schema.
+Version 1 includes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>schemaVersion</code></p>
+</li>
+<li>
+<p><code>generatedAt</code></p>
+</li>
+<li>
+<p><code>micronautVersion</code></p>
+</li>
+<li>
+<p><code>runtime</code></p>
+</li>
+<li>
+<p><code>packageName</code></p>
+</li>
+<li>
+<p><code>activeEnvironments</code></p>
+</li>
+<li>
+<p><code>optimizers</code>, including optimizer id, implementation class, description, enabled state, disabled reason, option keys, dependency ids, and supported runtimes</p>
+</li>
+<li>
+<p><code>generatedSources</code></p>
+</li>
+<li>
+<p><code>generatedResources</code></p>
+</li>
+<li>
+<p><code>filteredResources</code></p>
+</li>
+<li>
+<p><code>excludedServiceImplementations</code></p>
+</li>
+<li>
+<p><code>buildTimeInitClasses</code></p>
+</li>
+<li>
+<p><code>diagnostics</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "schemaVersion": 1,
+  "runtime": "JIT",
+  "packageName": "example.aot",
+  "optimizers": [
+    {
+      "id": "netty.properties",
+      "enabled": true,
+      "options": [
+        {
+          "key": "netty.machine.id",
+          "configured": true,
+          "redacted": true
+        }
+      ]
+    }
+  ],
+  "generatedSources": [
+    {
+      "className": "example.aot.AOTApplicationContextConfigurer",
+      "path": "example/aot/AOTApplicationContextConfigurer.java"
+    }
+  ],
+  "generatedResources": [
+    "META-INF/services/io.micronaut.context.ApplicationContextConfigurer"
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Configuration values are not written to the report.
+Optimizer options only show the option key, whether the key was configured, and whether the value was redacted.
+This prevents common secrets such as passwords, tokens, credentials, and datasource values from being copied into diagnostics artifacts by default.</p>
+</div>
+<div class="paragraph">
+<p>Build-tool integrations can enable the report property for an AOT invocation and publish the printed report path or the JSON file as a build artifact.
+When HTML is enabled, integrations can also publish <code>micronaut-aot-report.html</code> as a human-readable build artifact.
+Existing log files remain available for detailed diagnostics.</p>
+</div>
+
+<h1 id="repository"><a class="anchor" href="#repository"></a>6 Repository</h1>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/repository.adoc"'>

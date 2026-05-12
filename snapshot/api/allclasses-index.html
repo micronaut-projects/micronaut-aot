@@ -74,148 +74,156 @@ or to register resources to be excluded from the final binary).</div>
 <div class="block">The source generation context is used by source generators
 to get configuration details.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab6"><a href="io/micronaut/aot/core/AOTModule.html" title="annotation interface in io.micronaut.aot.core">AOTModule</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab6">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html" title="class in io.micronaut.aot.core.report">AotDiagnosticReportWriter</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Writes the structured Micronaut AOT diagnostics report.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab6"><a href="io/micronaut/aot/core/AOTModule.html" title="annotation interface in io.micronaut.aot.core">AOTModule</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab6">
 <div class="block">Annotation which must be present on AOT optimizers.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/context/ApplicationContextAnalyzer.html" title="class in io.micronaut.aot.core.context">ApplicationContextAnalyzer</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An application context analyzer is responsible for instantiating
 an application context and inferring whether a bean should be
 included in the application binaries.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The "optimized" entry point generator is the main source generator:
 it is responsible for generating a new entry point, which delegates
 to the original entry point of the application, and injects a number
 of optimizations before starting the application.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates the code used to enable environment variables and system
 properties caching in Micronaut.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Configuration keys which may be found in the properties
 used to configure the AOT analyzer, but shouldn't be
 declared directly by the user.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/aot/core/Configuration.html" title="interface in io.micronaut.aot.core">Configuration</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/aot/core/Configuration.html" title="interface in io.micronaut.aot.core">Configuration</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Read-only configuration for source generators.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates a "constant" property source, that is to say a
 <code>PropertySource</code> which properties are known at build time
 (and constant).</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">This code generator is responsible for taking the result
 of the environment deduction, which is the set of active
 environment names and the package names, and inject is
 via a custom application context configurer.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/DefaultConfiguration.html" title="class in io.micronaut.aot.core.config">DefaultConfiguration</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/DefaultConfiguration.html" title="class in io.micronaut.aot.core.config">DefaultConfiguration</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An implementation of configuration which uses properties
 as the backing store.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/context/DefaultSourceGenerationContext.html" title="class in io.micronaut.aot.core.context">DefaultSourceGenerationContext</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The source generation context.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/codegen/DelegatingSourceGenerationContext.html" title="class in io.micronaut.aot.core.codegen">DelegatingSourceGenerationContext</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Base class for source generation context which need to delegate
 to another one.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A code generator which is responsible for precomputing the Micronaut property
 names from environment variable names at build time.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/Environments.html" title="class in io.micronaut.aot.core">Environments</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/Environments.html" title="class in io.micronaut.aot.core">Environments</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Constants used for configuration of environments.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/GenericPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GenericPropertySourceGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/GenericPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GenericPropertySourceGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A source generator which will generate a static <code>PropertySource</code>
 from a given configuration file, in order to substitute the dynamic loader
 with a static configuration.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/GraalVMOptimizationFeatureSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GraalVMOptimizationFeatureSourceGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Generates the GraalVM configuration file which is going to configure
 the native image code generation, typically asking to initialize
 the optimized entry point at build time.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">KnownMissingTypesSourceGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/KnownMissingTypesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">KnownMissingTypesSourceGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A source generator which will check for existence of a number of classes
 at build time.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">LogbackConfigurationSourceGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">LogbackConfigurationSourceGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A source generator responsible for converting a logback.xml configuration into
 Java configuration.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/cli/Main.html" title="class in io.micronaut.aot.cli">Main</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/cli/Main.html" title="class in io.micronaut.aot.cli">Main</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Entry point for the Micronaut AOT command line interface.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/codegen/MapGenerator.html" title="class in io.micronaut.aot.core.codegen">MapGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/codegen/MapGenerator.html" title="class in io.micronaut.aot.core.codegen">MapGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A helper class to generate maps.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">MapPropertySourceGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">MapPropertySourceGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A source generator which generates a map property source with a fixed
 set of values at build time.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Runtime reflection utils for analyzing AOT modules.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/MicronautAotOptimizer.html" title="class in io.micronaut.aot">MicronautAotOptimizer</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/MicronautAotOptimizer.html" title="class in io.micronaut.aot">MicronautAotOptimizer</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The Micronaut AOT optimizer is the main entry point for code
 generation at build time.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/MicronautAotOptimizer.Runner.html" title="class in io.micronaut.aot">MicronautAotOptimizer.Runner</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/MicronautAotOptimizer.Runner.html" title="class in io.micronaut.aot">MicronautAotOptimizer.Runner</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The main AOT optimizer runner.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A code generator which is responsible for setting up Netty properties.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab6"><a href="io/micronaut/aot/core/Option.html" title="annotation interface in io.micronaut.aot.core">Option</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab6">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab6"><a href="io/micronaut/aot/core/Option.html" title="annotation interface in io.micronaut.aot.core">Option</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab6">
 <div class="block">Describes a configuration option of a source generator.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/ParentTagTagClassTuple.html" title="class in io.micronaut.aot.std.sourcegen">ParentTagTagClassTuple</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/ParentTagTagClassTuple.html" title="class in io.micronaut.aot.std.sourcegen">ParentTagTagClassTuple</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Represents default class name rules.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An optimizer which is responsible for determining what reactive
 types are found at build time.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/micronaut/aot/core/Runtime.html" title="enum class in io.micronaut.aot.core">Runtime</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="io/micronaut/aot/core/Runtime.html" title="enum class in io.micronaut.aot.core">Runtime</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
 <div class="block">The targeted type of runtime.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html" title="class in io.micronaut.aot.core.config">SourceGeneratorLoader</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html" title="class in io.micronaut.aot.core.config">SourceGeneratorLoader</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">This class is responsible for loading the source generators
 for a particular target runtime, and sort them in execution
 order according to their dependencies.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/SourceGeneratorSelection.html" title="class in io.micronaut.aot.core.config">SourceGeneratorSelection</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Describes how a discovered source generator was selected for an AOT run.</div>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/internal/StreamHelper.html" title="class in io.micronaut.aot.internal">StreamHelper</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
