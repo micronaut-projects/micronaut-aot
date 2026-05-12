@@ -75,6 +75,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     private final Configuration configuration;
     private final Map<Class<?>, Object> context = new HashMap<>();
     private final List<JavaFile> generatedJavaFiles = new ArrayList<>();
+    private final Set<String> generatedResources = new TreeSet<>();
     private final List<MethodSpec> initializers = new ArrayList<>();
     private final Path generatedResourcesDirectory;
     private final Set<String> buildTimeInitClasses = new HashSet<>();
@@ -204,6 +205,7 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     @Override
     public void registerGeneratedResource(@NonNull String path, Consumer<? super File> consumer) {
         LOGGER.debug("Registering generated resource file: {}", path);
+        generatedResources.add(path);
         deferredOperations.add(() -> {
             Path relative = generatedResourcesDirectory.resolve(path);
             File resourceFile = relative.toFile();
@@ -248,6 +250,11 @@ public final class DefaultSourceGenerationContext implements AOTContext {
     @NonNull
     public Set<String> getExcludedResources() {
         return Collections.unmodifiableSet(excludedResources);
+    }
+
+    @NonNull
+    public Set<String> getGeneratedResources() {
+        return Collections.unmodifiableSet(generatedResources);
     }
 
     @NonNull

@@ -65,6 +65,85 @@ class CliTest extends Specification {
         restoreSystemProperty(Main.SLF4J_PROVIDER, existingProvider)
     }
 
+    def "can generate a diagnostics report and print its path"() {
+        given:
+        def oldOut = System.out
+        def configFile = testDirectory.resolve("aot.properties")
+        Files.writeString(configFile, """cached.environment.enabled = true
+netty.machine.id = super-secret
+datasources.default.password = super-secret
+""")
+        def outputDirectory = testDirectory.resolve("output")
+        def classpath = System.getProperty('aot.runtime')
+        def stdout = new ByteArrayOutputStream()
+
+        when:
+        System.out = new PrintStream(stdout)
+        def exitCode = Main.execute(
+                '--classpath', classpath,
+                '--runtime', 'jit',
+                '--package', 'dummy',
+                '--config', configFile.toString(),
+                '--output', outputDirectory.toString(),
+                '--report',
+                '--report-format', 'json,html'
+        )
+        System.out = oldOut
+        def reportFile = outputDirectory.resolve("reports/micronaut-aot-report.json")
+        def htmlReportFile = outputDirectory.resolve("reports/micronaut-aot-report.html")
+        def reportText = Files.readString(reportFile)
+        def htmlReportText = Files.readString(htmlReportFile)
+
+        then:
+        exitCode == 0
+        stdout.toString().contains(reportFile.toFile().absolutePath)
+        stdout.toString().contains(htmlReportFile.toFile().absolutePath)
+        Files.exists(reportFile)
+        Files.exists(htmlReportFile)
+        !reportText.contains("super-secret")
+        !htmlReportText.contains("super-secret")
+        reportText.contains('"schemaVersion": 1')
+        reportText.contains('"runtime": "JIT"')
+        reportText.contains('"packageName": "dummy"')
+        reportText.contains('"id": "cached.environment"')
+        reportText.contains('"enabled": true')
+        reportText.contains('"id": "netty.properties"')
+        reportText.contains('"key": "netty.machine.id"')
+        reportText.contains('"configured": true')
+        reportText.contains('"className": "dummy.AOTApplicationContextConfigurer"')
+        reportText.contains('"META-INF/services/io.micronaut.context.ApplicationContextConfigurer"')
+        htmlReportText.contains("<title>Micronaut AOT Diagnostics Report</title>")
+        htmlReportText.contains("<td>JIT</td>")
+        htmlReportText.contains("<td>cached.environment</td>")
+        htmlReportText.contains("netty.machine.id (configured: true, redacted: true)")
+
+        cleanup:
+        if (oldOut != null) {
+            System.out = oldOut
+        }
+    }
+
+    def "does not generate a diagnostics report by default"() {
+        given:
+        def configFile = testDirectory.resolve("aot.properties")
+        Files.writeString(configFile, "cached.environment.enabled = true")
+        def outputDirectory = testDirectory.resolve("output")
+        def classpath = System.getProperty('aot.runtime')
+
+        when:
+        def exitCode = Main.execute(
+                '--classpath', classpath,
+                '--runtime', 'jit',
+                '--package', 'dummy',
+                '--config', configFile.toString(),
+                '--output', outputDirectory.toString()
+        )
+
+        then:
+        exitCode == 0
+        !Files.exists(outputDirectory.resolve("reports/micronaut-aot-report.json"))
+    }
+
     @Unroll
     def "can export a dummy configuration file"() {
         def configFile = testDirectory.resolve("${runtime}.properties")

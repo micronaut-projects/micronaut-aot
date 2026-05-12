@@ -19,16 +19,16 @@ class DefaultSourceGenerationContextTest extends AbstractSourceGeneratorSpec {
     def "test parallel diagnostic add"() {
         when:
 
-        def threadsCount = 50;
+        def threadsCount = 50
 
-        List<Callable<Object>> tasks = new ArrayList<>(threadsCount);
+        List<Callable<Object>> tasks = new ArrayList<>(threadsCount)
         for (int i = 0; i < threadsCount; i++) {
-            tasks.add(addDiagnostics("category", "message"));
-            tasks.add(addDiagnostics("category2", "message2"));
-            tasks.add(addDiagnostics("category3", "message3"));
+            tasks.add(addDiagnostics("category", "message"))
+            tasks.add(addDiagnostics("category2", "message2"))
+            tasks.add(addDiagnostics("category3", "message3"))
         }
 
-        def executorService = Executors.newFixedThreadPool(8);
+        def executorService = Executors.newFixedThreadPool(8)
         executorService.invokeAll(tasks)
 
         then:
@@ -39,9 +39,17 @@ class DefaultSourceGenerationContextTest extends AbstractSourceGeneratorSpec {
         context.diagnostics.category3.size() == 50
     }
 
+    def "tracks generated resources for diagnostics reporting"() {
+        when:
+        context.registerGeneratedResource("META-INF/test/resource.txt") {}
+
+        then:
+        context.generatedResources == ["META-INF/test/resource.txt"] as Set
+    }
+
     Callable<Object> addDiagnostics(String category, String message) {
-        return Executors.callable(() -> {
+        return Executors.callable({
             context.addDiagnostics(category, message)
-        })
+        } as Runnable)
     }
 }

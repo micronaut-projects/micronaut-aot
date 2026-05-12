@@ -25,4 +25,12 @@ public interface ConfigKeys {
     String GENERATED_PACKAGE = "package";
     String OUTPUT_DIRECTORY = "output.directory";
     String RUNTIME = "runtime";
+    String REPORT_ENABLED = "micronaut.aot.report.enabled";
+    String REPORT_OUTPUT = "micronaut.aot.report.output";
+    String REPORT_FORMAT = "micronaut.aot.report.format";
+    String REPORT_FORMAT_JSON = "json";
+    String REPORT_FORMAT_HTML = "html";
+    String REPORT_JSON_FILE_NAME = "micronaut-aot-report.json";
+    String REPORT_HTML_FILE_NAME = "micronaut-aot-report.html";
+    String REPORT_FILE_NAME = "micronaut-aot-report.json";
 }
