@@ -15,7 +15,7 @@
     <script>hljs.initHighlightingOnLoad();</script>
     <link rel="stylesheet" href="../css/multi-language-sample.css"/>
     <script src="../js/docs.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.13/clipboard.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
     <script type="text/javascript">
         function addJsClass(el) {
             var classes = document.body.className.split(" ");
@@ -23,7 +23,9 @@
             document.body.className = classes.join(" ");
         }
     </script>
-
+    <style type="text/css">
+        .lang-java { display: block }; .lang-python { display: block }; .lang-kotlin { display: block }; .lang-groovy { display: block }; 
+    </style>
 </head>
 
 <body class="body" id="docs" onload="addJsClass();" onhashchange="highlightMenu()">
@@ -50,7 +52,11 @@
                                 
                                 <div class="toc-item" style="margin-left:0"><a href="#quickStart"><strong>3</strong><span>Quick Start</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>4</strong><span>Repository</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#standardOptimizers"><strong>4</strong><span>Standard Optimizers</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#diagnosticsReport"><strong>5</strong><span>Diagnostics Report</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>6</strong><span>Repository</span></a></div>
                                 
                             </div>
                         </div>
@@ -87,7 +93,11 @@
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-quickStart"><a href="#quickStart"><strong>3</strong><span>Quick Start</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>4</strong><span>Repository</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-standardOptimizers"><a href="#standardOptimizers"><strong>4</strong><span>Standard Optimizers</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-diagnosticsReport"><a href="#diagnosticsReport"><strong>5</strong><span>Diagnostics Report</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>6</strong><span>Repository</span></a></div>
         
         </div>
     </div>
@@ -97,13 +107,13 @@
         <h1>Micronaut AOT</h1>
         <p></p>
         <p>Build time optimizations for Micronaut</p>
-        <p><strong>Version:</strong> 2.9.0 </p>
+        <p><strong>Version:</strong> 3.0.0 </p>
     </div>
     
 <h1 id="introduction"><a class="anchor" href="#introduction"></a>1 Introduction</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/2.9.x/src/main/docs/guide/introduction.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/introduction.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -147,7 +157,7 @@ This includes, but is not limited to:</p>
 <h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>2 Release History</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/2.9.x/src/main/docs/guide/releaseHistory.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/releaseHistory.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -163,7 +173,7 @@ This includes, but is not limited to:</p>
 <h1 id="quickStart"><a class="anchor" href="#quickStart"></a>3 Quick Start</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/2.9.x/src/main/docs/guide/quickStart.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/quickStart.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -206,7 +216,7 @@ Please refer to the documentation of your build tool for configuration options.<
 <p><code>micronaut-aot-std-optimizers</code> implements a number of standard Micronaut AOT optimizers.</p>
 </li>
 <li>
-<p><code>micronaut-cli</code> is the command line tool responsible for calling the AOT compiler. It is recommended to integrate with Micronaut AOT via the CLI tool, so that the process is properly isolated.</p>
+<p><code>micronaut-aot-cli</code> is the command line tool responsible for invoking the AOT compiler. It is recommended to integrate with Micronaut AOT via this CLI to ensure proper classloader isolation.</p>
 </li>
 </ul>
 </div>
@@ -377,6 +387,11 @@ For example, in the following code:</p>
 A code generator needs to implement the <code>AOTCodeGenerator</code> interface and be annotated with <code>@AOTModule</code>.</p>
 </div>
 <div class="paragraph">
+<p>The implementation class should be compiled from the regular Java source root of an AOT optimizer module, for example <code>src/main/java</code>.
+Register the generator with Java&#8217;s <code>ServiceLoader</code> mechanism by adding its fully qualified class name to <code>src/main/resources/META-INF/services/io.micronaut.aot.core.AOTCodeGenerator</code>.
+Build tool integrations load optimizer modules from the AOT optimizer classpath; for example, Gradle users can add the optimizer artifact or project dependency to the <code>aotPlugins</code> configuration.</p>
+</div>
+<div class="paragraph">
 <p>The <code>AOTModule</code> annotation is responsible for giving metadata about the code generators, including:</p>
 </div>
 <div class="ulist">
@@ -425,7 +440,7 @@ A code generator needs to implement the <code>AOTCodeGenerator</code> interface 
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@AOTModule(
     id = MyResourceGenerator.ID,
     options = {
-        @Option(name = "greeter.message", sampleValue = "Hello, world!", description = "The message to write")
+        @Option(key = "greeter.message", sampleValue = "Hello, world!", description = "The message to write")
     }
 )
 public class MyResourceGenerator implements AOTCodeGenerator {
@@ -433,11 +448,13 @@ public class MyResourceGenerator implements AOTCodeGenerator {
 
     @Override
     public void generate(AOTContext context) {
-        context.registerResource("/hello.txt", file -&gt; {
+        context.registerGeneratedResource("/hello.txt", file -&gt; {
             try (PrintWriter writer = new PrintWriter(file)) {
                 String message = context.getConfiguration()
                     .mandatoryValue("greeter.message");
-                writer.println(context.getOption("greeter.message"));
+                writer.println(message);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         });
     }
@@ -469,10 +486,519 @@ Different code generators may share the same option values: it is legal, but oft
 </div>
 </div>
 
-<h1 id="repository"><a class="anchor" href="#repository"></a>4 Repository</h1>
+<h1 id="standardOptimizers"><a class="anchor" href="#standardOptimizers"></a>4 Standard Optimizers</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/2.9.x/src/main/docs/guide/repository.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/standardOptimizers.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="sect1">
+<h2 id="_available_optimizers">Available Optimizers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Micronaut AOT includes standard optimizers that can be enabled or disabled in the Micronaut AOT configuration.
+Each optimizer is identified by its module id.
+To enable an optimizer, set <code>&lt;module id&gt;.enabled=true</code>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+These properties belong in the Micronaut AOT configuration used by the build plugin, not in the regular Micronaut application configuration files.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+These are not configuration properties to add in your regular Micronaut configuration files,but properties to be added to the Micronaut AOT configuration, via your build plugin.Please refer to the appropriate Maven or Gradle plugin for more details.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_cached_environment">Module cached.environment</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Configuration Properties for cached.environment</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cached.environment.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Caches environment property values: environment properties will be deemed immutable after application startup. optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_deduce_environment">Module deduce.environment</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Configuration Properties for deduce.environment</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>deduce.environment.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Deduces the environment at build time instead of runtime optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_known_missing_types">Module known.missing.types</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. Configuration Properties for known.missing.types</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>known.missing.types.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Checks of existence of some types at build time instead of runtime optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>known.missing.types.list</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A list of types that the AOT analyzer needs to check for existence (comma separated)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.reactivex.Observable,​reactor.core.publisher.Flux,​kotlinx.coroutines.flow.Flow,​io.reactivex.rxjava3.core.Flowable,​io.reactivex.rxjava3.core.Observable,​io.reactivex.Single,​reactor.core.publisher.Mono,​io.reactivex.Maybe,​io.reactivex.rxjava3.core.Single,​io.reactivex.rxjava3.core.Maybe,​io.reactivex.Completable,​io.reactivex.rxjava3.core.Completable,​io.methvin.watchservice.MacOSXListeningWatchService,​io.micronaut.core.async.publisher.CompletableFuturePublisher,​io.micronaut.core.async.publisher.Publishers.JustPublisher,​io.micronaut.core.async.subscriber.Completable</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_logback_xml_to_java">Module logback.xml.to.java</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 4. Configuration Properties for logback.xml.to.java</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>logback.xml.to.java.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Replaces logback.xml with a pure Java configuration (Experimental) optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_netty_properties">Module netty.properties</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 5. Configuration Properties for netty.properties</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>netty.properties.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Defines some Netty system properties when starting the application which optimize startup times. optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>netty.machine.id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The machine id used by Netty. By default, generates a random value at runtime. Set it to a fixed MAC address to override, or use the value 'netty' to disable the optimization and get it at runtime.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>random</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>netty.process.id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The process id to use for Netty. Defaults to a random PID at runtime. Set it to a fixed value (not recommended) or use the value 'netty' to disable the optimization and get it at runtime.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>random</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_precompute_environment_properties">Module precompute.environment.properties</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 6. Configuration Properties for precompute.environment.properties</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>precompute.environment.properties.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Precomputes Micronaut configuration property keys from the current environment variables optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_property_source_loader_generate">Module property-source-loader.generate</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 7. Configuration Properties for property-source-loader.generate</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.generate.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Converts configuration files supplied by property source loaders to Java configuration optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.types</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The PropertySourceLoader classnames to use for generating property sources</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.micronaut.context.env.PropertiesPropertySourceLoader,​ io.micronaut.context.env.yaml.YamlPropertySourceLoader</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.base-order</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The base order to use for the generated property sources. Positive value will be added to base order for specific environments</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>-1073741824</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.resource-names</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The resource names to generate property sources for. By default, it is 'application,bootstrap'.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>application,​bootstrap</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.service-loader-exclude</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the property source loaders specified by types should be excluded in service loading</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>yaml.to.java.config</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deprecated option to enable the yaml property source generation. Use property-source-loader.types=io.micronaut.context.env.yaml.YamlPropertySourceLoader instead</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_scan_reactive_types">Module scan.reactive.types</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 8. Configuration Properties for scan.reactive.types</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>scan.reactive.types.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Scans reactive types at build time instead of runtime optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_sealed_property_source">Module sealed.property.source</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 9. Configuration Properties for sealed.property.source</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>sealed.property.source.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Precomputes property sources at build time optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_module_graalvm_config">Module graalvm.config</h3>
+<div class="paragraph">
+<p>This module is available in native mode.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 10. Configuration Properties for graalvm.config</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>graalvm.config.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Generates GraalVM configuration files required to load the AOT optimizations optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>service.types</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The list of service types to be scanned (comma separated)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.micronaut.Service1,​io.micronaut.Service2</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<h1 id="diagnosticsReport"><a class="anchor" href="#diagnosticsReport"></a>5 Diagnostics Report</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/diagnosticsReport.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>Micronaut AOT can write a structured diagnostics report for build tools and CI systems.
+The report is disabled by default and does not change generated sources, generated resources, or log files unless it is enabled.</p>
+</div>
+<div class="paragraph">
+<p>Enable the report with the following configuration property:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.aot.report.enabled=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the CLI is used for an AOT run, the same behavior can be enabled with:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">micronaut-aot --classpath app.jar --runtime jit --package example.aot --config aot.properties --output build/aot --report</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The default output file is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">&lt;output.directory&gt;/reports/micronaut-aot-report.json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use <code>micronaut.aot.report.output</code> or <code>--report-output</code> to select a different report directory.
+Micronaut AOT writes fixed file names inside that directory.</p>
+</div>
+<div class="paragraph">
+<p>The default report format is JSON.
+The default value is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.aot.report.format=json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Set <code>micronaut.aot.report.format=html</code> or <code>micronaut.aot.report.format=json,html</code> to write an HTML report.
+The CLI accepts the same values with <code>--report-format</code>.
+The fixed output file names are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>micronaut-aot-report.json</code></p>
+</li>
+<li>
+<p><code>micronaut-aot-report.html</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Unsupported formats fail the AOT run with a configuration error.</p>
+</div>
+<div class="paragraph">
+<p>The JSON report uses a versioned schema.
+Version 1 includes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>schemaVersion</code></p>
+</li>
+<li>
+<p><code>generatedAt</code></p>
+</li>
+<li>
+<p><code>micronautVersion</code></p>
+</li>
+<li>
+<p><code>runtime</code></p>
+</li>
+<li>
+<p><code>packageName</code></p>
+</li>
+<li>
+<p><code>activeEnvironments</code></p>
+</li>
+<li>
+<p><code>optimizers</code>, including optimizer id, implementation class, description, enabled state, disabled reason, option keys, dependency ids, and supported runtimes</p>
+</li>
+<li>
+<p><code>generatedSources</code></p>
+</li>
+<li>
+<p><code>generatedResources</code></p>
+</li>
+<li>
+<p><code>filteredResources</code></p>
+</li>
+<li>
+<p><code>excludedServiceImplementations</code></p>
+</li>
+<li>
+<p><code>buildTimeInitClasses</code></p>
+</li>
+<li>
+<p><code>diagnostics</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "schemaVersion": 1,
+  "runtime": "JIT",
+  "packageName": "example.aot",
+  "optimizers": [
+    {
+      "id": "netty.properties",
+      "enabled": true,
+      "options": [
+        {
+          "key": "netty.machine.id",
+          "configured": true,
+          "redacted": true
+        }
+      ]
+    }
+  ],
+  "generatedSources": [
+    {
+      "className": "example.aot.AOTApplicationContextConfigurer",
+      "path": "example/aot/AOTApplicationContextConfigurer.java"
+    }
+  ],
+  "generatedResources": [
+    "META-INF/services/io.micronaut.context.ApplicationContextConfigurer"
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Configuration values are not written to the report.
+Optimizer options only show the option key, whether the key was configured, and whether the value was redacted.
+This prevents common secrets such as passwords, tokens, credentials, and datasource values from being copied into diagnostics artifacts by default.</p>
+</div>
+<div class="paragraph">
+<p>Build-tool integrations can enable the report property for an AOT invocation and publish the printed report path or the JSON file as a build artifact.
+When HTML is enabled, integrations can also publish <code>micronaut-aot-report.html</code> as a human-readable build artifact.
+Existing log files remain available for detailed diagnostics.</p>
+</div>
+
+<h1 id="repository"><a class="anchor" href="#repository"></a>6 Repository</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.0.x/src/main/docs/guide/repository.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>

@@ -12,7 +12,7 @@
     <script src="../js/guide.js"></script>
     <script>hljs.initHighlightingOnLoad();</script>
     <script src="../js/docs.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.13/clipboard.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
 </head>
 <body class="body">
     <div id="main">
@@ -46,7 +46,7 @@
         <div class="docs-content">
             <div class="project">
                 <h1>Configuration Reference</h1>
-                <p><strong>Version:</strong>2.9.0</p>
+                <p><strong>Version:</strong>3.0.0</p>
                 <p></p>
             </div>
 <div class="sect2">
@@ -236,12 +236,63 @@ These are not configuration properties to add in your regular Micronaut configur
 </table>
 </div>
 <div class="sect2">
+<h3 id="_module_property_source_loader_generate">Module property-source-loader.generate</h3>
+<div class="paragraph">
+<p>This module is available in JIT and native modes.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 7. Configuration Properties for property-source-loader.generate</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.generate.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Converts configuration files supplied by property source loaders to Java configuration optimization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.types</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The PropertySourceLoader classnames to use for generating property sources</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.micronaut.context.env.PropertiesPropertySourceLoader,​ io.micronaut.context.env.yaml.YamlPropertySourceLoader</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.base-order</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The base order to use for the generated property sources. Positive value will be added to base order for specific environments</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>-1073741824</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.resource-names</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The resource names to generate property sources for. By default, it is 'application,bootstrap'.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>application,​bootstrap</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>property-source-loader.service-loader-exclude</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the property source loaders specified by types should be excluded in service loading</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>yaml.to.java.config</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deprecated option to enable the yaml property source generation. Use property-source-loader.types=io.micronaut.context.env.yaml.YamlPropertySourceLoader instead</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
 <h3 id="_module_scan_reactive_types">Module scan.reactive.types</h3>
 <div class="paragraph">
 <p>This module is available in JIT and native modes.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 7. Configuration Properties for scan.reactive.types</caption>
+<caption class="title">Table 8. Configuration Properties for scan.reactive.types</caption>
 <colgroup>
 <col style="width: 14.2857%;">
 <col style="width: 42.8571%;">
@@ -257,52 +308,6 @@ These are not configuration properties to add in your regular Micronaut configur
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>scan.reactive.types.enabled</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Scans reactive types at build time instead of runtime optimization</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_module_serviceloading_jit">Module serviceloading.jit</h3>
-<div class="paragraph">
-<p>This module is available in JIT mode.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 8. Configuration Properties for serviceloading.jit</caption>
-<colgroup>
-<col style="width: 14.2857%;">
-<col style="width: 42.8571%;">
-<col style="width: 42.8572%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>serviceloading.jit.enabled</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Scans for service types ahead-of-time, avoiding classpath scanning at startup optimization</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>service.types</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The list of service types to be scanned (comma separated)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.micronaut.context.env.PropertySourceLoader,​io.micronaut.inject.BeanConfiguration,​io.micronaut.inject.BeanDefinitionReference,​io.micronaut.http.HttpRequestFactory,​io.micronaut.http.HttpResponseFactory,​io.micronaut.core.beans.BeanIntrospectionReference,​io.micronaut.core.convert.TypeConverterRegistrar,​io.micronaut.context.env.PropertyExpressionResolver</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>serviceloading.rejected.impls</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A list of implementation types which shouldn&#8217;t be included in the final application (comma separated)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>com.Misc,​org.Bar</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>serviceloading.force.include.impls</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A list of implementation types to include even if they don&#8217;t match bean requirements (comma separated)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>com.Misc,​org.Bar</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>possible.environments</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The list of environment names that this application can possibly use at runtime.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev,​prod,​aws,​gcs</code></p></td>
 </tr>
 </tbody>
 </table>
@@ -360,52 +365,6 @@ These are not configuration properties to add in your regular Micronaut configur
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>service.types</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The list of service types to be scanned (comma separated)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.micronaut.Service1,​io.micronaut.Service2</code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_module_serviceloading_native">Module serviceloading.native</h3>
-<div class="paragraph">
-<p>This module is available in native mode.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 11. Configuration Properties for serviceloading.native</caption>
-<colgroup>
-<col style="width: 14.2857%;">
-<col style="width: 42.8571%;">
-<col style="width: 42.8572%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Property</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Example value</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>serviceloading.native.enabled</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the Scans for service types ahead-of-time, avoiding classpath scanning at startup optimization</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>service.types</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The list of service types to be scanned (comma separated)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.micronaut.context.env.PropertySourceLoader,​io.micronaut.inject.BeanConfiguration,​io.micronaut.inject.BeanDefinitionReference,​io.micronaut.http.HttpRequestFactory,​io.micronaut.http.HttpResponseFactory,​io.micronaut.core.beans.BeanIntrospectionReference,​io.micronaut.core.convert.TypeConverterRegistrar,​io.micronaut.context.env.PropertyExpressionResolver</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>serviceloading.rejected.impls</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A list of implementation types which shouldn&#8217;t be included in the final application (comma separated)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>com.Misc,​org.Bar</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>serviceloading.force.include.impls</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A list of implementation types to include even if they don&#8217;t match bean requirements (comma separated)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>com.Misc,​org.Bar</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>possible.environments</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The list of environment names that this application can possibly use at runtime.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev,​prod,​aws,​gcs</code></p></td>
 </tr>
 </tbody>
 </table>
