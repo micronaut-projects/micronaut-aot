@@ -17,6 +17,7 @@ package io.micronaut.aot.std.sourcegen;
 
 import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.AOTModule;
+import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Option;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import io.micronaut.aot.core.config.MetadataUtils;
@@ -85,6 +86,7 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
 
     public static final String ID = "property-source-loader.generate";
     public static final String DESCRIPTION = "Converts configuration files supplied by property source loaders to Java configuration";
+    public static final String DEPRECATED_YAML_TO_JAVA_CONFIG = "yaml.to.java.config";
 
     public static final Option TYPES_OPTION =
         MetadataUtils.findMetadata(GenericPropertySourceGenerator.class).get().options()[0];
@@ -132,9 +134,10 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         this.resources = resources;
         // This option is deprecated
         List<String> propertySourceLoaderTypes = context.getConfiguration().stringList(TYPES_OPTION.key());
-        if (context.getConfiguration().booleanValue(YAML_GENERATION_OPTION.key(), false)) {
+        Optional<String> deprecatedYamlGenerationOption = deprecatedYamlGenerationOption(context.getConfiguration());
+        if (deprecatedYamlGenerationOption.isPresent()) {
             LOG.warn("Option {} is deprecated. Automatically using {}={} instead.",
-                YAML_GENERATION_OPTION, TYPES_OPTION.key(), YAML_PROPERTY_SOURCE_LOADER);
+                deprecatedYamlGenerationOption.get(), TYPES_OPTION.key(), YAML_PROPERTY_SOURCE_LOADER);
             if (!propertySourceLoaderTypes.contains(YAML_PROPERTY_SOURCE_LOADER)) {
                 propertySourceLoaderTypes = new ArrayList<>(propertySourceLoaderTypes);
                 propertySourceLoaderTypes.add(YAML_PROPERTY_SOURCE_LOADER);
@@ -152,6 +155,16 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         this.serviceLoaderExclude = context.getConfiguration().optionalValue(SERVICE_LOADER_EXCLUDE_OPTION.key(),
             v -> v.map(Boolean::parseBoolean).orElse(true));
         this.configured = true;
+    }
+
+    private static Optional<String> deprecatedYamlGenerationOption(Configuration configuration) {
+        if (configuration.booleanValue(YAML_GENERATION_OPTION.key(), false)) {
+            return Optional.of(YAML_GENERATION_OPTION.key());
+        }
+        if (configuration.booleanValue(DEPRECATED_YAML_TO_JAVA_CONFIG, false)) {
+            return Optional.of(DEPRECATED_YAML_TO_JAVA_CONFIG);
+        }
+        return Optional.empty();
     }
 
     @Override

@@ -24,6 +24,7 @@ import io.micronaut.aot.core.context.ApplicationContextAnalyzer
 import io.micronaut.aot.core.context.DefaultSourceGenerationContext
 import spock.lang.Specification
 import spock.lang.TempDir
+import spock.lang.Unroll
 
 import java.nio.file.Path
 
@@ -45,10 +46,11 @@ class SourceGeneratorLoaderTest extends Specification {
         sorted*.generator*.class == [FirstGenerator, SecondGenerator, MissingMetadataGenerator]
     }
 
-    def "deprecated yaml generation flag enables property source loader generator"() {
+    @Unroll
+    def "deprecated yaml generation flag #property enables property source loader generator"() {
         given:
         def props = new Properties()
-        props.put("yaml.to.java.config.enabled", "true")
+        props.put(property, "true")
         def config = new DefaultConfiguration(props)
         def context = new DefaultSourceGenerationContext(
                 "io.micronaut.test",
@@ -61,6 +63,9 @@ class SourceGeneratorLoaderTest extends Specification {
         SourceGeneratorLoader.load(Runtime.JIT, context).any {
             it instanceof DeprecatedYamlPropertySourceGenerator
         }
+
+        where:
+        property << ["yaml.to.java.config", "yaml.to.java.config.enabled"]
     }
 
     def "property source loader generator remains disabled without feature flags"() {

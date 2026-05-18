@@ -43,6 +43,7 @@ public class SourceGeneratorLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceGeneratorLoader.class);
     private static final String PROPERTY_SOURCE_LOADER_GENERATOR_ID = "property-source-loader.generate";
     private static final String DEPRECATED_YAML_TO_JAVA_CONFIG_ENABLED = "yaml.to.java.config.enabled";
+    private static final String DEPRECATED_YAML_TO_JAVA_CONFIG = "yaml.to.java.config";
 
     private static final Comparator<AOTModule> EXECUTION_ORDER = (first, second) -> {
         if (Arrays.asList(first.dependencies()).contains(second.id())) {
@@ -126,7 +127,8 @@ public class SourceGeneratorLoader {
     private static boolean isEnabledByConfiguration(Configuration configuration, AOTModule module) {
         return configuration.isFeatureEnabled(module.id()) ||
             PROPERTY_SOURCE_LOADER_GENERATOR_ID.equals(module.id()) &&
-                configuration.booleanValue(DEPRECATED_YAML_TO_JAVA_CONFIG_ENABLED, false);
+                (configuration.booleanValue(DEPRECATED_YAML_TO_JAVA_CONFIG_ENABLED, false) ||
+                    configuration.booleanValue(DEPRECATED_YAML_TO_JAVA_CONFIG, false));
     }
 
 }

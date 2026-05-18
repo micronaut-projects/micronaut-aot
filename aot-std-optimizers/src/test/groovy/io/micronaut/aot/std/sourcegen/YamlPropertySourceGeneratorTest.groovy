@@ -24,7 +24,7 @@ class YamlPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
     AOTCodeGenerator newGenerator() {
         // Setting resource to "test" and environment to "config" will load the "test-config"
-        props.put(GenericPropertySourceGenerator.YAML_GENERATION_OPTION.key(), "true")
+        props.put(GenericPropertySourceGenerator.DEPRECATED_YAML_TO_JAVA_CONFIG, "true")
         props.put(GenericPropertySourceGenerator.RESOURCE_NAMES_OPTION.key(), "test")
         new GenericPropertySourceGenerator()
     }
