@@ -17,16 +17,21 @@ package io.micronaut.aot.std.sourcegen
 
 import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
-import io.micronaut.context.env.ActiveEnvironment
+import io.micronaut.context.ApplicationContextBuilder
 
 class YamlPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
 
     @Override
     AOTCodeGenerator newGenerator() {
         // Setting resource to "test" and environment to "config" will load the "test-config"
-        props.put(GenericPropertySourceGenerator.YAML_GENERATION_OPTION.key(), "true")
+        props.put(GenericPropertySourceGenerator.DEPRECATED_YAML_TO_JAVA_CONFIG, "true")
         props.put(GenericPropertySourceGenerator.RESOURCE_NAMES_OPTION.key(), "test")
-        new GenericPropertySourceGenerator(context, [ActiveEnvironment.of("config", 0)])
+        new GenericPropertySourceGenerator()
+    }
+
+    @Override
+    protected void customizeContext(ApplicationContextBuilder builder) {
+        builder.environments("config")
     }
 
     def "generates a class from a YAML configuration file"() {

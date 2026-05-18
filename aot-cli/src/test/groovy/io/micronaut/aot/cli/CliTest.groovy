@@ -177,7 +177,7 @@ ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.typ
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.base-order")}
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.resource-names")}
 ${toPropertiesSample(GenericPropertySourceGenerator, "property-source-loader.service-loader-exclude")}
-${toPropertiesSample(GenericPropertySourceGenerator, "yaml.to.java.config")}"""],
+${toPropertiesSample(GenericPropertySourceGenerator, "yaml.to.java.config.enabled")}"""],
                 [PublishersSourceGenerator.DESCRIPTION, 'scan.reactive.types.enabled = true'],
                 [ConstantPropertySourcesSourceGenerator.DESCRIPTION, "sealed.property.source.enabled = true"],
         ].findAll().collect { desc, c ->
