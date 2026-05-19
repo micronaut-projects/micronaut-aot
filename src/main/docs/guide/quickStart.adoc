@@ -34,7 +34,7 @@ In a nutshell, the inputs of Micronaut AOT are:
 
 And its outputs are:
 
-- generated of source files and their compiled (`.class`) versions
+- generated source files and their compiled (`.class`) versions
 - generated resource files
 - a list of resources which should be removed from the final binary (for example, if a YAML file is replaced with Java configuration, a class would be generated, but then we know we don't need the YAML file anymore in the final binary)
 - log files (to diagnose what happened during the AOT process)
@@ -150,12 +150,12 @@ public class MyResourceGenerator implements AOTCodeGenerator {
 
     @Override
     public void generate(AOTContext context) {
-        context.registerGeneratedResource("/hello.txt", file -> {
-            try (PrintWriter writer = new PrintWriter(file)) {
-                String message = context.getConfiguration()
-                    .mandatoryValue("greeter.message");
-                writer.println(message);
-            } catch (IOException e) {
+        context.registerGeneratedResource("hello.txt", file -> {
+            String message = context.getConfiguration()
+                .mandatoryValue("greeter.message");
+            try {
+                java.nio.file.Files.writeString(file.toPath(), message);
+            } catch (java.io.IOException e) {
                 throw new RuntimeException(e);
             }
         });
