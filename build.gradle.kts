@@ -1,3 +1,5 @@
+import org.sonarqube.gradle.SonarExtension
+
 /*
  * Copyright 2017-2021 original authors
  *
@@ -20,4 +22,12 @@ plugins {
 
 repositories {
     mavenCentral()
+}
+
+if (System.getenv("SONAR_TOKEN") != null) {
+    configure<SonarExtension> {
+        properties {
+            property("sonar.exclusions", "**/example/**")
+        }
+    }
 }
