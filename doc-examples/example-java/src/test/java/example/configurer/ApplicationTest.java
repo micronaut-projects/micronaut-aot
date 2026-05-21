@@ -15,11 +15,22 @@
  */
 package example.configurer;
 
+import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class ApplicationTest {
     @Test
     void applicationStartsWithContextConfigurer() {
-        Application.main();
+        new Application();
+        assertDoesNotThrow(() -> Application.main());
+    }
+
+    @Test
+    void configurerAppliesContextConfiguration() {
+        Application.MyConfigurer configurer = new Application.MyConfigurer();
+
+        assertDoesNotThrow(() -> configurer.configure(ApplicationContext.builder()));
     }
 }
