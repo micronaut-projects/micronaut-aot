@@ -34,7 +34,7 @@ In a nutshell, the inputs of Micronaut AOT are:
 
 And its outputs are:
 
-- generated of source files and their compiled (`.class`) versions
+- generated source files and their compiled (`.class`) versions
 - generated resource files
 - a list of resources which should be removed from the final binary (for example, if a YAML file is replaced with Java configuration, a class would be generated, but then we know we don't need the YAML file anymore in the final binary)
 - log files (to diagnose what happened during the AOT process)
@@ -63,36 +63,13 @@ This is how the AOT compiler will "know" about particular application context cu
 Therefore, it is critical to understand that the AOT compiler cannot figure out arbitrary application context customizations.
 For example, in the following code:
 
-```java
-class Application {
-    public static void main(String...args) {
-        Micronaut.build()
-            .deduceEnvironment(false)
-            .mainClass(Application.class)
-            .start();
-    }
-}
-```
+snippet::example.opaque.Application[project-base="doc-examples/example", source="main", indent="0", tags="class"]
 
-there's a `deduceEnvironment()` call which is _opaque_ to the AOT compiler: it cannot know that the application is configured that way (for this it would actually have to _start_ the application and perform runtime interception which would be too expensive or impossible).
+there's an `environmentPropertySource()` call which is _opaque_ to the AOT compiler: it cannot know that the application is configured that way (for this it would actually have to _start_ the application and perform runtime interception which would be too expensive or impossible).
 
 Therefore, all customizations need to be done using a different pattern:
 
-```java
-class Application {
-    @ContextConfigurer
-    public static class MyConfigurer implements ApplicationContextConfigurer {
-        @Override
-        public void configure(ApplicationContextBuilder context) {
-            context.deduceEnvironment(false);
-        }
-    }
-
-    public static void main(String... args) {
-        Micronaut.run(Application.class, args);
-    }
-}
-```
+snippet::example.configurer.Application[project-base="doc-examples/example", source="main", indent="0", tags="class"]
 
 Because `@ContextConfigurer` makes sure that _any_ application context created will see the customizer applied, the application context created by the AOT compiler for its internal use _will_ see the customizations.
 
@@ -138,30 +115,7 @@ Code generators contribute code via the `AOTContext` interface, which allows:
 
 For example, a simple code generator which generates a resource file may be declared as:
 
-```java
-@AOTModule(
-    id = MyResourceGenerator.ID,
-    options = {
-        @Option(key = "greeter.message", sampleValue = "Hello, world!", description = "The message to write")
-    }
-)
-public class MyResourceGenerator implements AOTCodeGenerator {
-    public static final String ID = "my.resource.generator";
-
-    @Override
-    public void generate(AOTContext context) {
-        context.registerGeneratedResource("/hello.txt", file -> {
-            try (PrintWriter writer = new PrintWriter(file)) {
-                String message = context.getConfiguration()
-                    .mandatoryValue("greeter.message");
-                writer.println(message);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-}
-```
+snippet::example.optimizer.MyResourceGenerator[project-base="doc-examples/example", source="main", indent="0", tags="class"]
 
 Then in a configuration file, the code generator would be configured this way:
 
