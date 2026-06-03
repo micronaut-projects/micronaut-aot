@@ -38,8 +38,8 @@ public class ConfigPropsGenerator {
                     SourceGeneratorLoader.list(Runtime.NATIVE).stream()
                 ).distinct()
                 .toList();
-            writer.println("WARNING: These are not configuration properties to add in your regular Micronaut configuration files," +
-                           "but properties to be added to the Micronaut AOT configuration, via your build plugin." +
+            writer.println("WARNING: These are not configuration properties to add in your regular Micronaut configuration files, " +
+                           "but properties to be added to the Micronaut AOT configuration, via your build plugin. " +
                            "Please refer to the appropriate Maven or Gradle plugin for more details.");
             writer.println();
             for (AOTModule module : codeGenerators) {
