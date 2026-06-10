@@ -57,7 +57,7 @@ public class ConfigPropsGenerator {
                 writer.println("[cols=\"1,3,3\"]");
                 writer.println("|===");
                 writer.println("|Property|Description|Example value");
-                writer.println("| `" + module.id() + ".enabled` |Enables this optimization: " + trimTrailingPeriod(module.description()) + "|`true`");
+                writer.println("| `" + module.id() + ".enabled` |" + enabledDescription(module) + "|`true`");
                 for (Option option : module.options()) {
                     // Add 0-width space so that text wrapping works
                     var sample = option.sampleValue().replace(",", ",\u200B");
@@ -68,7 +68,13 @@ public class ConfigPropsGenerator {
         }
     }
 
-    private static String trimTrailingPeriod(String value) {
-        return value.endsWith(".") ? value.substring(0, value.length() - 1) : value;
+    private static String enabledDescription(AOTModule module) {
+        var description = normalizedDescription(module.description());
+        return description.isEmpty() ? "Enables this optimization" : "Enables this optimization: " + description;
+    }
+
+    private static String normalizedDescription(String value) {
+        var trimmed = value.trim();
+        return trimmed.endsWith(".") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
     }
 }
