@@ -48,7 +48,7 @@ import java.util.Set;
 public class KnownMissingTypesSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "known.missing.types";
     public static final Option OPTION = MetadataUtils.findMetadata(KnownMissingTypesSourceGenerator.class).get().options()[0];
-    public static final String DESCRIPTION = "Checks of existence of some types at build time instead of runtime";
+    public static final String DESCRIPTION = "Checks for the existence of some types at build time instead of runtime";
 
     private List<String> findMissingClasses(List<String> classNames) {
         var knownMissingClasses = new ArrayList<String>();

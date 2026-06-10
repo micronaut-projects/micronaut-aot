@@ -4,6 +4,4 @@ Micronaut AOT includes standard optimizers that can be enabled or disabled in th
 Each optimizer is identified by its module id.
 To enable an optimizer, set `<module id>.enabled=true`.
 
-WARNING: These properties belong in the Micronaut AOT configuration used by the build plugin, not in the regular Micronaut application configuration files.
-
 include::{includedir}configurationProperties/standard-optimizers.adoc[]

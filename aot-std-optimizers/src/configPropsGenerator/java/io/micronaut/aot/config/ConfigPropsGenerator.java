@@ -57,7 +57,7 @@ public class ConfigPropsGenerator {
                 writer.println("[cols=\"1,3,3\"]");
                 writer.println("|===");
                 writer.println("|Property|Description|Example value");
-                writer.println("| `" + module.id() + ".enabled` |Enables the " + module.description() + " optimization|`true`");
+                writer.println("| `" + module.id() + ".enabled` |Enables this optimization: " + trimTrailingPeriod(module.description()) + "|`true`");
                 for (Option option : module.options()) {
                     // Add 0-width space so that text wrapping works
                     var sample = option.sampleValue().replace(",", ",\u200B");
@@ -66,5 +66,9 @@ public class ConfigPropsGenerator {
                 writer.println("|===");
             }
         }
+    }
+
+    private static String trimTrailingPeriod(String value) {
+        return value.endsWith(".") ? value.substring(0, value.length() - 1) : value;
     }
 }
