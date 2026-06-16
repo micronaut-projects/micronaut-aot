@@ -21,6 +21,8 @@ import io.micronaut.aot.core.AOTContext;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * Base class for source generators which generate a single class file.
  */
@@ -41,11 +43,11 @@ public abstract class AbstractSingleClassFileGenerator extends AbstractCodeGener
     }
 
     protected final AOTContext getContext() {
-        return context;
+        return Objects.requireNonNull(context, "Context must not be null; ensure generate(AOTContext) has been called");
     }
 
     @NonNull
     public final JavaFile javaFile(TypeSpec typeSpec) {
-        return context.javaFile(typeSpec);
+        return Objects.requireNonNull(context, "Context must not be null; ensure generate(AOTContext) has been called").javaFile(typeSpec);
     }
 }
