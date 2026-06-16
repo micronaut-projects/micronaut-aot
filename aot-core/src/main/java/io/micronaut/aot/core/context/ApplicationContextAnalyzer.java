@@ -234,7 +234,7 @@ public final class ApplicationContextAnalyzer {
         }
     }
 
-    private class AnnotationMetadataProviderPredicate implements Predicate<AnnotationMetadataProvider> {
+    private final class AnnotationMetadataProviderPredicate implements Predicate<AnnotationMetadataProvider> {
 
         @Override
         public boolean test(AnnotationMetadataProvider component) {
