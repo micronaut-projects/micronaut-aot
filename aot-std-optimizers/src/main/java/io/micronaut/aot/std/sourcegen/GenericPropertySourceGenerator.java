@@ -149,11 +149,13 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
                 .map(String::trim).collect(Collectors.toList());
         }
         this.propertySourceLoaderTypes = propertySourceLoaderTypes;
-        this.baseOrder = context.getConfiguration().optionalValue(BASE_ORDER_OPTION.key(),
+        Integer configuredBaseOrder = context.getConfiguration().optionalValue(BASE_ORDER_OPTION.key(),
             v -> v.map(Integer::parseInt).orElse(Ordered.HIGHEST_PRECEDENCE / 2));
+        this.baseOrder = configuredBaseOrder != null ? configuredBaseOrder : Ordered.HIGHEST_PRECEDENCE / 2;
         this.environments = environments;
-        this.serviceLoaderExclude = context.getConfiguration().optionalValue(SERVICE_LOADER_EXCLUDE_OPTION.key(),
+        Boolean configuredServiceLoaderExclude = context.getConfiguration().optionalValue(SERVICE_LOADER_EXCLUDE_OPTION.key(),
             v -> v.map(Boolean::parseBoolean).orElse(true));
+        this.serviceLoaderExclude = configuredServiceLoaderExclude != null ? configuredServiceLoaderExclude : true;
         this.configured = true;
     }
 
