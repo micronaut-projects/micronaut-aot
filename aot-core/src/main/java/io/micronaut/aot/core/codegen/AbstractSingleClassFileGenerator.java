@@ -19,12 +19,14 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTContext;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Base class for source generators which generate a single class file.
  */
 public abstract class AbstractSingleClassFileGenerator extends AbstractCodeGenerator {
 
+    @Nullable
     private AOTContext context;
 
     protected abstract JavaFile generate();

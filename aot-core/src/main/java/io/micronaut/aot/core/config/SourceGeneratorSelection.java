@@ -30,8 +30,10 @@ public final class SourceGeneratorSelection {
     public static final String MISSING_METADATA = "missing_metadata";
 
     private final AOTCodeGenerator generator;
+    @Nullable
     private final AOTModule module;
     private final boolean enabled;
+    @Nullable
     private final String disabledReason;
 
     public SourceGeneratorSelection(AOTCodeGenerator generator,

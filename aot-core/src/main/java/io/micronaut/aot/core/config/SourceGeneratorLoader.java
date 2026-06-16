@@ -21,6 +21,7 @@ import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.Configuration;
 import io.micronaut.aot.core.Runtime;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +71,7 @@ public class SourceGeneratorLoader {
         return sourceGeneratorStream()
             .map(sg -> new Object() {
                 final AOTCodeGenerator generator = sg;
+                @Nullable
                 final AOTModule module = MetadataUtils.findMetadata(sg.getClass()).orElse(null);
             })
             .map(sg -> {
