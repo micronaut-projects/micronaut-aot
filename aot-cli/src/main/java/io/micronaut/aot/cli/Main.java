@@ -50,28 +50,28 @@ public class Main implements Runnable, ConfigKeys {
     static final String LOGBACK_SERVICE_PROVIDER = "ch.qos.logback.classic.spi.LogbackServiceProvider";
 
     @Option(names = {"--classpath", "-cp"}, description = "The Micronaut application classpath", required = true)
-    private String classpathString;
+    private String classpathString = "";
 
     @Option(names = {"--package", "-p"}, description = "The target package for generated classes", required = true)
-    private String packageName;
+    private String packageName = "";
 
     @Option(names = {"--runtime"}, description = "The target runtime. Possible values: jit, native")
     private String runtime = "jit";
 
     @Option(names = {"--config"}, description = "The configuration file (.properties)", required = true)
-    private File config;
+    private File config = new File("");
 
     @Option(names = {"--output", "-o"}, description = "The output directory", required = false)
-    private File outputDirectory;
+    private File outputDirectory = new File("");
 
     @Option(names = {"--report"}, description = "Generate diagnostics reports")
     private boolean report;
 
     @Option(names = {"--report-output"}, description = "The diagnostics report output directory")
-    private File reportOutputDirectory;
+    private File reportOutputDirectory = new File("");
 
     @Option(names = {"--report-format"}, description = "The diagnostics report format. Supported values: json, html")
-    private String reportFormat;
+    private String reportFormat = "";
 
     @Override
     public void run() {
@@ -93,23 +93,23 @@ public class Main implements Runnable, ConfigKeys {
             }
         }).collect(Collectors.joining(",")));
         props.put(GENERATED_PACKAGE, packageName);
-        if (outputDirectory != null) {
+        if (!outputDirectory.getPath().isEmpty()) {
             props.put(OUTPUT_DIRECTORY, outputDirectory.getAbsolutePath());
         }
         if (report) {
             props.put(REPORT_ENABLED, "true");
         }
-        if (reportOutputDirectory != null) {
+        if (!reportOutputDirectory.getPath().isEmpty()) {
             props.put(REPORT_OUTPUT, reportOutputDirectory.getAbsolutePath());
         }
-        if (reportFormat != null) {
+        if (!reportFormat.isEmpty()) {
             props.put(REPORT_FORMAT, reportFormat);
         }
         props.put(RUNTIME, runtime);
         URL[] urls = classpath.toArray(new URL[0]);
         executeInIsolatedLoader(props, urls, Thread.currentThread().getContextClassLoader());
-        if (outputDirectory != null && Boolean.parseBoolean(props.getProperty(REPORT_ENABLED))) {
-            for (File reportFile : reportFiles(props)) {
+        if (!outputDirectory.getPath().isEmpty() && Boolean.parseBoolean(props.getProperty(REPORT_ENABLED))) {
+            for (File reportFile : reportFiles(props, outputDirectory)) {
                 System.out.println("Micronaut AOT diagnostics report written to " + reportFile.getAbsolutePath());
             }
         }
@@ -130,7 +130,7 @@ public class Main implements Runnable, ConfigKeys {
             Thread.currentThread().setContextClassLoader(cl);
             Class<?> runnerClass = cl.loadClass("io.micronaut.aot.MicronautAotOptimizer");
             assert runnerClass != MicronautAotOptimizer.class;
-            if (outputDirectory != null) {
+            if (!outputDirectory.getPath().isEmpty()) {
                 runnerClass.getDeclaredMethod("execute", Properties.class)
                         .invoke(null, props);
             } else {
@@ -177,7 +177,7 @@ public class Main implements Runnable, ConfigKeys {
         System.exit(execute(args));
     }
 
-    private List<File> reportFiles(Properties props) {
+    private static List<File> reportFiles(Properties props, File outputDirectory) {
         String reportOutput = props.getProperty(REPORT_OUTPUT);
         File reportDirectory = reportOutput == null || reportOutput.isEmpty()
                 ? new File(outputDirectory, "reports")
