@@ -95,7 +95,6 @@ public interface Configuration {
      * @param separator a separator regular expression
      * @return the list of values, or an empty list
      */
-    @SuppressWarnings("ConstantConditions")
     @NonNull
     default List<String> stringList(@NonNull String key, @NonNull String separator) {
         List<String> result = optionalValue(key, opt -> opt.map(string ->
