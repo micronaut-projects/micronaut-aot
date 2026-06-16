@@ -30,6 +30,7 @@ import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.convert.ArgumentConversionContext;
 import io.micronaut.core.type.Argument;
 import io.micronaut.inject.BeanDefinition;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -129,6 +130,7 @@ public final class ApplicationContextAnalyzer {
 
     private final class ShallowConditionContext<T extends AnnotationMetadataProvider> implements ConditionContext<T> {
         private final T component;
+        @Nullable
         private List<Failure> failures;
 
         private ShallowConditionContext(T component) {
@@ -161,17 +163,17 @@ public final class ApplicationContextAnalyzer {
         }
 
         @Override
-        public <R> R getBean(Class<R> beanType, Qualifier<R> qualifier) {
+        public <R> R getBean(Class<R> beanType, @Nullable Qualifier<R> qualifier) {
             return applicationContext.getBean(beanType, qualifier);
         }
 
         @Override
-        public <R> Optional<R> findBean(Argument<R> beanType, Qualifier<R> qualifier) {
+        public <R> Optional<R> findBean(Argument<R> beanType, @Nullable Qualifier<R> qualifier) {
             return applicationContext.findBean(beanType, qualifier);
         }
 
         @Override
-        public <R> Optional<R> findBean(Class<R> beanType, Qualifier<R> qualifier) {
+        public <R> Optional<R> findBean(Class<R> beanType, @Nullable Qualifier<R> qualifier) {
             return applicationContext.findBean(beanType, qualifier);
         }
 
@@ -181,17 +183,17 @@ public final class ApplicationContextAnalyzer {
         }
 
         @Override
-        public <R> Collection<R> getBeansOfType(Class<R> beanType, Qualifier<R> qualifier) {
+        public <R> Collection<R> getBeansOfType(Class<R> beanType, @Nullable Qualifier<R> qualifier) {
             return applicationContext.getBeansOfType(beanType, qualifier);
         }
 
         @Override
-        public <R> Stream<R> streamOfType(Class<R> beanType, Qualifier<R> qualifier) {
+        public <R> Stream<R> streamOfType(Class<R> beanType, @Nullable Qualifier<R> qualifier) {
             return applicationContext.streamOfType(beanType, qualifier);
         }
 
         @Override
-        public <R> R getProxyTargetBean(Class<R> beanType, Qualifier<R> qualifier) {
+        public <R> R getProxyTargetBean(Class<R> beanType, @Nullable Qualifier<R> qualifier) {
             return applicationContext.getProxyTargetBean(beanType, qualifier);
         }
 
@@ -232,7 +234,7 @@ public final class ApplicationContextAnalyzer {
         }
     }
 
-    private class AnnotationMetadataProviderPredicate implements Predicate<AnnotationMetadataProvider> {
+    private final class AnnotationMetadataProviderPredicate implements Predicate<AnnotationMetadataProvider> {
 
         @Override
         public boolean test(AnnotationMetadataProvider component) {

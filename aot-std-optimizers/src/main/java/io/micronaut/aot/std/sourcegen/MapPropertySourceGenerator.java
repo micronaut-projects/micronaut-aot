@@ -24,9 +24,10 @@ import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator;
 import io.micronaut.aot.core.codegen.MapGenerator;
 import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.core.annotation.Generated;
-import org.jspecify.annotations.NonNull;
 import io.micronaut.core.order.Ordered;
 import io.micronaut.core.util.StringUtils;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 
@@ -54,12 +55,14 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
     private final String namePrefix;
     private final String resourceName;
     private final Map<String, Object> values;
+    @Nullable
     private final Integer order;
 
     public MapPropertySourceGenerator(
         String namePrefix,
         String resourceName,
         Map<String, Object> values,
+        @Nullable
         Integer order
     ) {
         this.namePrefix = namePrefix;
@@ -80,10 +83,11 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
     protected JavaFile generate() {
         String typeName = computeTypeName();
         String orderKey = BASE_ORDER_OPTION + "." + resourceName;
-        int order = getContext().getConfiguration()
+        Integer configuredOrder = getContext().getConfiguration()
             .optionalValue(orderKey, value ->
                 value.map(Integer::parseInt)
                     .orElse(this.order != null ? this.order : Ordered.HIGHEST_PRECEDENCE));
+        int order = configuredOrder != null ? configuredOrder : Ordered.HIGHEST_PRECEDENCE;
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName)
             .addModifiers(PUBLIC)
             .superclass(MapPropertySource.class);

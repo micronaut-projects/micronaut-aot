@@ -95,15 +95,15 @@ public interface Configuration {
      * @param separator a separator regular expression
      * @return the list of values, or an empty list
      */
-    @SuppressWarnings("ConstantConditions")
     @NonNull
     default List<String> stringList(@NonNull String key, @NonNull String separator) {
-        return optionalValue(key, opt -> opt.map(string ->
+        List<String> result = optionalValue(key, opt -> opt.map(string ->
             Arrays.stream(string.split(separator))
                 .filter(Objects::nonNull)
                 .filter(s -> !s.trim().isEmpty())
                 .collect(Collectors.toList())
         ).orElse(Collections.emptyList()));
+        return result != null ? result : Collections.emptyList();
     }
 
     /**
@@ -115,7 +115,8 @@ public interface Configuration {
      * @return the boolean value
      */
     default boolean booleanValue(@NonNull String key, boolean defaultValue) {
-        return optionalValue(key, s -> s.map(Boolean::parseBoolean).orElse(defaultValue));
+        Boolean result = optionalValue(key, s -> s.map(Boolean::parseBoolean).orElse(defaultValue));
+        return result != null ? result : defaultValue;
     }
 
     /**

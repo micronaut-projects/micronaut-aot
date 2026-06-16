@@ -26,6 +26,8 @@ import io.micronaut.context.ApplicationContextBuilder;
 import io.micronaut.context.ApplicationContextConfigurer;
 import org.jspecify.annotations.NonNull;
 
+import java.util.Objects;
+
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -128,11 +130,11 @@ public class NettyPropertiesSourceGenerator extends AbstractCodeGenerator {
     }
 
     private static String pidOf(AOTContext context) {
-        return context.getConfiguration().optionalString(PROCESS_ID, RANDOM_VALUE);
+        return Objects.requireNonNull(context.getConfiguration().optionalString(PROCESS_ID, RANDOM_VALUE));
     }
 
     private static String machineIdOptionOf(AOTContext context) {
-        return context.getConfiguration().optionalString(MACHINE_ID, RANDOM_VALUE);
+        return Objects.requireNonNull(context.getConfiguration().optionalString(MACHINE_ID, RANDOM_VALUE));
     }
 
 }
