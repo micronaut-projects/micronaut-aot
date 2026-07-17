@@ -49,6 +49,7 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import io.micronaut.aot.core.AOTContext;
 import io.micronaut.core.util.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.xml.sax.InputSource;
 
 import javax.lang.model.element.Modifier;
@@ -84,7 +85,7 @@ class Logback14GeneratorHelper {
         );
     }
 
-    private static void injectDefaultComponentClasses(Model aModel, Model parent) {
+    private static void injectDefaultComponentClasses(Model aModel, @Nullable Model parent) {
 
         applyInjectionRules(aModel, parent);
 
@@ -105,7 +106,7 @@ class Logback14GeneratorHelper {
         }
     }
 
-    private static void applyInjectionRules(Model aModel, Model parent) {
+    private static void applyInjectionRules(Model aModel, @Nullable Model parent) {
         if (parent == null) {
             return;
         }
@@ -175,7 +176,7 @@ class Logback14GeneratorHelper {
             }
 
             @Override
-            public void postVisit(Model model, Model parent) {
+            public void postVisit(Model model, @Nullable Model parent) {
                 if (model instanceof ComponentModel componentModel) {
                     String className = componentModel.getClassName();
                     if (className != null) {
@@ -196,7 +197,7 @@ class Logback14GeneratorHelper {
             }
 
             @Override
-            public void visitRootLogger(RootLoggerModel model, Model parent) {
+            public void visitRootLogger(RootLoggerModel model, @Nullable Model parent) {
                 codeBuilder.addStatement("$T _rootLogger = loggerContext.getLogger($T.ROOT_LOGGER_NAME)", ch.qos.logback.classic.Logger.class, ch.qos.logback.classic.Logger.class);
                 String level = model.getLevel();
                 if (level != null) {
@@ -206,7 +207,7 @@ class Logback14GeneratorHelper {
             }
 
             @Override
-            public void visitAppender(AppenderModel model, Model parent) {
+            public void visitAppender(AppenderModel model, @Nullable Model parent) {
                 ClassName appenderName = ClassName.bestGuess(model.getClassName());
                 String varName = varNameOf(model);
                 appenderRefToAppenderVarName.put(model.getName(), varName);
@@ -214,7 +215,7 @@ class Logback14GeneratorHelper {
             }
 
             @Override
-            public void visitImplicit(ImplicitModel model, Model parent) {
+            public void visitImplicit(ImplicitModel model, @Nullable Model parent) {
                 String className = model.getClassName();
                 if (className == null && parent instanceof ComponentModel) {
                     generateSetterCode(model, parent);
@@ -224,15 +225,15 @@ class Logback14GeneratorHelper {
             }
 
             @Override
-            public void postVisitImplicit(ImplicitModel model, Model parent) {
+            public void postVisitImplicit(ImplicitModel model, @Nullable Model parent) {
                 String className = model.getClassName();
-                if (className != null) {
+                if (className != null && parent != null) {
                     generateSetterCode(model, parent);
                 }
             }
 
             @Override
-            public void visitLogger(LoggerModel model, Model parent) {
+            public void visitLogger(LoggerModel model, @Nullable Model parent) {
                 String loggerVarName = varNameOf(model);
                 codeBuilder.addStatement("$T $L = loggerContext.getLogger($S)", ch.qos.logback.classic.Logger.class, loggerVarName, model.getName());
                 String level = model.getLevel();
@@ -247,7 +248,7 @@ class Logback14GeneratorHelper {
             }
 
             @Override
-            public void postVisitConfiguration(ConfigurationModel model, Model parent) {
+            public void postVisitConfiguration(ConfigurationModel model, @Nullable Model parent) {
                 for (Map.Entry<String, Set<String>> entry : loggerToAppenders.entrySet()) {
                     String loggerName = entry.getKey();
                     for (String appenderRef : entry.getValue()) {
@@ -260,7 +261,7 @@ class Logback14GeneratorHelper {
             }
 
             @Override
-            public void visitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+            public void visitLoggerContextListener(LoggerContextListenerModel model, @Nullable Model parent) {
                 String className = model.getClassName();
                 if (className == null) {
                     throw new IllegalStateException("LoggerContextListenerModel must have a class name");
@@ -269,13 +270,13 @@ class Logback14GeneratorHelper {
             }
 
             @Override
-            public void postVisitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+            public void postVisitLoggerContextListener(LoggerContextListenerModel model, @Nullable Model parent) {
                 String loggerContextListenerVarName = varNameOf(model);
                 codeBuilder.addStatement("loggerContext.addListener($L)", loggerContextListenerVarName);
             }
 
             @Override
-            public void visitStatusListener(StatusListenerModel model, Model parent) {
+            public void visitStatusListener(StatusListenerModel model, @Nullable Model parent) {
                 String varName = varNameOf(model); // Will always be "statuslistener"
                 Class<?> type;
                 try {
@@ -329,10 +330,12 @@ class Logback14GeneratorHelper {
                         } else {
                             try {
                                 if (Charset.class.equals(parameterType)) {
-                                    parameterType.getDeclaredMethod("forName", String.class);
+                                    Method conversionMethod = parameterType.getDeclaredMethod("forName", String.class);
+                                    assert conversionMethod != null;
                                     codeBuilder.addStatement("$L.$L($T.forName($S))", parentVarName, method.getName(), ClassName.get(parameterType), model.getBodyText());
                                 } else {
-                                    parameterType.getDeclaredMethod("valueOf", String.class);
+                                    Method conversionMethod = parameterType.getDeclaredMethod("valueOf", String.class);
+                                    assert conversionMethod != null;
                                     codeBuilder.addStatement("$L.$L($T.valueOf($S))", parentVarName, method.getName(), ClassName.get(parameterType), model.getBodyText());
                                 }
                                 return true;
@@ -388,13 +391,13 @@ class Logback14GeneratorHelper {
             visit(model, null);
         }
 
-        default void visit(Model model, Model parent) {
+        default void visit(Model model, @Nullable Model parent) {
             preVisit(model, parent);
             model.getSubModels().forEach(m -> visit(m, model));
             postVisit(model, parent);
         }
 
-        default void preVisit(Model model, Model parent) {
+        default void preVisit(Model model, @Nullable Model parent) {
             if (model instanceof RootLoggerModel rootLoggerModel) {
                 visitRootLogger(rootLoggerModel, parent);
             }
@@ -418,7 +421,7 @@ class Logback14GeneratorHelper {
             }
         }
 
-        default void postVisit(Model model, Model parent) {
+        default void postVisit(Model model, @Nullable Model parent) {
             if (model instanceof RootLoggerModel rootLoggerModel) {
                 postVisitRootLogger(rootLoggerModel, parent);
             }
@@ -439,43 +442,43 @@ class Logback14GeneratorHelper {
             }
         }
 
-        default void visitRootLogger(RootLoggerModel model, Model parent) {
+        default void visitRootLogger(RootLoggerModel model, @Nullable Model parent) {
         }
 
-        default void postVisitRootLogger(RootLoggerModel model, Model parent) {
+        default void postVisitRootLogger(RootLoggerModel model, @Nullable Model parent) {
         }
 
-        default void visitAppender(AppenderModel model, Model parent) {
+        default void visitAppender(AppenderModel model, @Nullable Model parent) {
         }
 
-        default void postVisitAppender(AppenderModel model, Model parent) {
+        default void postVisitAppender(AppenderModel model, @Nullable Model parent) {
         }
 
-        default void visitImplicit(ImplicitModel model, Model parent) {
+        default void visitImplicit(ImplicitModel model, @Nullable Model parent) {
         }
 
-        default void postVisitImplicit(ImplicitModel model, Model parent) {
+        default void postVisitImplicit(ImplicitModel model, @Nullable Model parent) {
         }
 
-        default void visitLogger(LoggerModel model, Model parent) {
+        default void visitLogger(LoggerModel model, @Nullable Model parent) {
         }
 
-        default void postVisitLogger(LoggerModel model, Model parent) {
+        default void postVisitLogger(LoggerModel model, @Nullable Model parent) {
         }
 
-        default void visitConfiguration(ConfigurationModel model, Model parent) {
+        default void visitConfiguration(ConfigurationModel model, @Nullable Model parent) {
         }
 
-        default void postVisitConfiguration(ConfigurationModel model, Model parent) {
+        default void postVisitConfiguration(ConfigurationModel model, @Nullable Model parent) {
         }
 
-        default void visitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+        default void visitLoggerContextListener(LoggerContextListenerModel model, @Nullable Model parent) {
         }
 
-        default void postVisitLoggerContextListener(LoggerContextListenerModel model, Model parent) {
+        default void postVisitLoggerContextListener(LoggerContextListenerModel model, @Nullable Model parent) {
         }
 
-        default void visitStatusListener(StatusListenerModel model, Model parent) {
+        default void visitStatusListener(StatusListenerModel model, @Nullable Model parent) {
         }
 
     }

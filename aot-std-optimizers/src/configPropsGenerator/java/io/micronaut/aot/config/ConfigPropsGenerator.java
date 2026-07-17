@@ -38,8 +38,8 @@ public class ConfigPropsGenerator {
                     SourceGeneratorLoader.list(Runtime.NATIVE).stream()
                 ).distinct()
                 .toList();
-            writer.println("WARNING: These are not configuration properties to add in your regular Micronaut configuration files," +
-                           "but properties to be added to the Micronaut AOT configuration, via your build plugin." +
+            writer.println("WARNING: These are not configuration properties to add in your regular Micronaut configuration files, " +
+                           "but properties to be added to the Micronaut AOT configuration, via your build plugin. " +
                            "Please refer to the appropriate Maven or Gradle plugin for more details.");
             writer.println();
             for (AOTModule module : codeGenerators) {
@@ -57,7 +57,7 @@ public class ConfigPropsGenerator {
                 writer.println("[cols=\"1,3,3\"]");
                 writer.println("|===");
                 writer.println("|Property|Description|Example value");
-                writer.println("| `" + module.id() + ".enabled` |Enables the " + module.description() + " optimization|`true`");
+                writer.println("| `" + module.id() + ".enabled` |" + enabledDescription(module) + "|`true`");
                 for (Option option : module.options()) {
                     // Add 0-width space so that text wrapping works
                     var sample = option.sampleValue().replace(",", ",\u200B");
@@ -66,5 +66,15 @@ public class ConfigPropsGenerator {
                 writer.println("|===");
             }
         }
+    }
+
+    private static String enabledDescription(AOTModule module) {
+        var description = normalizedDescription(module.description());
+        return description.isEmpty() ? "Enables this optimization" : "Enables this optimization: " + description;
+    }
+
+    private static String normalizedDescription(String value) {
+        var trimmed = value.trim();
+        return trimmed.endsWith(".") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
     }
 }
