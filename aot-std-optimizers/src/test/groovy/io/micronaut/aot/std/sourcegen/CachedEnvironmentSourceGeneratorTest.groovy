@@ -15,8 +15,13 @@
  */
 package io.micronaut.aot.std.sourcegen
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
+import org.slf4j.LoggerFactory
 
 class CachedEnvironmentSourceGeneratorTest extends AbstractSourceGeneratorSpec {
     @Override
@@ -35,5 +40,25 @@ class CachedEnvironmentSourceGeneratorTest extends AbstractSourceGeneratorSpec {
 }
 """
         }
+    }
+
+    def "warns that the optimization is deprecated"() {
+        given:
+        def logger = (Logger) LoggerFactory.getLogger(CachedEnvironmentSourceGenerator)
+        def appender = new ListAppender<ILoggingEvent>()
+        appender.start()
+        logger.addAppender(appender)
+
+        when:
+        generate()
+
+        then:
+        CachedEnvironmentSourceGenerator.isAnnotationPresent(Deprecated)
+        appender.list.any {
+            it.level == Level.WARN && it.formattedMessage.startsWith("The cached.environment optimization is deprecated.")
+        }
+
+        cleanup:
+        logger.detachAppender(appender)
     }
 }
