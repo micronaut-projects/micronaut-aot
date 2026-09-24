@@ -314,7 +314,7 @@ final class Logback14GeneratorHelper {
         Class<?> type = loadComponentClass(model.getClassName(), StatusListener.class);
         String variable = variableNameOf(model);
         boolean lifeCycle = LifeCycle.class.isAssignableFrom(type);
-        code.addStatement("$T $L = new $T()", type, variable, type);
+        emitNewInstance(type, variable);
         if (lifeCycle) {
             code.addStatement("boolean $LAdded = loggerContext.getStatusManager().add($L)", variable, variable);
         } else {
@@ -323,20 +323,20 @@ final class Logback14GeneratorHelper {
         emitSetContext(type, variable);
         emitNestedComponents(model, type, variable);
         if (lifeCycle) {
-            code.beginControlFlow("if ($LAdded)", variable)
-                .addStatement("$L.start()", variable)
-                .endControlFlow();
+            code.beginControlFlow("if ($LAdded)", variable);
+            emitStart(variable);
+            code.endControlFlow();
         }
     }
 
     private void emitLoggerContextListener(LoggerContextListenerModel model) {
         Class<?> type = loadComponentClass(model.getClassName(), LoggerContextListener.class);
         String variable = variableNameOf(model);
-        code.addStatement("$T $L = new $T()", type, variable, type);
+        emitNewInstance(type, variable);
         emitSetContext(type, variable);
         emitNestedComponents(model, type, variable);
         if (LifeCycle.class.isAssignableFrom(type)) {
-            code.addStatement("$L.start()", variable);
+            emitStart(variable);
         }
         code.addStatement("loggerContext.addListener($L)", variable);
     }
@@ -349,7 +349,7 @@ final class Logback14GeneratorHelper {
         }
         Class<?> type = loadComponentClass(model.getClassName(), Appender.class);
         String variable = variableNameOf(model);
-        code.addStatement("$T $L = new $T()", type, variable, type);
+        emitNewInstance(type, variable);
         code.addStatement("$L.setContext(loggerContext)", variable);
         code.addStatement("$L.setName($S)", variable, name);
         for (Model subModel : model.getSubModels()) {
@@ -361,7 +361,7 @@ final class Logback14GeneratorHelper {
                 throw unsupportedElement(subModel);
             }
         }
-        code.addStatement("$L.start()", variable);
+        emitStart(variable);
         appenderVariables.put(name, variable);
     }
 
@@ -388,7 +388,7 @@ final class Logback14GeneratorHelper {
         String level = requireLiteral(model.getLevel());
         if (!isBlank(level)) {
             if (INHERITED.equalsIgnoreCase(level) || NULL.equalsIgnoreCase(level)) {
-                if (Logger.ROOT_LOGGER_NAME.equalsIgnoreCase(name)) {
+                if (org.slf4j.Logger.ROOT_LOGGER_NAME.equalsIgnoreCase(name)) {
                     throw unsupported("sets the level of the root logger to " + level);
                 }
                 code.addStatement("$L.setLevel(null)", variable);
@@ -445,14 +445,14 @@ final class Logback14GeneratorHelper {
         Method adder = parent.getAdder(BeanUtil.toLowerCamelCase(capitalizeFirstLetter(tag)));
         Method method = adder != null ? adder : parent.getSetter(BeanUtil.toLowerCamelCase(tag));
         if (method == null || method.getParameterCount() != 1) {
-            throw unsupported("sets property [" + tag + "], which " + parentType.getName() + " does not have");
+            throw unsupportedProperty(tag, ", which " + parentType.getName() + " does not have");
         }
         Class<?> parameterType = method.getParameterTypes()[0];
         if (StringToObjectConverter.canBeBuiltFromSimpleString(parameterType)) {
             emitSimpleProperty(model, method, parentVariable);
         } else {
             if (adder != null && adder != parent.getAdder(BeanUtil.toLowerCamelCase(tag))) {
-                throw unsupported("sets property [" + tag + "], whose adder cannot be resolved consistently");
+                throw unsupportedProperty(tag, ", whose adder cannot be resolved consistently");
             }
             emitComponentProperty(model, method, parentType, parentVariable);
         }
@@ -476,9 +476,9 @@ final class Logback14GeneratorHelper {
             converted = null;
         }
         if (converted == null) {
-            throw unsupported("sets property [" + tag + "] to [" + value + "], which cannot be converted to " + type.getName());
+            throw unsupportedProperty(tag, " to [" + value + "], which cannot be converted to " + type.getName());
         }
-        code.addStatement("$L.$L($L)", parentVariable, method.getName(), valueOf(value, type, converted));
+        emitCall(parentVariable, method, valueOf(value, type, converted));
     }
 
     /**
@@ -495,19 +495,33 @@ final class Logback14GeneratorHelper {
         } else if (type == float.class || type == double.class) {
             return CodeBlock.of("$T.valueOf($S)", type == float.class ? Float.class : Double.class, trimmed);
         } else if (type.isEnum() || followsTheValueOfConvention(type)) {
-            requireAccessible(type);
-            Method valueOf = StringToObjectConverter.getValueOfMethod(type);
-            if (valueOf == null || !type.isAssignableFrom(valueOf.getReturnType())) {
-                throw unsupported("sets a property of type " + type.getName() + ", whose valueOf method does not return that type");
-            }
-            return CodeBlock.of("$T.valueOf($S)", type, trimmed);
+            return valueOfMethodCall(type, trimmed);
         } else if (Charset.class.isAssignableFrom(type)) {
-            if (NULL.equalsIgnoreCase(value)) {
-                return CodeBlock.of("$T.defaultCharset()", Charset.class);
-            }
-            return CodeBlock.of("$T.forName($S)", Charset.class, value);
+            return charsetOf(value);
         }
         throw unsupported("sets a property of type " + type.getName() + ", which is not supported");
+    }
+
+    /**
+     * Generates the call to the {@code valueOf} method of an enum, or of a class following the same convention.
+     */
+    private CodeBlock valueOfMethodCall(Class<?> type, String trimmed) {
+        requireAccessible(type);
+        Method valueOf = StringToObjectConverter.getValueOfMethod(type);
+        if (valueOf == null || !type.isAssignableFrom(valueOf.getReturnType())) {
+            throw unsupported("sets a property of type " + type.getName() + ", whose valueOf method does not return that type");
+        }
+        return CodeBlock.of("$T.valueOf($S)", type, trimmed);
+    }
+
+    /**
+     * Mirrors {@code StringToObjectConverter}, which converts {@code null}, ignoring case, to the default charset.
+     */
+    private static CodeBlock charsetOf(String value) {
+        if (NULL.equalsIgnoreCase(value)) {
+            return CodeBlock.of("$T.defaultCharset()", Charset.class);
+        }
+        return CodeBlock.of("$T.forName($S)", Charset.class, value);
     }
 
     private void emitComponentProperty(ImplicitModel model, Method method, Class<?> parentType, String parentVariable) {
@@ -523,14 +537,14 @@ final class Logback14GeneratorHelper {
         }
         requireInstantiable(type);
         String variable = variableNameOf(model);
-        code.addStatement("$T $L = new $T()", type, variable, type);
+        emitNewInstance(type, variable);
         emitSetContext(type, variable);
         emitNestedComponents(model, type, variable);
         emitSetParent(type, variable, parentType, parentVariable);
         if (LifeCycle.class.isAssignableFrom(type) && !isMarkedWithNoAutoStart(type)) {
-            code.addStatement("$L.start()", variable);
+            emitStart(variable);
         }
-        code.addStatement("$L.$L($L)", parentVariable, method.getName(), variable);
+        emitCall(parentVariable, method, variable);
     }
 
     /**
@@ -564,7 +578,19 @@ final class Logback14GeneratorHelper {
         if (!setter.getParameterTypes()[0].isAssignableFrom(parentType)) {
             throw unsupported("nests " + type.getName() + " in " + parentType.getName() + ", which is not a valid parent");
         }
-        code.addStatement("$L.$L($L)", variable, setter.getName(), parentVariable);
+        emitCall(variable, setter, parentVariable);
+    }
+
+    private void emitNewInstance(Class<?> type, String variable) {
+        code.addStatement("$T $L = new $T()", type, variable, type);
+    }
+
+    private void emitStart(String variable) {
+        code.addStatement("$L.start()", variable);
+    }
+
+    private void emitCall(String receiver, Method method, Object argument) {
+        code.addStatement("$L.$L($L)", receiver, method.getName(), argument);
     }
 
     private void emitSetContext(Class<?> type, String variable) {
@@ -579,7 +605,7 @@ final class Logback14GeneratorHelper {
         }
         Class<?> type = loadClass(className);
         if (!expectedType.isAssignableFrom(type)) {
-            throw unsupported("refers to class [" + className + "], which is not a " + expectedType.getName());
+            throw unsupportedClass(className, "which is not a " + expectedType.getName());
         }
         requireInstantiable(type);
         return type;
@@ -589,13 +615,13 @@ final class Logback14GeneratorHelper {
         try {
             return Class.forName(className, false, Logback14GeneratorHelper.class.getClassLoader());
         } catch (ClassNotFoundException | LinkageError e) {
-            throw unsupported("refers to class [" + className + "], which cannot be loaded");
+            throw unsupportedClass(className, "which cannot be loaded");
         }
     }
 
     private void requireInstantiable(Class<?> type) {
         if (!isInstantiable(type)) {
-            throw unsupported("refers to class [" + type.getName() + "], which cannot be instantiated from generated code");
+            throw unsupportedClass(type.getName(), "which cannot be instantiated from generated code");
         }
     }
 
@@ -613,7 +639,7 @@ final class Logback14GeneratorHelper {
 
     private void requireAccessible(Class<?> type) {
         if (!isAccessible(type)) {
-            throw unsupported("refers to class [" + type.getName() + "], which is not public");
+            throw unsupportedClass(type.getName(), "which is not public");
         }
     }
 
@@ -736,6 +762,14 @@ final class Logback14GeneratorHelper {
 
     private static UnsupportedConfigurationException unsupportedElement(Model model) {
         return unsupported("contains <" + model.getTag() + ">, which cannot be converted");
+    }
+
+    private static UnsupportedConfigurationException unsupportedProperty(String tag, String reason) {
+        return unsupported("sets property [" + tag + "]" + reason);
+    }
+
+    private static UnsupportedConfigurationException unsupportedClass(String className, String reason) {
+        return unsupported("refers to class [" + className + "], " + reason);
     }
 
     private static UnsupportedConfigurationException unsupported(String reason) {
