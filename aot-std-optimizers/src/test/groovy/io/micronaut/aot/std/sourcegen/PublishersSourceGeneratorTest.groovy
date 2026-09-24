@@ -17,6 +17,8 @@ package io.micronaut.aot.std.sourcegen
 
 import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
+import io.micronaut.core.async.publisher.PublishersOptimizations
+import io.micronaut.core.optim.StaticOptimizations
 
 class PublishersSourceGeneratorTest extends AbstractSourceGeneratorSpec {
 
@@ -41,17 +43,53 @@ import io.micronaut.core.async.publisher.PublishersOptimizations;
 import io.micronaut.core.async.subscriber.Completable;
 import io.micronaut.core.optim.StaticOptimizations;
 import java.lang.Override;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class PublishersOptimizationsLoader implements StaticOptimizations.Loader<PublishersOptimizations> {
   @Override
   public PublishersOptimizations load() {
-    return new PublishersOptimizations(Arrays.asList(CompletableFuturePublisher.class, Publishers.JustPublisher.class, Publishers.JustThrowPublisher.class, Completable.class), Arrays.asList(CompletableFuturePublisher.class, Publishers.JustPublisher.class, Publishers.JustThrowPublisher.class), Arrays.asList(Completable.class));
+    return new PublishersOptimizations(new ArrayList<>(Arrays.asList(CompletableFuturePublisher.class, Publishers.JustPublisher.class, Publishers.JustThrowPublisher.class, Completable.class)), new ArrayList<>(Arrays.asList(CompletableFuturePublisher.class, Publishers.JustPublisher.class, Publishers.JustThrowPublisher.class)), new ArrayList<>(Arrays.asList(Completable.class)));
   }
 }"""
                 compiles()
             }
 
+        }
+    }
+
+    def "generated lists accept types registered at runtime"() {
+        given:
+        generate()
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            hasClass("PublishersOptimizationsLoader") {
+                containingSources "new ArrayList<>(Arrays.asList("
+                compiles()
+            }
+        }
+
+        when: "the compiled loader is run, as StaticOptimizations does at startup"
+        def optimizations = loadOptimizations()
+
+        and: "types are registered, as Publishers.registerReactive* does"
+        optimizations.reactiveTypes.add(StringBuilder)
+        optimizations.singleTypes.add(StringBuilder)
+        optimizations.completableTypes.add(StringBuilder)
+
+        then:
+        noExceptionThrown()
+        optimizations.reactiveTypes.last() == StringBuilder
+        optimizations.singleTypes.last() == StringBuilder
+        optimizations.completableTypes.last() == StringBuilder
+    }
+
+    private PublishersOptimizations loadOptimizations() {
+        def compiled = testDirectory.resolve("compiled").toUri().toURL()
+        try (def loader = new URLClassLoader([compiled] as URL[], getClass().classLoader)) {
+            def loaderClass = loader.loadClass("${packageName}.PublishersOptimizationsLoader")
+            def optimizationsLoader = (StaticOptimizations.Loader<PublishersOptimizations>) loaderClass.getDeclaredConstructor().newInstance()
+            optimizationsLoader.load()
         }
     }
 

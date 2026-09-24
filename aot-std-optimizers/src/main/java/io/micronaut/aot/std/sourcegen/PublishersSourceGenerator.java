@@ -24,6 +24,7 @@ import org.jspecify.annotations.NonNull;
 import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.core.async.publisher.PublishersOptimizations;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -57,9 +58,17 @@ public class PublishersSourceGenerator extends AbstractCodeGenerator {
 
     }
 
+    /**
+     * Generates a mutable list of the given types. The list must be mutable because
+     * {@link Publishers#registerReactiveType(Class)} and its siblings add to the lists
+     * that {@link PublishersOptimizations} hands over.
+     *
+     * @param types the type names
+     * @return the code block creating the list
+     */
     private static CodeBlock asClassList(List<String> types) {
         CodeBlock.Builder knownReactiveBlock = CodeBlock.builder()
-            .add("$T.asList(", Arrays.class);
+            .add("new $T<>($T.asList(", ArrayList.class, Arrays.class);
         for (int i = 0; i < types.size(); i++) {
             String knownReactiveType = types.get(i);
             knownReactiveBlock.add("$T.class", ClassName.bestGuess(knownReactiveType.replace('$', '.')));
@@ -67,7 +76,7 @@ public class PublishersSourceGenerator extends AbstractCodeGenerator {
                 knownReactiveBlock.add(", ");
             }
         }
-        knownReactiveBlock.add(")");
+        knownReactiveBlock.add("))");
         return knownReactiveBlock.build();
     }
 
