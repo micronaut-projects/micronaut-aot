@@ -1,0 +1,13 @@
+<configuration>
+    <appender name="FIRST" class="ch.qos.logback.core.FileAppender">
+        <file>build/logback-collision.log</file>
+        <encoder><pattern>%msg%n</pattern></encoder>
+    </appender>
+    <appender name="SECOND" class="ch.qos.logback.core.FileAppender">
+        <file>build/logback-collision.log</file>
+        <encoder><pattern>%msg%n</pattern></encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="SECOND"/>
+    </root>
+</configuration>
