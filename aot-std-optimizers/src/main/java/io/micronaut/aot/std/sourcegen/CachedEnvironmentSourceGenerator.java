@@ -20,21 +20,35 @@ import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.codegen.AbstractCodeGenerator;
 import org.jspecify.annotations.NonNull;
 import io.micronaut.core.optim.StaticOptimizations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Generates the code used to enable environment variables and system
  * properties caching in Micronaut.
+ *
+ * @deprecated On the JVM, this optimization has had no effect since Micronaut 5.0:
+ * {@code CachedEnvironment} reads the caching flag when it is initialized, which
+ * happens before the generated application context configurer is loaded. In native
+ * images the flag is set at image build time, so environment variables and system
+ * properties are still frozen at startup there.
  */
+@Deprecated(since = "3.1.1")
 @AOTModule(
     id = CachedEnvironmentSourceGenerator.ID,
     description = CachedEnvironmentSourceGenerator.DESCRIPTION
 )
 public class CachedEnvironmentSourceGenerator extends AbstractCodeGenerator {
     public static final String ID = "cached.environment";
-    public static final String DESCRIPTION = "Caches environment property values: environment properties will be deemed immutable after application startup.";
+    public static final String DESCRIPTION = "Caches environment property values: environment properties will be deemed immutable after application startup. " +
+        "Deprecated: on the JVM it has had no effect since Micronaut 5.0; in native images it still applies.";
+
+    private static final Logger LOG = LoggerFactory.getLogger(CachedEnvironmentSourceGenerator.class);
 
     @Override
     public void generate(@NonNull AOTContext context) {
+        LOG.warn("The {} optimization is deprecated. On the JVM it has had no effect since Micronaut 5.0; " +
+            "in native images it freezes environment variables and system properties at startup.", ID);
         context.registerStaticInitializer(staticMethod("enableEnvironmentCaching", body ->
             body.addStatement("$T.cacheEnvironment()", StaticOptimizations.class)));
     }
