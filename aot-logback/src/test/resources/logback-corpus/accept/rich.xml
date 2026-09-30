@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <!-- Declared before the appenders it references, so Joran handles this logger in its second pass. -->
+    <logger name="com.example" level="DEBUG" additivity="false">
+        <appender-ref ref="ERR"/>
+        <appender-ref ref="OUT"/>
+    </logger>
+
+    <appender name="OUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %-5level [%thread] %logger{20}:%line %X{requestId} %mdc - %replace(%msg){'secret', '***'}%n%ex{short}
+            </pattern>
+        </encoder>
+        <target>System.out</target>
+    </appender>
+
+    <appender name="ERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <immediateFlush>true</immediateFlush>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %level %logger %X - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="UNUSED" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="io.micronaut.runtime.Micronaut" level="INFO"/>
+    <logger name="com.example.quiet" level="INHERITED"/>
+    <logger name="com.example.silent" level="off"/>
+    <logger name="org.hibernate" level=" warn " additivity="true"/>
+
+    <root level="WARN">
+        <appender-ref ref="OUT"/>
+    </root>
+</configuration>

@@ -1,0 +1,14 @@
+<configuration>
+    <!-- The differential harness replaces @LOG_FILE@ with a temporary file before compiling or reading it. -->
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>@LOG_FILE@</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%date{ISO8601} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="TRACE">
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

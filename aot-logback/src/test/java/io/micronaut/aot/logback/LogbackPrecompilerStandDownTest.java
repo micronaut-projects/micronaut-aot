@@ -1,0 +1,468 @@
+/*
+ * Copyright 2017-2026 original authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.micronaut.aot.logback;
+
+import io.micronaut.aot.logback.LogbackTestSupport.Application;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.UnaryOperator;
+
+import static io.micronaut.aot.logback.LogbackTestSupport.JORAN_AT_STARTUP;
+import static io.micronaut.aot.logback.LogbackTestSupport.LOGBACK_XML;
+import static io.micronaut.aot.logback.LogbackTestSupport.STAND_DOWN;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * When {@link LogbackPrecompiler} generates nothing, and what it says: through the public API, with directories
+ * and jars as class path entries.
+ */
+class LogbackPrecompilerStandDownTest {
+
+    @TempDir
+    Path temporary;
+
+    // ------------------------------------------------------------------ what is compiled
+
+    @Test
+    void precompilesTheLogbackXmlOfTheApplicationOutput() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+
+        LogbackPrecompiler.Result result = application.precompile(false);
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertTrue(result.message().startsWith("Precompiled logback.xml (application output) into "
+                + LogbackPrecompiler.CONFIGURATOR_CLASS + ": 1 appender, 1 pattern, "), result::message);
+        assertTrue(result.message().endsWith(" ms"), result::message);
+        assertEquals(LOGBACK_XML, Files.readString(application.resources().resolve("logback.xml")),
+                "logback.xml stays where it is for the fallbacks");
+    }
+
+    /** A {@code logback.xml} that only a dependency carries is read from it, and the message names it. */
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void precompilesALogbackXmlThatOnlyADependencyCarries(boolean jar) throws IOException {
+        Application application = application(Map.of());
+        Path dependency;
+        if (jar) {
+            dependency = LogbackTestSupport.jar(temporary.resolve("libs/logging-configuration.jar"), null,
+                    Map.of("logback.xml", LOGBACK_XML.getBytes(StandardCharsets.UTF_8)));
+        } else {
+            dependency = temporary.resolve("other-project/build/resources/main");
+            LogbackTestSupport.write(dependency.resolve("logback.xml"), LOGBACK_XML);
+        }
+        List<Path> runtimeClasspath = new ArrayList<>(LogbackTestSupport.logbackJars());
+        runtimeClasspath.add(dependency);
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(runtimeClasspath).build());
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertTrue(result.message().startsWith("Precompiled logback.xml ("
+                + (jar ? "logging-configuration.jar" : dependency.toString()) + ") into "
+                + LogbackPrecompiler.CONFIGURATOR_CLASS + ": 1 appender, 1 pattern, "), result::message);
+    }
+
+    @Test
+    void aJarIsAnApplicationOutputToo() throws IOException {
+        Path jar = LogbackTestSupport.jar(temporary.resolve("application.jar"), null, Map.of(
+                "com/example/Application.class", new byte[] {1},
+                "logback.xml", LOGBACK_XML.getBytes(StandardCharsets.UTF_8)));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(LogbackPrecompiler.Request.builder()
+                .applicationOutput(List.of(jar))
+                .runtimeClasspath(LogbackTestSupport.logbackJars())
+                .targetRelease(25)
+                .build());
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertTrue(result.message().startsWith("Precompiled logback.xml (application output) into "),
+                result::message);
+    }
+
+    @Test
+    void theFirstApplicationRootThatHoldsANameWins() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        // The class directory holds another logback.xml, outside the subset: it is never read.
+        LogbackTestSupport.write(application.classes().resolve("logback.xml"),
+                LOGBACK_XML.replace("<configuration>", "<configuration scan=\"true\">"));
+
+        LogbackPrecompiler.Result resourcesFirst = application.precompile(false);
+        LogbackPrecompiler.Result classesFirst = LogbackPrecompiler.precompile(application.request()
+                .applicationOutput(List.of(application.classes(), application.resources())).build());
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, resourcesFirst.status(), resourcesFirst::message);
+        assertEquals(LogbackPrecompiler.Status.STOOD_DOWN, classesFirst.status(), classesFirst::message);
+        assertTrue(classesFirst.message().contains("scan=\"true\""), classesFirst::message);
+    }
+
+    /**
+     * A packaged configuration that sets logger levels, as most do, does not stand the precompiler down: only a
+     * {@code config} key next to the word {@code logger} does.
+     */
+    @Test
+    void aPackagedConfigurationWithoutAConfigKeyIsStillPrecompiled() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML,
+                "application.yml", """
+                        micronaut:
+                          application:
+                            name: demo
+                          config-client:
+                            enabled: false
+                        logger:
+                          levels:
+                            com.example: DEBUG
+                        """,
+                "application-test.toml", "[logger.levels]\n\"com.example\" = \"DEBUG\"\n",
+                "config/application.json", "{\"logger\":{\"levels\":{\"com.example\":\"DEBUG\"}}}\n"));
+
+        LogbackPrecompiler.Result result = application.precompile(false);
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+    }
+
+    // ------------------------------------------------------------------ stand-downs
+
+    @ParameterizedTest
+    @ValueSource(strings = {"no logback.xml", "logback-test.xml", "logback.groovy", "versioned logback.xml",
+        "application Configurator", "dependency Configurator", "application.properties logger.config",
+        "application.yml logger config", "bootstrap.yml configurationFile", "application.toml logger table",
+        "application.toml inline table", "application.yml flow style", "application.json on one line",
+        "application.groovy closure", "application.yml merged anchor", "Logback outside the range",
+        "mismatched versions", "subset rejection"})
+    void standsDownWithOneInformationalLine(String condition) throws IOException {
+        Map<String, String> files = new LinkedHashMap<>();
+        files.put("logback.xml", LOGBACK_XML);
+        List<Path> dependencies = new ArrayList<>(LogbackTestSupport.logbackJars());
+        String reason;
+        switch (condition) {
+            case "no logback.xml" -> {
+                files.remove("logback.xml");
+                reason = "there is no logback.xml";
+            }
+            case "logback-test.xml" -> {
+                files.put("logback-test.xml", LOGBACK_XML);
+                reason = "application output has logback-test.xml";
+            }
+            case "logback.groovy" -> {
+                files.put("logback.groovy", "root(WARN)\n");
+                reason = "application output has logback.groovy";
+            }
+            case "versioned logback.xml" -> {
+                files.put("META-INF/versions/21/logback.xml", LOGBACK_XML);
+                reason = "application output has META-INF/versions/21/logback.xml";
+            }
+            case "application Configurator" -> {
+                files.put(LogbackPrecompiler.SERVICE_ENTRY, "com.example.MyConfigurator\n");
+                reason = "application output already registers a Logback Configurator ("
+                        + LogbackPrecompiler.SERVICE_ENTRY + ")";
+            }
+            case "dependency Configurator" -> {
+                dependencies.add(LogbackTestSupport.jar(temporary.resolve("libs/aot-configurator.jar"), null,
+                        Map.of(LogbackPrecompiler.SERVICE_ENTRY,
+                                "io.micronaut.aot.StaticLogbackConfiguration\n".getBytes(StandardCharsets.UTF_8))));
+                reason = "aot-configurator.jar already registers a Logback Configurator";
+            }
+            case "application.properties logger.config" -> {
+                files.put("application.properties", "micronaut.application.name=demo\nlogger.config=custom.xml\n");
+                reason = "the packaged application.properties may set logger.config";
+            }
+            case "application.yml logger config" -> {
+                files.put("application.yml", "logger:\n  levels:\n    com.example: DEBUG\n  config: custom.xml\n");
+                reason = "the packaged application.yml may set logger.config";
+            }
+            case "bootstrap.yml configurationFile" -> {
+                files.put("config/bootstrap.yml", "logback:\n  configurationFile: custom.xml\n");
+                reason = "the packaged config/bootstrap.yml may set";
+            }
+            case "application.toml logger table" -> {
+                files.put("application.toml", "[micronaut.application]\nname = \"demo\"\n\n[logger]\n"
+                        + "config = \"custom.xml\"\n");
+                reason = "the packaged application.toml may set logger.config";
+            }
+            case "application.toml inline table" -> {
+                files.put("application-prod.toml", "logger = { config = \"custom.xml\" }\n");
+                reason = "the packaged application-prod.toml may set logger.config";
+            }
+            case "application.yml flow style" -> {
+                files.put("application.yml", "logger: {config: custom.xml}\n");
+                reason = "the packaged application.yml may set logger.config";
+            }
+            case "application.json on one line" -> {
+                files.put("application.json", "{\"logger\":{\"config\":\"custom.xml\"}}");
+                reason = "the packaged application.json may set logger.config";
+            }
+            case "application.groovy closure" -> {
+                files.put("application.groovy", "logger { config = 'custom.xml' }\n");
+                reason = "the packaged application.groovy may set logger.config";
+            }
+            case "application.yml merged anchor" -> {
+                // The config key stands before the logger key, and on another level.
+                files.put("application.yml", "shared: &shared\n  Config: custom.xml\nLogger:\n  <<: *shared\n");
+                reason = "the packaged application.yml may set logger.config";
+            }
+            case "Logback outside the range" -> {
+                dependencies = fakeLogback("1.4.14", "1.4.14");
+                reason = "Logback 1.4.14 is outside the tested range [1.5.37, 1.6)";
+            }
+            case "mismatched versions" -> {
+                dependencies = fakeLogback("1.5.37", "1.5.38");
+                reason = "logback-classic 1.5.37 and logback-core 1.5.38 differ";
+            }
+            case "subset rejection" -> {
+                files.put("logback.xml", LOGBACK_XML.replace("<configuration>",
+                        "<configuration>\n    <property name=\"APP\" value=\"demo\"/>"));
+                reason = "logback.xml (application output) is outside what the precompiler can reproduce exactly:"
+                        + " <property> (line 2) is not supported";
+            }
+            default -> throw new IllegalArgumentException(condition);
+        }
+        Application application = application(files);
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(dependencies).build());
+
+        assertStoodDown(result, reason);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"no logback-classic", "no logback-core", "no slf4j-api", "no Implementation-Version"})
+    void standsDownWithoutTheLoggingLibraries(String condition) throws IOException {
+        List<Path> dependencies = new ArrayList<>(LogbackTestSupport.logbackJars());
+        String reason;
+        switch (condition) {
+            case "no logback-classic" -> {
+                dependencies.remove(0);
+                reason = "logback-classic is not on the class path";
+            }
+            case "no logback-core" -> {
+                dependencies.remove(1);
+                reason = "logback-core is not on the class path";
+            }
+            case "no slf4j-api" -> {
+                dependencies.remove(2);
+                reason = "slf4j-api is not on the class path";
+            }
+            case "no Implementation-Version" -> {
+                dependencies = fakeLogback(null, "1.5.37");
+                reason = "logback-classic or logback-core declares no Implementation-Version";
+            }
+            default -> throw new IllegalArgumentException(condition);
+        }
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application(Map.of("logback.xml", LOGBACK_XML)).request().runtimeClasspath(dependencies).build());
+
+        assertStoodDown(result, reason);
+    }
+
+    @Test
+    void standsDownWhenTheApplicationCarriesALoggingClassOfItsOwn() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        Files.createDirectories(application.classes().resolve("org/slf4j/impl"));
+        Files.write(application.classes().resolve("org/slf4j/impl/StaticLoggerBinder.class"), new byte[] {1});
+
+        assertStoodDown(application.precompile(false), "the application output carries its own Logback or SLF4J"
+                + " class org/slf4j/impl/StaticLoggerBinder.class");
+    }
+
+    /** What an annotation processor writes goes to the class output, not to the resources. */
+    @Test
+    void standsDownOnAConfiguratorServiceFileThatOnlyAClassDirectoryHolds() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        LogbackTestSupport.write(application.classes().resolve(LogbackPrecompiler.SERVICE_ENTRY),
+                "com.example.MyConfigurator\n");
+
+        assertStoodDown(application.precompile(false), "application output already registers a Logback Configurator ("
+                + LogbackPrecompiler.SERVICE_ENTRY + ")");
+
+        // Without the class directory the engine cannot know.
+        LogbackPrecompiler.Result resourcesOnly = LogbackPrecompiler.precompile(
+                application.request().applicationOutput(List.of(application.resources())).build());
+        assertEquals(LogbackPrecompiler.Status.GENERATED, resourcesOnly.status(), resourcesOnly::message);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {8, 17, 21, 24})
+    void standsDownBelowJava25(int release) throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().targetRelease(release).build());
+
+        assertStoodDown(result, "the target release " + release + " is below 25, the Java release of the"
+                + " generated classes");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {25, 26})
+    void generatesClassFilesOfJava25FromJava25On(int release) throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().targetRelease(release).build());
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        for (String name : List.of(LogbackPrecompiler.CONFIGURATOR_ENTRY, LogbackPrecompiler.FALLBACK_ENTRY,
+                LogbackPrecompiler.GUARD_ENTRY)) {
+            byte[] bytes = result.entries().get(name);
+            assertEquals(69, (bytes[6] & 0xFF) << 8 | bytes[7] & 0xFF, name);
+        }
+    }
+
+    // ------------------------------------------------------------------ failures
+
+    @ParameterizedTest
+    @ValueSource(strings = {"LogbackConfigurator", "JoranFallback", "ClassPathGuard"})
+    void aTakenGeneratedNameIsAFailure(String className) throws IOException {
+        String name = LogbackPrecompiler.PACKAGE_PATH + className + ".class";
+        Application application = application(Map.of("logback.xml", LOGBACK_XML, name, "not ours"));
+
+        LogbackPrecompiler.Result result = application.precompile(false);
+
+        assertEquals(LogbackPrecompiler.Status.FAILED, result.status(), result::message);
+        assertEquals("The application output already carries '" + name + "'; no Logback configuration was"
+                + " precompiled and Logback will configure itself with Joran at startup", result.message());
+        assertEquals(Map.of(), result.entries());
+    }
+
+    @Test
+    void theNameOfTheGuardIsFreeOnAClosedClassPath() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML,
+                LogbackPrecompiler.GUARD_ENTRY, "not ours"));
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, application.precompile(true).status());
+        assertEquals(LogbackPrecompiler.Status.FAILED, application.precompile(false).status());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void aFrontEndOrEmitterFailureIsAFailureAndNothingIsThrown(boolean frontEnd) throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        LogbackPrecompiler.descriptionHook = description -> {
+            if (frontEnd) {
+                throw new IllegalStateException("forced front-end failure");
+            }
+            // An int setter handed a String: the emitted class no longer verifies.
+            Map<String, Object> broken = new LinkedHashMap<>(description);
+            List<Object> operations = new ArrayList<>((List<?>) broken.get("operations"));
+            @SuppressWarnings("unchecked")
+            Map<String, Object> appender = new LinkedHashMap<>((Map<String, Object>) operations.get(0));
+            appender.put("steps", List.of(Map.of("step", "property", "method", "setName",
+                    "descriptor", "(I)V", "value", "not an int")));
+            operations.set(0, appender);
+            broken.put("operations", operations);
+            return broken;
+        };
+        LogbackPrecompiler.Result result;
+        try {
+            result = application.precompile(false);
+        } finally {
+            LogbackPrecompiler.descriptionHook = UnaryOperator.identity();
+        }
+
+        assertEquals(LogbackPrecompiler.Status.FAILED, result.status(), result::message);
+        assertEquals(Map.of(), result.entries());
+        assertTrue(result.message().startsWith(STAND_DOWN + "it could not be compiled: "), result::message);
+        assertTrue(result.message().contains(frontEnd ? "forced front-end failure" : "does not verify"),
+                result::message);
+        assertTrue(result.message().endsWith(JORAN_AT_STARTUP), result::message);
+    }
+
+    @Test
+    void aMissingClassPathEntryIsAFailure() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        List<Path> runtimeClasspath = new ArrayList<>(LogbackTestSupport.logbackJars());
+        runtimeClasspath.add(temporary.resolve("libs/missing.jar"));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(runtimeClasspath).build());
+
+        assertUnreadable(result, "missing.jar");
+    }
+
+    @Test
+    void aMissingApplicationRootIsAFailure() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(application.request()
+                .applicationOutput(List.of(application.resources(), temporary.resolve("classes/groovy/main")))
+                .build());
+
+        assertUnreadable(result, "main");
+    }
+
+    @Test
+    void aClassPathEntryThatIsNoArchiveIsAFailure() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        List<Path> runtimeClasspath = new ArrayList<>(LogbackTestSupport.logbackJars());
+        runtimeClasspath.add(LogbackTestSupport.write(temporary.resolve("libs/notes.txt"), "not an archive"));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(runtimeClasspath).build());
+
+        assertUnreadable(result, "notes.txt is neither a directory nor an archive");
+    }
+
+    // ------------------------------------------------------------------ plumbing
+
+    private Application application(Map<String, String> files) throws IOException {
+        return LogbackTestSupport.application(temporary, files);
+    }
+
+    private static void assertStoodDown(LogbackPrecompiler.Result result, String reason) {
+        assertEquals(LogbackPrecompiler.Status.STOOD_DOWN, result.status(), result::message);
+        assertFalse(result.generated());
+        assertEquals(Map.of(), result.entries());
+        String line = result.message();
+        assertTrue(line.startsWith(STAND_DOWN), line);
+        assertTrue(line.contains(reason), () -> line + "\ndoes not name: " + reason);
+        assertTrue(line.endsWith(JORAN_AT_STARTUP), line);
+        assertFalse(line.contains("\n"), line);
+    }
+
+    private static void assertUnreadable(LogbackPrecompiler.Result result, String what) {
+        assertEquals(LogbackPrecompiler.Status.FAILED, result.status(), result::message);
+        assertEquals(Map.of(), result.entries());
+        assertTrue(result.message().startsWith(STAND_DOWN + "the class path could not be read: "), result::message);
+        assertTrue(result.message().contains(what), result::message);
+        assertTrue(result.message().endsWith(JORAN_AT_STARTUP), result::message);
+    }
+
+    /** Jars that look like Logback to the precompiler's survey, at the given versions, and hold nothing else. */
+    private List<Path> fakeLogback(String classicVersion, String coreVersion) throws IOException {
+        Path libs = Files.createTempDirectory(temporary, "fake-logback");
+        return new ArrayList<>(List.of(
+                LogbackTestSupport.jar(libs.resolve("fake-logback-classic.jar"), classicVersion,
+                        Map.of("ch/qos/logback/classic/LoggerContext.class", new byte[] {1})),
+                LogbackTestSupport.jar(libs.resolve("fake-logback-core.jar"), coreVersion,
+                        Map.of("ch/qos/logback/core/Context.class", new byte[] {1})),
+                LogbackTestSupport.jar(libs.resolve("fake-slf4j-api.jar"), null,
+                        Map.of("org/slf4j/ILoggerFactory.class", new byte[] {1}))));
+    }
+}

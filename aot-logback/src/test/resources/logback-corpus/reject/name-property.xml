@@ -1,0 +1,12 @@
+<configuration>
+    <!-- Joran keeps this appender under the name RENAMED, so the root logger never gets it. -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <name>RENAMED</name>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
