@@ -11,21 +11,12 @@ It is meant for build tool plugins and packagers, not for applications.
 
 The engine fails closed.
 Whenever it cannot prove that the generated code builds exactly the `LoggerContext` Joran builds, it generates nothing and says why, and Logback reads `logback.xml` at startup as it always did.
-It also stands down when a `Configurator` is already registered, so it never doubles up with `logback.xml.to.java`.
+It also stands down when a `Configurator` is already registered on the class path it is given, which is the case for an application that `logback.xml.to.java` has already optimized.
+It cannot see an optimizer that runs later, on an application that already carries its output: a build that applies both has to decide which one configures Logback.
 
 == Calling it
 
-[source,java]
-----
-LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
-        LogbackPrecompiler.Request.builder()
-                .applicationOutput(List.of(processedResources, classesDirectory))
-                .runtimeClasspath(runtimeClasspath)
-                .targetRelease(25)
-                .build());
-log(result.message());
-result.writeTo(outputDirectory);
-----
+snippet::example.logback.LogbackPrecompilation[project-base="doc-examples/example", source="main", indent="0", tags="precompile"]
 
 The inputs are:
 
@@ -34,7 +25,7 @@ The inputs are:
 |Input |Meaning
 
 |`applicationOutput`
-|The application's own output in class path order: its resource roots and its class directories, or a jar. Pass the class directories as well as the resources: the engine stands down when the application carries a Logback or SLF4J class, or a `Configurator` service file, which an annotation processor writes to the class output. When two roots hold the same name, the first wins.
+|The application's own output in class path order: its resource roots and its class directories, or a jar. Pass the class directories as well as the resources: the engine stands down when the application carries a Logback or SLF4J class, or a `Configurator` service file, which an annotation processor writes to the class output. When two roots hold the same name, the first wins, except for `logback.xml`: when two roots have one, the engine stands down.
 
 |`runtimeClasspath`
 |The runtime class path after the application, in order: jars or directories. The engine takes logback-classic, logback-core and slf4j-api from here, never from the caller's own class path.
@@ -53,14 +44,18 @@ The `Result` has a `status()`, one `message()` for the caller to log, and the ge
 
 * `GENERATED`: the message says what was compiled. `writeTo` writes the entries below a directory, which has to be on the application's class path next to its `logback.xml`. A packager can add `entries()` to an archive instead.
 * `STOOD_DOWN`: nothing was generated, and the message names the reason. This is expected for many applications.
-* `FAILED`: nothing was generated because a generated name is already taken, the class path could not be read, or the engine failed. The message is worth a warning.
+* `FAILED`: nothing was generated because a generated name is already taken, the output of an earlier call is still in the application output, the class path could not be read, or the engine failed. The message is worth a warning.
 
 `precompile` never throws for anything about its inputs, so a build that calls it does not fail because of Logback.
 `writeTo` only writes: removing the output of an earlier build is the caller's job.
+A caller that writes into one of the application roots it passes, such as the class directory, has to remove that output before it calls `precompile` again, not after. While it is there the result is `FAILED` and the earlier output stays in use, whatever has changed in the application since.
+The output is the service file and the classes of the package `io.micronaut.aot.logback.generated`.
 `logback.xml` has to stay in the application, because the fallbacks below read it.
 
 `LogbackPrecompiler.applicationInputs()` returns, as Ant-style patterns, the entries of the application output that can change the result.
 A build tool may declare its inputs with them, so that the step stays up to date when ordinary classes and resources change.
+Of everything else in the application output the engine reads the name and nothing more.
+On the runtime class path it reads the names of every entry, and the manifests of logback-classic and logback-core.
 
 The engine never loads application classes.
 It reads `logback.xml` with Logback's own parser and model builder, taken from the application's Logback jars, in an isolated class loader.
@@ -93,9 +88,9 @@ Besides a file outside the subset, the engine generates nothing when:
 * `targetRelease` is below 25;
 * the application output carries a Logback or SLF4J class of its own;
 * logback-classic, logback-core or slf4j-api is missing, a Logback jar declares no `Implementation-Version`, the two versions differ, or the version is outside the tested range, which is `[1.5.37, 1.6)`;
-* there is no `logback.xml`, or more than one class path entry has one, which Logback reports at startup;
+* there is no `logback.xml`, or more than one class path entry or more than one application root has one, which Logback reports at startup;
 * any class path entry has a `logback-test.xml`, a `logback.groovy` or a versioned Logback file under `META-INF/versions/`;
-* any class path entry already registers a `Configurator`;
+* any entry of the class path it is given already registers a `Configurator`;
 * a packaged `application*` or `bootstrap*` configuration file, at the root or under `config/`, may set `logger.config` or `logback.configurationFile`. Micronaut applies such a location only without a `Configurator` service, and the generated code cannot see it.
 
 == What the configurator does at run time
@@ -122,6 +117,13 @@ So unless the caller sets `closedClassPath(true)`, the configurator hands over t
 * the first visible `logback.xml` is missing, or differs from the compiled file in size or CRC-32.
 
 It looks where Joran would, through the class loader that defines logback-classic, and keeps the answer.
-The guards do not see a second `logback.xml` that is added to the class path after the build.
+
+The guards have limits. After any of these changes the generated configurator is still applied, although Joran would give another result:
+
+* A second `logback.xml` is added to the class path after the build. Logback would report it at startup.
+* `logback.xml` is edited while the application runs. The guard keeps its first answer, so a later logging refresh applies the compiled configuration again, where Joran would read the file again.
+* The class path changes in another way that the build checked. Nothing but the two guards is checked again at run time: not the Logback version, not a `Configurator` that another entry registers, not a packaged `logger.config`. With a Logback outside the tested range, the generated classes are untested and may not even link.
+
+Build again after such a change, or start the application with `-Dmicronaut.logback.precompiled=false`.
 
 `closedClassPath(true)` is for a packager whose archive is the whole class path. The build-time checks then guarantee what the guards check, and `ClassPathGuard` is not generated.
