@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +130,7 @@ class LogbackPrecompilerApiTest {
                 Map.of("logback.xml", LOGBACK_XML.replace("WARN", "ERROR"))).precompile(false);
         second.writeTo(directory);
 
-        assertFalse(java.util.Arrays.equals(first, Files.readAllBytes(configurator)));
+        assertFalse(Arrays.equals(first, Files.readAllBytes(configurator)));
         assertArrayEquals(second.entries().get(LogbackPrecompiler.CONFIGURATOR_ENTRY),
                 Files.readAllBytes(configurator));
     }
@@ -163,6 +164,8 @@ class LogbackPrecompilerApiTest {
         files.put("application.txt", "logger.config=custom.xml\n");
         files.put("messages.properties", "logger.config=custom.xml\n");
         files.put("META-INF/services/ch.qos.logback.classic.spi.LoggingEventAware", "com.example.Aware\n");
+        // Not even a manifest: the engine reads the manifests of the two Logback entries and no other.
+        files.put("META-INF/MANIFEST.MF", "not a manifest\n");
         files.put("META-INF/versions/21/com/example/logback.xml", LOGBACK_XML);
         files.put("ch/qos/logback/notes.txt", "not a class");
         files.put("io/micronaut/aot/logback/generated/Other.class", "not a generated name");
@@ -190,7 +193,7 @@ class LogbackPrecompilerApiTest {
 
             LogbackPrecompiler.Result result = LogbackTestSupport.application(temporary, changed).precompile(false);
 
-            assertTrue(result.status() != baseline.status() || !java.util.Arrays.equals(
+            assertTrue(result.status() != baseline.status() || !Arrays.equals(
                     result.entries().get(LogbackPrecompiler.CONFIGURATOR_ENTRY),
                     baseline.entries().get(LogbackPrecompiler.CONFIGURATOR_ENTRY)),
                     () -> pattern + " does not change the result: " + result.message());

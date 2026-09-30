@@ -35,7 +35,18 @@ import java.util.List;
 final class IsolatedClassPath extends URLClassLoader {
 
     IsolatedClassPath(List<Path> entries) {
-        super("isolated-logback-class-path", urls(entries), ClassLoader.getPlatformClassLoader());
+        this(entries, ClassLoader.getPlatformClassLoader());
+    }
+
+    /**
+     * A class path below another one, for a case where Logback is defined by a loader that does not see what the
+     * application's loader sees.
+     *
+     * @param entries the entries of this loader
+     * @param parent  its parent
+     */
+    IsolatedClassPath(List<Path> entries, ClassLoader parent) {
+        super("isolated-logback-class-path", urls(entries), parent);
     }
 
     private static URL[] urls(List<Path> entries) {

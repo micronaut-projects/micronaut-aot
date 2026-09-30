@@ -33,6 +33,8 @@ import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 /**
  * What the tests of {@link LogbackPrecompiler} share: the corpus, an application laid out in directories, the
@@ -150,6 +152,55 @@ final class LogbackTestSupport {
             }
         }
         return jar;
+    }
+
+    /**
+     * Writes an archive of exactly the given entries: unlike {@link #jar(Path, String, Map)} it writes no manifest
+     * of its own, so a test can give it one that is not a manifest.
+     *
+     * @param archive where
+     * @param entries its entries, by name
+     * @return the archive
+     */
+    static Path zip(Path archive, Map<String, byte[]> entries) throws IOException {
+        Files.createDirectories(archive.getParent());
+        try (OutputStream file = Files.newOutputStream(archive);
+             ZipOutputStream out = new ZipOutputStream(file)) {
+            for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
+                out.putNextEntry(new ZipEntry(entry.getKey()));
+                out.write(entry.getValue());
+                out.closeEntry();
+            }
+        }
+        return archive;
+    }
+
+    /**
+     * Unpacks a jar into a directory, which is then the same class path entry as the jar.
+     *
+     * @param jar       the jar
+     * @param directory where, created when it does not exist
+     * @return the directory
+     */
+    static Path explode(Path jar, Path directory) throws IOException {
+        try (ZipFile zip = new ZipFile(jar.toFile())) {
+            for (var entries = zip.entries(); entries.hasMoreElements(); ) {
+                ZipEntry entry = entries.nextElement();
+                Path target = directory.resolve(entry.getName()).normalize();
+                if (!target.startsWith(directory)) {
+                    throw new IOException(entry.getName() + " leaves " + directory);
+                }
+                if (entry.isDirectory()) {
+                    Files.createDirectories(target);
+                    continue;
+                }
+                Files.createDirectories(target.getParent());
+                try (InputStream in = zip.getInputStream(entry)) {
+                    Files.copy(in, target);
+                }
+            }
+        }
+        return directory;
     }
 
     /**

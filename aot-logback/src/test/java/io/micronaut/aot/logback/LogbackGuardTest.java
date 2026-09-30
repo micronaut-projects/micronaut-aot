@@ -32,6 +32,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -92,7 +94,7 @@ class LogbackGuardTest {
         try (IsolatedClassPath classPath = classPath(application.resources(), generated)) {
             String[] calls = classPath.probe("configure", 2);
 
-            // Twice: the answer of the guard is kept, and a second call is Micronaut's refresh.
+            // Twice: a second call is Micronaut's refresh.
             assertEquals(joranDefault(application.resources()), calls[0]);
             assertEquals(calls[0], calls[1]);
             assertTrue(calls[0].startsWith(DO_NOT_INVOKE_NEXT + "\n"), calls[0]);
@@ -162,7 +164,7 @@ class LogbackGuardTest {
     }
 
     @Test
-    void theGuardLooksThroughTheLoaderThatDefinesLogback() throws Exception {
+    void anEarlierClassPathEntryWithAnotherLogbackXmlIsWhatIsApplied() throws Exception {
         // The changed file is on the class path before the compiled one, where Joran finds it first.
         Application application = application();
         Path generated = application.generate(false);
@@ -173,6 +175,63 @@ class LogbackGuardTest {
         String description = assertFallsBack(earlier, application.resources(), generated);
 
         assertTrue(description.contains("MOUNTED"), description);
+    }
+
+    /**
+     * Two loaders: Logback in a parent that sees no {@code logback.xml}, the compiled file, unchanged, and the
+     * generated classes in a child. Joran searches with the loader that defines Logback, so it finds nothing
+     * there, and the guard has to look through that same loader, not through its own.
+     */
+    @Test
+    void theGuardLooksThroughTheLoaderThatDefinesLogback() throws Exception {
+        Application application = application();
+        Path generated = application.generate(false);
+        Path harness = LogbackTestSupport.harness(temporary.resolve("harness"));
+        String expected;
+
+        try (IsolatedClassPath logback = new IsolatedClassPath(LogbackTestSupport.logbackJars());
+             IsolatedClassPath child = new IsolatedClassPath(
+                     List.of(application.resources(), generated, harness), logback)) {
+            // The fixture: the loader of the generated classes sees the compiled file, Logback's does not.
+            assertNotNull(child.getResource("logback.xml"));
+            assertNull(logback.getResource("logback.xml"));
+            expected = child.probe("joranDefault");
+
+            String[] calls = child.probe("configure", 1);
+
+            assertEquals(expected, calls[0]);
+            assertTrue(calls[0].startsWith(INVOKE_NEXT + "\n"), calls[0]);
+            assertTrue(child.loaded(LogbackPrecompiler.GUARD_CLASS), "the guard did not run");
+            assertTrue(child.loaded(LogbackPrecompiler.FALLBACK_CLASS), "the configuration was not left to Joran");
+        }
+        assertNotEquals(expected, compiledDescription());
+    }
+
+    /**
+     * The guard answers once. A {@code logback.xml} that is edited while the application runs is therefore not
+     * picked up by a later call, which is Micronaut's logging refresh: a documented limit, where Joran would read
+     * the file again.
+     */
+    @Test
+    void theAnswerOfTheGuardIsKeptForLaterCalls() throws Exception {
+        Application application = application();
+        Path generated = application.generate(false);
+        Path xml = application.resources().resolve("logback.xml");
+        String changed = Files.readString(xml).replace("level=\"WARN\"", "level=\"ERROR\"");
+        String[] calls;
+
+        try (IsolatedClassPath classPath = classPath(application.resources(), generated)) {
+            calls = classPath.probe("configureChangeAndConfigureAgain", xml.toString(), changed);
+
+            assertLiteralPath(classPath);
+        }
+
+        assertTrue(calls[0].startsWith(DO_NOT_INVOKE_NEXT + "\n"), calls[0]);
+        assertTrue(calls[0].contains("ROOT level=WARN"), calls[0]);
+        // reset() drops the statuses the first call recorded, so only the tree itself is compared.
+        assertEquals(LogbackTestSupport.tree(calls[0]), LogbackTestSupport.tree(calls[1]));
+        // The limit: Logback's own lookup on that class path now gives the edited file.
+        assertTrue(joranDefault(application.resources(), generated).contains("ROOT level=ERROR"));
     }
 
     // ------------------------------------------------------------------ why a second logback.xml stands down
@@ -200,6 +259,30 @@ class LogbackGuardTest {
         assertEquals(LogbackTestSupport.STAND_DOWN + "application output and logging-configuration.jar both have a"
                 + " logback.xml, which Logback reports at startup" + LogbackTestSupport.JORAN_AT_STARTUP,
                 result.message());
+        assertEquals(Map.of(), result.entries());
+    }
+
+    /**
+     * The same with two roots of the application: on an open class path each is a class path entry of its own, so
+     * Joran sees both files.
+     */
+    @Test
+    void joranWarnsAboutALogbackXmlInTwoApplicationRootsSoThePrecompilerStandsDown() throws Exception {
+        Application application = application();
+        Files.copy(application.resources().resolve("logback.xml"), application.classes().resolve("logback.xml"));
+
+        String joran;
+        try (IsolatedClassPath classPath = classPath(application.resources(), application.classes())) {
+            joran = classPath.probe("joranDefault");
+        }
+        assertTrue(joran.contains("status 1 Resource [logback.xml] occurs multiple times on the classpath."), joran);
+
+        LogbackPrecompiler.Result result = application.precompile(false);
+
+        assertEquals(LogbackPrecompiler.Status.STOOD_DOWN, result.status(), result::message);
+        assertEquals(LogbackTestSupport.STAND_DOWN + "the application roots " + application.resources() + " and "
+                + application.classes() + " both have a logback.xml, which Logback reports at startup"
+                + LogbackTestSupport.JORAN_AT_STARTUP, result.message());
         assertEquals(Map.of(), result.entries());
     }
 

@@ -103,14 +103,15 @@ import java.util.zip.ZipFile;
  * <p>When the target release is below {@value #MINIMUM_RELEASE}; when logback-classic, logback-core or slf4j-api
  * is missing, the application output carries Logback or SLF4J classes of its own, or either Logback version is
  * missing, differs from the other or is outside {@value #MINIMUM_VERSION} to {@value #VERSION_LIMIT} (exclusive);
- * when there is no {@code logback.xml} or more than one class path entry has one, or any entry has a
- * {@code logback-test.xml}, a {@code logback.groovy} or a versioned Logback file; when any entry already registers
- * a {@code Configurator} service, which covers the application's own configurator and the one of the
- * {@code logback.xml.to.java} optimizer; when a packaged {@code application*} or {@code bootstrap*} file might set
- * {@code logger.config} or {@code logback.configurationFile}, which the generated code cannot see; and when the
- * front end finds the file outside its literal subset. Each of these is {@link Status#STOOD_DOWN}. A generated
- * name that is already taken, a class path that cannot be read, or an unexpected failure, is
- * {@link Status#FAILED}.</p>
+ * when there is no {@code logback.xml} or more than one class path entry or application root has one, or any
+ * entry has a {@code logback-test.xml}, a {@code logback.groovy} or a versioned Logback file; when any entry of
+ * the class path it is given already registers a {@code Configurator} service, which covers the application's own
+ * configurator and an application that the {@code logback.xml.to.java} optimizer has already optimized; when a
+ * packaged {@code application*} or {@code bootstrap*} file might set {@code logger.config} or
+ * {@code logback.configurationFile}, which the generated code cannot see; and when the front end finds the file
+ * outside its literal subset. Each of these is {@link Status#STOOD_DOWN}. A generated name that is already taken,
+ * which includes the output of an earlier call that is still in the application output, a class path that cannot
+ * be read, or an unexpected failure, is {@link Status#FAILED}.</p>
  *
  * @since 3.2.0
  */
@@ -237,6 +238,14 @@ public final class LogbackPrecompiler {
             for (Path entry : request.runtimeClasspath) {
                 layers.add(Layer.of(entry));
             }
+            if (registersGeneratedConfigurator(layers.get(0))) {
+                // Not a stand-down: that output is still on the class path, and it was compiled from the
+                // application as it was then.
+                return Result.failed("The application output already holds the output of an earlier"
+                        + " precompilation (" + SERVICE_ENTRY + " names " + CONFIGURATOR_CLASS + "), which stays"
+                        + " in use; no Logback configuration was precompiled. Remove that output before"
+                        + " precompiling again");
+            }
             survey = Survey.of(layers);
             String reason = survey.standDownReason();
             if (reason == null) {
@@ -281,7 +290,7 @@ public final class LogbackPrecompiler {
     /**
      * The entries of the application output that can change the result, as Ant-style patterns relative to a root
      * ({@code *} matches within a path segment, {@code **}{@code /} any number of directories). Everything else
-     * in a root is ignored: its name is read and nothing more.
+     * in a root is ignored: its name is read and nothing more, its {@code META-INF/MANIFEST.MF} included.
      *
      * <p>This is a contract a build tool's input declaration may rely on: a task that declares the application
      * output filtered by these patterns, plus the runtime class path, stays up to date when ordinary classes and
@@ -428,6 +437,25 @@ public final class LogbackPrecompiler {
     }
 
     /**
+     * Whether the application output holds what an earlier call generated: its {@code Configurator} service file
+     * names the generated configurator. That happens when a caller writes a result into an application root and
+     * precompiles again without removing it.
+     */
+    private static boolean registersGeneratedConfigurator(Layer application) throws IOException {
+        if (!application.names().contains(SERVICE_ENTRY)) {
+            return false;
+        }
+        String services = new String(application.read(SERVICE_ENTRY), StandardCharsets.UTF_8);
+        for (String line : services.split("\\R")) {
+            int comment = line.indexOf('#');
+            if ((comment < 0 ? line : line.substring(0, comment)).strip().equals(CONFIGURATOR_CLASS)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Runs the front end with the isolated loader as the thread's context class loader, and restores the caller's
      * afterwards. Logback's {@code SaxEventRecorder} asks JAXP for a parser factory, and JAXP, like every service
      * lookup, searches the context class loader: left alone, that is the build tool's or the plugin's class path,
@@ -554,7 +582,9 @@ public final class LogbackPrecompiler {
              * when the application carries a Logback or SLF4J class of its own, and when a {@code Configurator}
              * is already registered, which an annotation processor does by writing the service file to the class
              * output. The roots are one layer of the class path: when two of them hold the same name, the first
-             * wins. Only the entries {@link LogbackPrecompiler#applicationInputs()} describes are read; of
+             * wins. {@code logback.xml} is the exception: when two roots hold one the engine stands down, because
+             * Logback reports a {@code logback.xml} that occurs twice wherever the roots are class path entries of
+             * their own. Only the entries {@link LogbackPrecompiler#applicationInputs()} describes are read; of
              * everything else, the name. Every root has to exist.</p>
              *
              * @param roots directories or jars
@@ -568,10 +598,10 @@ public final class LogbackPrecompiler {
             /**
              * The runtime class path after the application, in order: jars or directories. Required.
              *
-             * <p>Each entry is one layer: a jar gives the names of its central directory and its manifest, a
-             * directory the names of its files and its {@code META-INF/MANIFEST.MF} when it has one.
-             * logback-classic, logback-core and slf4j-api are taken from here, never from the caller's own class
-             * path. Every entry has to exist.</p>
+             * <p>Each entry is one layer: a jar gives the names of its central directory, a directory the names
+             * of its files. logback-classic, logback-core and slf4j-api are taken from here, never from the
+             * caller's own class path, and the {@code META-INF/MANIFEST.MF} of the two Logback entries is read
+             * for their version. Every entry has to exist.</p>
              *
              * @param entries jars or directories
              * @return this builder
@@ -700,6 +730,13 @@ public final class LogbackPrecompiler {
          * output of an earlier build is the caller's job, because only the build tool knows whether the
          * directory is its own.
          *
+         * <p>A caller that writes into one of the roots it passes as
+         * {@linkplain Request.Builder#applicationOutput(List) application output}, such as a class directory, has
+         * to remove that earlier output <em>before</em> it calls {@link LogbackPrecompiler#precompile(Request)}
+         * again, not after: the engine neither replaces nor removes it, and the call is {@link Status#FAILED}
+         * while it is there. The output is the service file and the classes of the package
+         * {@value LogbackPrecompiler#PACKAGE}.</p>
+         *
          * @param directory the directory, created when it does not exist
          * @return the files written, in order; empty, and nothing is touched, unless {@link #generated()}
          * @throws IOException if a file cannot be written
@@ -747,9 +784,10 @@ public final class LogbackPrecompiler {
         STOOD_DOWN,
 
         /**
-         * Nothing was generated because something went wrong: a generated name is already taken, the class path
-         * could not be read, or the front end or the emitter failed. Logback configures itself with Joran at
-         * startup.
+         * Nothing was generated because something went wrong: a generated name is already taken, the output of
+         * an earlier call is still in the application output, the class path could not be read, or the front end
+         * or the emitter failed. Logback configures itself with Joran at startup, unless an earlier output is
+         * what is in the way, which then stays in use.
          */
         FAILED
     }
@@ -757,17 +795,21 @@ public final class LogbackPrecompiler {
     /**
      * One layer of the class path, as a class loader searches it.
      *
-     * @param description how the message names it: {@code application output}, or the entry's file name or path
-     * @param source      the class path entry, or {@code null} for the application output
-     * @param manifest    the entry's manifest, or {@code null}
-     * @param names       every entry name the layer holds
-     * @param reader      reads one entry
+     * @param description     how the message names it: {@code application output}, or the entry's file name or
+     *                        path
+     * @param source          the class path entry, or {@code null} for the application output
+     * @param names           every entry name the layer holds
+     * @param reader          reads one entry
+     * @param logbackXmlRoots the application roots that hold a {@code logback.xml}, in order; empty for a class
+     *                        path entry
      */
-    record Layer(String description, @Nullable Path source, @Nullable Manifest manifest, Collection<String> names,
-                 EntryReader reader) {
+    record Layer(String description, @Nullable Path source, Collection<String> names, EntryReader reader,
+                 List<Path> logbackXmlRoots) {
 
         /**
          * The application output: one layer made of every root, where the first root that holds a name wins.
+         * Which roots hold a {@code logback.xml} is kept: where the roots are class path entries of their own,
+         * Joran sees every one of them.
          *
          * @param roots directories or jars
          * @return the layer
@@ -775,20 +817,24 @@ public final class LogbackPrecompiler {
          */
         static Layer application(List<Path> roots) throws IOException {
             Map<String, Root> owners = new LinkedHashMap<>();
+            List<Path> logbackXmlRoots = new ArrayList<>();
             for (Path path : roots) {
                 Root root = Root.of(path);
                 for (String name : root.names()) {
                     owners.putIfAbsent(name, root);
+                    if (name.equals(LOGBACK_XML)) {
+                        logbackXmlRoots.add(path);
+                    }
                 }
             }
-            return new Layer("application output", null, null, Collections.unmodifiableSet(owners.keySet()),
+            return new Layer("application output", null, Collections.unmodifiableSet(owners.keySet()),
                     name -> {
                         Root root = owners.get(name);
                         if (root == null) {
                             throw new IOException("the application output has no " + name);
                         }
                         return root.read(name);
-                    });
+                    }, List.copyOf(logbackXmlRoots));
         }
 
         /**
@@ -801,16 +847,30 @@ public final class LogbackPrecompiler {
         static Layer of(Path entry) throws IOException {
             Root root = Root.of(entry);
             String description = root.directory() ? entry.toString() : String.valueOf(entry.getFileName());
-            return new Layer(description, entry, root.manifest(), root.names(), root::read);
+            return new Layer(description, entry, root.names(), root::read, List.of());
         }
 
         byte[] read(String name) throws IOException {
             return reader.read(name);
         }
 
-        @Nullable String implementationVersion() {
-            return manifest == null ? null
-                    : manifest.getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+        /**
+         * The {@code Implementation-Version} of the layer's manifest. Only the two Logback entries are asked, so
+         * no other manifest is ever read: not an application root's, and not another dependency's.
+         *
+         * @return the version, or {@code null} when the layer has no manifest or the manifest no version
+         * @throws IOException if the manifest cannot be read
+         */
+        @Nullable String implementationVersion() throws IOException {
+            if (!names.contains(MANIFEST_ENTRY)) {
+                return null;
+            }
+            try {
+                return new Manifest(new ByteArrayInputStream(read(MANIFEST_ENTRY))).getMainAttributes()
+                        .getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+            } catch (IOException e) {
+                throw new IOException("the " + MANIFEST_ENTRY + " of " + description + ": " + e.getMessage(), e);
+            }
         }
     }
 
@@ -820,9 +880,8 @@ public final class LogbackPrecompiler {
      * @param path      where it is
      * @param directory whether it is a directory; anything else is read as a ZIP
      * @param names     the names of its files, without directories
-     * @param manifest  its {@code META-INF/MANIFEST.MF}, or {@code null}
      */
-    private record Root(Path path, boolean directory, List<String> names, @Nullable Manifest manifest) {
+    private record Root(Path path, boolean directory, List<String> names) {
 
         static Root of(Path path) throws IOException {
             if (Files.isDirectory(path)) {
@@ -836,13 +895,7 @@ public final class LogbackPrecompiler {
                     }
                 }
                 Collections.sort(names);
-                Path manifest = path.resolve(MANIFEST_ENTRY);
-                if (!Files.isRegularFile(manifest)) {
-                    return new Root(path, true, names, null);
-                }
-                try (InputStream in = Files.newInputStream(manifest)) {
-                    return new Root(path, true, names, new Manifest(in));
-                }
+                return new Root(path, true, names);
             }
             try (ZipFile zip = new ZipFile(path.toFile())) {
                 List<String> names = new ArrayList<>(zip.size());
@@ -852,13 +905,7 @@ public final class LogbackPrecompiler {
                         names.add(entry.getName());
                     }
                 }
-                ZipEntry manifest = zip.getEntry(MANIFEST_ENTRY);
-                if (manifest == null) {
-                    return new Root(path, false, names, null);
-                }
-                try (InputStream in = zip.getInputStream(manifest)) {
-                    return new Root(path, false, names, new Manifest(in));
-                }
+                return new Root(path, false, names);
             } catch (ZipException e) {
                 throw new ZipException(path + " is neither a directory nor an archive: " + e.getMessage());
             }
@@ -950,7 +997,7 @@ public final class LogbackPrecompiler {
             }
         }
 
-        @Nullable String standDownReason() {
+        @Nullable String standDownReason() throws IOException {
             if (applicationLogging != null) {
                 return "the application output carries its own Logback or SLF4J class " + applicationLogging;
             }
@@ -978,9 +1025,15 @@ public final class LogbackPrecompiler {
             if (logbackXml < 0) {
                 return "there is no logback.xml";
             }
+            // Joran's default lookup adds a warning for a resource that occurs more than once, and Logback prints
+            // its status list at startup when it holds a warning. The generated code does neither. Two roots of
+            // the application count as well: on an open class path each is an entry of its own.
+            List<Path> roots = layers.get(logbackXml).logbackXmlRoots();
+            if (roots.size() > 1) {
+                return "the application roots " + roots.get(0) + " and " + roots.get(1)
+                        + " both have a logback.xml, which Logback reports at startup";
+            }
             if (secondLogbackXml != null) {
-                // Joran's default lookup adds a warning for a resource that occurs more than once, and Logback
-                // prints its status list at startup when it holds a warning. The generated code does neither.
                 return layers.get(logbackXml).description() + " and " + secondLogbackXml
                         + " both have a logback.xml, which Logback reports at startup";
             }

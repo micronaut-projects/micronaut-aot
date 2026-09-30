@@ -26,6 +26,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -34,9 +35,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * dependencies of its own, must get neither a dependency nor a platform from it.
  *
  * <p>The build passes the generated POM, the generated Gradle module metadata and the compile class path of the
- * main source set as system properties; without them, as in an IDE, the tests are skipped.</p>
+ * main source set as system properties, and says that it is the build with {@value #BUILD_MARKER}. Without that
+ * marker, as in an IDE, the tests are skipped. With it, a property that is missing is a failure: these tests are
+ * the only evidence that the module publishes nothing else, and must not turn into skips when the build changes.</p>
  */
 class PublishedMetadataTest {
+
+    private static final String BUILD_MARKER = "aot.logback.build";
 
     @Test
     void thePomDeclaresNoDependencyAndNoPlatform() throws Exception {
@@ -68,8 +73,7 @@ class PublishedMetadataTest {
 
     @Test
     void theMainCodeCompilesWithoutLogbackAndSlf4j() {
-        String classpath = System.getProperty("aot.logback.compileClasspath");
-        assumeTrue(classpath != null, "not run by the build");
+        String classpath = property("aot.logback.compileClasspath");
 
         for (String entry : classpath.split(File.pathSeparator)) {
             String name = Path.of(entry).getFileName().toString();
@@ -79,8 +83,15 @@ class PublishedMetadataTest {
     }
 
     private static Path file(String property) {
-        String value = System.getProperty(property);
+        return Path.of(property(property));
+    }
+
+    private static String property(String name) {
+        String value = System.getProperty(name);
+        if (value == null) {
+            assertNull(System.getProperty(BUILD_MARKER), "the build did not pass " + name);
+        }
         assumeTrue(value != null, "not run by the build");
-        return Path.of(value);
+        return value;
     }
 }

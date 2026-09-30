@@ -17,6 +17,7 @@ package io.micronaut.aot.logback;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.Configurator;
+import io.micronaut.aot.logback.LogbackTestSupport.Application;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -393,6 +394,63 @@ class LogbackPrecompilerTest {
 
         assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
         assertEquals(3, result.entries().size(), result::message);
+    }
+
+    /**
+     * A caller whose own class path holds the module next to a Logback of its own, as a build tool plugin's may:
+     * here one whose classes cannot even be defined. The front end runs on the Logback of the runtime class path
+     * it is given, so it never meets them.
+     */
+    @Test
+    void theFrontEndRunsOnTheLogbackOfTheRuntimeClassPathNotOnTheCallers() throws Exception {
+        Path callersLogback = temporary.resolve("callers-logback");
+        for (String name : List.of("ch/qos/logback/classic/LoggerContext.class",
+                "ch/qos/logback/classic/joran/JoranConfigurator.class", "ch/qos/logback/core/Context.class",
+                "ch/qos/logback/core/spi/ContextAwareBase.class", "org/slf4j/ILoggerFactory.class")) {
+            LogbackTestSupport.write(callersLogback.resolve(name), "not a class");
+        }
+        List<URL> caller = new ArrayList<>();
+        caller.add(LogbackTestSupport.jarOf(LogbackPrecompiler.class).toUri().toURL());
+        URL frontEnd = LogbackPrecompiler.class.getResource(LogbackPrecompiler.FRONTEND_RESOURCE);
+        if ("file".equals(frontEnd.getProtocol())) {
+            // The build runs the tests on directories: the front end jar is in the resources, not with the classes.
+            Path resources = Path.of(frontEnd.toURI());
+            for (int i = Path.of(LogbackPrecompiler.FRONTEND_RESOURCE).getNameCount(); i > 0; i--) {
+                resources = resources.getParent();
+            }
+            caller.add(resources.toUri().toURL());
+        }
+        caller.add(callersLogback.toUri().toURL());
+        Application application = LogbackTestSupport.application(temporary,
+                Map.of("logback.xml", LogbackTestSupport.corpus("accept/rich.xml", null)));
+        String status;
+        String message;
+
+        try (URLClassLoader loader = new URLClassLoader(caller.toArray(URL[]::new),
+                ClassLoader.getPlatformClassLoader())) {
+            assertThrows(ClassFormatError.class,
+                    () -> Class.forName("ch.qos.logback.classic.LoggerContext", false, loader),
+                    "the fixture does not put a broken Logback on the caller's class path");
+            Class<?> precompiler = Class.forName(LogbackPrecompiler.class.getName(), true, loader);
+            assertSame(loader, precompiler.getClassLoader(), "the module is not loaded by the caller's loader");
+            Class<?> requestType = Class.forName(LogbackPrecompiler.Request.class.getName(), true, loader);
+            Object builder = requestType.getMethod("builder").invoke(null);
+            Class<?> builderType = builder.getClass();
+            builderType.getMethod("applicationOutput", List.class)
+                    .invoke(builder, List.of(application.resources(), application.classes()));
+            builderType.getMethod("runtimeClasspath", List.class).invoke(builder, LogbackTestSupport.logbackJars());
+            builderType.getMethod("targetRelease", int.class).invoke(builder, 25);
+            builderType.getMethod("workDirectory", Path.class).invoke(builder, temporary.resolve("callers-work"));
+
+            Object result = precompiler.getMethod("precompile", requestType)
+                    .invoke(null, builderType.getMethod("build").invoke(builder));
+
+            status = String.valueOf(result.getClass().getMethod("status").invoke(result));
+            message = (String) result.getClass().getMethod("message").invoke(result);
+        }
+
+        assertEquals("GENERATED", status, message);
+        assertTrue(message.startsWith("Precompiled logback.xml (application output) into "), message);
     }
 
     @Test

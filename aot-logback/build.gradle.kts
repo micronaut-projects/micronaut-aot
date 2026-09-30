@@ -80,7 +80,9 @@ tasks.named<Jar>("sourcesJar") {
     from(logbackFrontend.allSource)
 }
 
-// PublishedMetadataTest reads what the module publishes and what its main code compiles against.
+// PublishedMetadataTest reads what the module publishes and what its main code compiles against. The marker
+// tells it that the build runs it, so that a property this build no longer passes fails the test instead of
+// skipping it.
 val publishedPom = tasks.named<GenerateMavenPom>("generatePomFileForMavenPublication").map { it.destination }
 val publishedModule = tasks.named<GenerateModuleMetadata>("generateMetadataFileForMavenPublication")
     .flatMap { it.outputFile }
@@ -90,6 +92,7 @@ tasks.named<Test>("test") {
     inputs.files(publishedPom).withPropertyName("publishedPom").withPathSensitivity(PathSensitivity.NONE)
     inputs.files(publishedModule).withPropertyName("publishedModule").withPathSensitivity(PathSensitivity.NONE)
     inputs.files(mainCompileClasspath).withPropertyName("mainCompileClasspath").withNormalizer(ClasspathNormalizer::class)
+    systemProperty("aot.logback.build", "true")
     doFirst {
         systemProperty("aot.logback.pom", publishedPom.get().absolutePath)
         systemProperty("aot.logback.module", publishedModule.get().asFile.absolutePath)

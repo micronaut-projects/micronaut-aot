@@ -20,6 +20,7 @@ import ch.qos.logback.classic.spi.Configurator;
 import ch.qos.logback.classic.util.DefaultJoranConfigurator;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -49,6 +50,32 @@ public final class LogbackProbe {
      */
     public static String[] configure(int calls) {
         return configure(LogbackProbe.class.getClassLoader(), calls);
+    }
+
+    /**
+     * Calls the registered configurator on one context, replaces a file, and calls it again after a reset: what
+     * Micronaut's logging refresh does in an application whose {@code logback.xml} was edited while it runs.
+     *
+     * @param file    the file to replace after the first call
+     * @param content its new content
+     * @return for both calls, the returned status, a line break and the description of the context after it
+     */
+    public static String[] configureChangeAndConfigureAgain(String file, String content) {
+        ClassLoader generated = LogbackProbe.class.getClassLoader();
+        LoggerContext context = new LoggerContext();
+        String[] descriptions = new String[2];
+        descriptions[0] = LogbackDifferential.configure(generated, context) + "\n"
+                + LogbackDifferential.describe(context);
+        try {
+            Files.writeString(Path.of(file), content, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+        context.reset();
+        descriptions[1] = LogbackDifferential.configure(generated, context) + "\n"
+                + LogbackDifferential.describe(context);
+        context.stop();
+        return descriptions;
     }
 
     /**

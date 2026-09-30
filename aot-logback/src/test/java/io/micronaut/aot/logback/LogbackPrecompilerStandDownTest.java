@@ -34,6 +34,7 @@ import java.util.function.UnaryOperator;
 import static io.micronaut.aot.logback.LogbackTestSupport.JORAN_AT_STARTUP;
 import static io.micronaut.aot.logback.LogbackTestSupport.LOGBACK_XML;
 import static io.micronaut.aot.logback.LogbackTestSupport.STAND_DOWN;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -107,18 +108,59 @@ class LogbackPrecompilerStandDownTest {
 
     @Test
     void theFirstApplicationRootThatHoldsANameWins() throws IOException {
-        Application application = application(Map.of("logback.xml", LOGBACK_XML));
-        // The class directory holds another logback.xml, outside the subset: it is never read.
-        LogbackTestSupport.write(application.classes().resolve("logback.xml"),
-                LOGBACK_XML.replace("<configuration>", "<configuration scan=\"true\">"));
+        Application application = application(Map.of("logback.xml", LOGBACK_XML,
+                "application.properties", "micronaut.application.name=demo\n"));
+        // The class directory holds another application.properties, which names a location: it is never read,
+        // as a class loader never finds it.
+        LogbackTestSupport.write(application.classes().resolve("application.properties"),
+                "logger.config=custom.xml\n");
 
         LogbackPrecompiler.Result resourcesFirst = application.precompile(false);
         LogbackPrecompiler.Result classesFirst = LogbackPrecompiler.precompile(application.request()
                 .applicationOutput(List.of(application.classes(), application.resources())).build());
 
         assertEquals(LogbackPrecompiler.Status.GENERATED, resourcesFirst.status(), resourcesFirst::message);
-        assertEquals(LogbackPrecompiler.Status.STOOD_DOWN, classesFirst.status(), classesFirst::message);
-        assertTrue(classesFirst.message().contains("scan=\"true\""), classesFirst::message);
+        assertStoodDown(classesFirst, "the packaged application.properties may set logger.config");
+    }
+
+    /** A directory is listed in the order of its names, so what a message names does not depend on the file system. */
+    @Test
+    void theMessageNamesTheFirstEntryInTheOrderOfTheNames() throws IOException {
+        Map<String, String> files = new LinkedHashMap<>();
+        files.put("logback.xml", LOGBACK_XML);
+        for (String name : List.of("config/application.yml", "bootstrap.yml", "application.yml",
+                "application-prod.yml")) {
+            files.put(name, "logger:\n  config: custom.xml\n");
+        }
+
+        assertStoodDown(application(files).precompile(false), "the packaged application-prod.yml may set");
+    }
+
+    /** Logback exploded into directories is the same class path, and its version is still read. */
+    @Test
+    void logbackInDirectoriesIsReadAsItIsInJars() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        List<Path> directories = new ArrayList<>();
+        for (Path jar : LogbackTestSupport.logbackJars()) {
+            directories.add(LogbackTestSupport.explode(jar,
+                    temporary.resolve("exploded").resolve(String.valueOf(jar.getFileName()))));
+        }
+        LogbackPrecompiler.Request request = application.request().runtimeClasspath(directories).build();
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(request);
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertArrayEquals(application.precompile(false).entries().get(LogbackPrecompiler.CONFIGURATOR_ENTRY),
+                result.entries().get(LogbackPrecompiler.CONFIGURATOR_ENTRY));
+
+        // The manifest of a directory is what gives its version.
+        Path manifest = directories.get(0).resolve("META-INF/MANIFEST.MF");
+        Files.writeString(manifest, Files.readString(manifest)
+                .replaceAll("Implementation-Version: \\S+", "Implementation-Version: 1.4.14"));
+        assertStoodDown(LogbackPrecompiler.precompile(request), "logback-classic 1.4.14 and logback-core ");
+        Files.delete(manifest);
+        assertStoodDown(LogbackPrecompiler.precompile(request),
+                "logback-classic or logback-core declares no Implementation-Version");
     }
 
     /**
@@ -291,6 +333,24 @@ class LogbackPrecompilerStandDownTest {
                 + " class org/slf4j/impl/StaticLoggerBinder.class");
     }
 
+    /**
+     * Two roots of the application that both hold a {@code logback.xml}: on an open class path they are two
+     * class path entries, and Logback reports the file that occurs twice. {@link LogbackGuardTest} shows that.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void standsDownWhenTwoApplicationRootsHoldALogbackXml(boolean closed) throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        LogbackTestSupport.write(application.classes().resolve("logback.xml"), LOGBACK_XML);
+
+        assertStoodDown(application.precompile(closed), "the application roots " + application.resources()
+                + " and " + application.classes() + " both have a logback.xml, which Logback reports at startup");
+        assertStoodDown(LogbackPrecompiler.precompile(application.request().closedClassPath(closed)
+                .applicationOutput(List.of(application.classes(), application.resources())).build()),
+                "the application roots " + application.classes() + " and " + application.resources()
+                        + " both have a logback.xml, which Logback reports at startup");
+    }
+
     /** What an annotation processor writes goes to the class output, not to the resources. */
     @Test
     void standsDownOnAConfiguratorServiceFileThatOnlyAClassDirectoryHolds() throws IOException {
@@ -349,6 +409,75 @@ class LogbackPrecompilerStandDownTest {
         assertEquals("The application output already carries '" + name + "'; no Logback configuration was"
                 + " precompiled and Logback will configure itself with Joran at startup", result.message());
         assertEquals(Map.of(), result.entries());
+    }
+
+    /**
+     * What a caller gets that writes into a root it passes as application output, as a build step that writes
+     * into the class directory does: the second call finds the first one's output. It is a failure, not a
+     * stand-down, until the caller removes that output, because that output stays in use whatever has changed.
+     */
+    @Test
+    void theOutputOfAnEarlierCallInAnApplicationRootIsAFailureUntilItIsRemoved() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        LogbackPrecompiler.Result first = application.precompile(false);
+        List<Path> written = first.writeTo(application.classes());
+        assertEquals(4, written.size());
+
+        LogbackPrecompiler.Result second = application.precompile(false);
+
+        assertEquals(LogbackPrecompiler.Status.FAILED, second.status(), second::message);
+        assertEquals("The application output already holds the output of an earlier precompilation ("
+                + LogbackPrecompiler.SERVICE_ENTRY + " names " + LogbackPrecompiler.CONFIGURATOR_CLASS
+                + "), which stays in use; no Logback configuration was precompiled. Remove that output before"
+                + " precompiling again", second.message());
+        assertEquals(Map.of(), second.entries());
+        assertEquals(List.of(), second.writeTo(application.classes()));
+        for (Path file : written) {
+            String name = application.classes().relativize(file).toString().replace('\\', '/');
+            assertArrayEquals(first.entries().get(name), Files.readAllBytes(file), name);
+        }
+
+        // The application now names a location, which that earlier output does not know about: still a failure.
+        LogbackTestSupport.write(application.resources().resolve("application.properties"),
+                "logger.config=custom.xml\n");
+        assertEquals(second.message(), application.precompile(false).message());
+
+        // Once the caller has removed the earlier output, the engine sees the application as it is.
+        for (Path file : written) {
+            Files.delete(file);
+        }
+        assertStoodDown(application.precompile(false), "the packaged application.properties may set logger.config");
+        Files.delete(application.resources().resolve("application.properties"));
+        LogbackPrecompiler.Result third = application.precompile(false);
+        assertEquals(LogbackPrecompiler.Status.GENERATED, third.status(), third::message);
+        assertArrayEquals(first.entries().get(LogbackPrecompiler.CONFIGURATOR_ENTRY),
+                third.entries().get(LogbackPrecompiler.CONFIGURATOR_ENTRY));
+    }
+
+    /** A service file is read as {@code ServiceLoader} reads it: comments and blank lines do not count. */
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "# written by a build step\n\nio.micronaut.aot.logback.generated.LogbackConfigurator # the generated one\n",
+        "com.example.MyConfigurator\r\n  io.micronaut.aot.logback.generated.LogbackConfigurator"})
+    void aServiceFileThatNamesTheGeneratedConfiguratorIsAnEarlierOutput(String services) throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML,
+                LogbackPrecompiler.SERVICE_ENTRY, services));
+
+        LogbackPrecompiler.Result result = application.precompile(false);
+
+        assertEquals(LogbackPrecompiler.Status.FAILED, result.status(), result::message);
+        assertTrue(result.message().startsWith("The application output already holds the output of an earlier"
+                + " precompilation"), result::message);
+    }
+
+    /** Only a line that is the generated name counts: another configurator is a stand-down, as it always was. */
+    @Test
+    void aServiceFileThatOnlyMentionsTheGeneratedConfiguratorIsAnotherConfigurator() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML, LogbackPrecompiler.SERVICE_ENTRY,
+                "# not io.micronaut.aot.logback.generated.LogbackConfigurator\ncom.example.MyConfigurator\n"));
+
+        assertStoodDown(application.precompile(false), "application output already registers a Logback Configurator ("
+                + LogbackPrecompiler.SERVICE_ENTRY + ")");
     }
 
     @Test
@@ -427,6 +556,40 @@ class LogbackPrecompilerStandDownTest {
                 application.request().runtimeClasspath(runtimeClasspath).build());
 
         assertUnreadable(result, "notes.txt is neither a directory nor an archive");
+    }
+
+    /**
+     * Of all the manifests on the class path, the engine reads those of logback-classic and logback-core. One
+     * that is not a manifest anywhere else, in an application root or in another dependency, changes nothing.
+     */
+    @Test
+    void onlyTheManifestsOfTheTwoLogbackEntriesAreRead() throws IOException {
+        byte[] notAManifest = "not a manifest\n".getBytes(StandardCharsets.UTF_8);
+        Application application = application(Map.of("logback.xml", LOGBACK_XML,
+                "META-INF/MANIFEST.MF", "not a manifest\n"));
+        LogbackTestSupport.write(application.classes().resolve("META-INF/MANIFEST.MF"), "not a manifest\n");
+        List<Path> runtimeClasspath = new ArrayList<>(LogbackTestSupport.logbackJars());
+        runtimeClasspath.add(LogbackTestSupport.zip(temporary.resolve("libs/library.jar"),
+                Map.of("META-INF/MANIFEST.MF", notAManifest, "com/example/Library.class", new byte[] {1})));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(runtimeClasspath).build());
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+    }
+
+    @Test
+    void aLogbackManifestThatCannotBeReadIsAFailure() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        List<Path> dependencies = fakeLogback("1.5.37", "1.5.37");
+        dependencies.set(1, LogbackTestSupport.zip(temporary.resolve("libs/broken-logback-core.jar"), Map.of(
+                "META-INF/MANIFEST.MF", "not a manifest\n".getBytes(StandardCharsets.UTF_8),
+                "ch/qos/logback/core/Context.class", new byte[] {1})));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(dependencies).build());
+
+        assertUnreadable(result, "the META-INF/MANIFEST.MF of broken-logback-core.jar: ");
     }
 
     // ------------------------------------------------------------------ plumbing
