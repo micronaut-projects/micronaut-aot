@@ -42,12 +42,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -110,11 +112,12 @@ import java.util.zip.ZipFile;
  * entry has a {@code logback-test.xml}, a {@code logback.groovy} or a versioned Logback file; when any entry of
  * the class path it is given already registers a {@code Configurator} service, which covers the application's own
  * configurator and an application that the {@code logback.xml.to.java} optimizer has already optimized; when a
- * packaged {@code application*} or {@code bootstrap*} file might set {@code logger.config} or
- * {@code logback.configurationFile}, which the generated code cannot see; and when the front end finds the file
- * outside its literal subset. Each of these is {@link Status#STOOD_DOWN}. A generated name that is already taken,
- * which includes the output of an earlier call that is still in the application output, a class path that cannot
- * be read, or an unexpected failure, is {@link Status#FAILED}.</p>
+ * packaged {@code application*} or {@code bootstrap*} file, of the application output or of any entry of the
+ * runtime class path, might set {@code logger.config} or {@code logback.configurationFile}, which the generated
+ * code cannot see; and when the front end finds the file outside its literal subset. Each of these is
+ * {@link Status#STOOD_DOWN}. A generated name that is already taken, which includes the output of an earlier call
+ * that is still in the application output, a class path that cannot be read, or an unexpected failure, is
+ * {@link Status#FAILED}.</p>
  *
  * @since 3.2.0
  */
@@ -252,7 +255,7 @@ public final class LogbackPrecompiler {
             survey = Survey.of(layers);
             String reason = survey.standDownReason();
             if (reason == null) {
-                reason = packagedConfigurationReason(layers.get(0));
+                reason = packagedConfigurationReason(layers);
             }
             if (reason != null) {
                 return Result.standDown(reason);
@@ -480,9 +483,15 @@ public final class LogbackPrecompiler {
     }
 
     /**
-     * Stands down when a packaged configuration file of the application might set {@code logger.config} or
+     * Stands down when a packaged configuration file might set {@code logger.config} or
      * {@code logback.configurationFile}: Micronaut's refresh applies such a location only when no
      * {@code Configurator} service is registered, and the generated code cannot see it.
+     *
+     * <p>Every {@code application*} and {@code bootstrap*} file of every class path entry is checked: those of
+     * each application root and those of each entry of the runtime class path, in class path order, including a
+     * file that an earlier entry shadows. Micronaut reads a configuration file of a dependency whenever the
+     * application has none of that name, and its configuration loading strategy can merge the files of every
+     * entry; which strategy the application uses is not known here.</p>
      *
      * <p>A {@code .properties} file is parsed, and sets one when it has either key. Any other format is not
      * parsed, so the check is on its text, ignoring case, and errs on the side of standing down: the text names
@@ -491,34 +500,47 @@ public final class LogbackPrecompiler {
      * TOML {@code [logger]} table or inline table and a Groovy closure. A false positive only costs the
      * optimisation.</p>
      */
-    private static @Nullable String packagedConfigurationReason(Layer application) throws IOException {
-        for (String name : application.names()) {
-            if (!PACKAGED_CONFIGURATION.matcher(name).matches()) {
-                continue;
-            }
-            byte[] content = application.read(name);
-            String text = new String(content, StandardCharsets.UTF_8);
-            boolean sets;
-            if (name.endsWith(".properties")) {
-                Properties properties = new Properties();
-                properties.load(new ByteArrayInputStream(content));
-                sets = false;
-                for (String key : properties.stringPropertyNames()) {
-                    String normalized = key.toLowerCase(Locale.ROOT).replace("-", "");
-                    sets |= normalized.equals("logger.config") || normalized.equals("logback.configurationfile");
+    private static @Nullable String packagedConfigurationReason(List<Layer> layers) throws IOException {
+        for (int i = 0; i < layers.size(); i++) {
+            Layer layer = layers.get(i);
+            Set<String> seen = new HashSet<>();
+            for (Root root : layer.roots()) {
+                for (String name : root.names()) {
+                    if (!(name.startsWith("application") || name.startsWith("bootstrap")
+                            || name.startsWith("config/")) || !PACKAGED_CONFIGURATION.matcher(name).matches()) {
+                        continue;
+                    }
+                    if (setsLocation(name, root.read(name))) {
+                        // An application root's file is named by its root only when an earlier root shadows it.
+                        String where = i > 0 ? " of " + layer.description()
+                                : seen.contains(name) ? " of " + root.path() : "";
+                        return "the packaged " + name + where + " may set logger.config or"
+                                + " logback.configurationFile, which Micronaut applies only without a Configurator"
+                                + " service";
+                    }
+                    seen.add(name);
                 }
-            } else {
-                String lower = text.toLowerCase(Locale.ROOT);
-                sets = lower.contains("configurationfile") || lower.contains("configuration-file")
-                        || lower.contains("logger.config")
-                        || LOGGER_WORD.matcher(lower).find() && CONFIG_KEY.matcher(lower).find();
-            }
-            if (sets) {
-                return "the packaged " + name + " may set logger.config or logback.configurationFile, which"
-                        + " Micronaut applies only without a Configurator service";
             }
         }
         return null;
+    }
+
+    private static boolean setsLocation(String name, byte[] content) throws IOException {
+        if (name.endsWith(".properties")) {
+            Properties properties = new Properties();
+            properties.load(new ByteArrayInputStream(content));
+            for (String key : properties.stringPropertyNames()) {
+                String normalized = key.toLowerCase(Locale.ROOT).replace("-", "");
+                if (normalized.equals("logger.config") || normalized.equals("logback.configurationfile")) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        String lower = new String(content, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
+        return lower.contains("configurationfile") || lower.contains("configuration-file")
+                || lower.contains("logger.config")
+                || LOGGER_WORD.matcher(lower).find() && CONFIG_KEY.matcher(lower).find();
     }
 
     /**
@@ -585,10 +607,12 @@ public final class LogbackPrecompiler {
              * when the application carries a Logback or SLF4J class of its own, and when a {@code Configurator}
              * is already registered, which an annotation processor does by writing the service file to the class
              * output. The roots are one layer of the class path: when two of them hold the same name, the first
-             * wins. {@code logback.xml} is the exception: when two roots hold one the engine stands down, because
-             * Logback reports a {@code logback.xml} that occurs twice wherever the roots are class path entries of
-             * their own. Only the entries {@link LogbackPrecompiler#applicationInputs()} describes are read; of
-             * everything else, the name. Every root has to exist.</p>
+             * wins. There are two exceptions, because wherever the roots are class path entries of their own both
+             * files are found: when two roots hold a {@code logback.xml} the engine stands down, as Logback reports
+             * the file that occurs twice, and the packaged {@code application*} and {@code bootstrap*} files of
+             * every root are read, since Micronaut can merge them. Only the entries
+             * {@link LogbackPrecompiler#applicationInputs()} describes are read; of everything else, the name.
+             * Every root has to exist.</p>
              *
              * @param roots directories or jars
              * @return this builder
@@ -604,7 +628,10 @@ public final class LogbackPrecompiler {
              * <p>Each entry is one layer: a jar gives the names of its central directory, a directory the names
              * of its files. logback-classic, logback-core and slf4j-api are taken from here, never from the
              * caller's own class path, and the {@code META-INF/MANIFEST.MF} of the two Logback entries is read
-             * for their version. Every entry has to exist.</p>
+             * for their version. The packaged {@code application*} and {@code bootstrap*} configuration files of
+             * every entry, at its root or under {@code config/}, are read as well: Micronaut reads those of a
+             * dependency too, and the engine stands down when one might set {@code logger.config} or
+             * {@code logback.configurationFile}. Every entry has to exist.</p>
              *
              * @param entries jars or directories
              * @return this builder
@@ -806,9 +833,10 @@ public final class LogbackPrecompiler {
      * @param reader          reads one entry
      * @param logbackXmlRoots the application roots that hold a {@code logback.xml}, in order; empty for a class
      *                        path entry
+     * @param roots           what the layer is made of, in order: every application root, or the one entry
      */
     record Layer(String description, @Nullable Path source, Collection<String> names, EntryReader reader,
-                 List<Path> logbackXmlRoots) {
+                 List<Path> logbackXmlRoots, List<Root> roots) {
 
         /**
          * The application output: one layer made of every root, where the first root that holds a name wins.
@@ -822,8 +850,10 @@ public final class LogbackPrecompiler {
         static Layer application(List<Path> roots) throws IOException {
             Map<String, Root> owners = new LinkedHashMap<>();
             List<Path> logbackXmlRoots = new ArrayList<>();
+            List<Root> read = new ArrayList<>();
             for (Path path : roots) {
                 Root root = Root.of(path);
+                read.add(root);
                 for (String name : root.names()) {
                     owners.putIfAbsent(name, root);
                     if (name.equals(LOGBACK_XML)) {
@@ -838,7 +868,7 @@ public final class LogbackPrecompiler {
                             throw new IOException("the application output has no " + name);
                         }
                         return root.read(name);
-                    }, List.copyOf(logbackXmlRoots));
+                    }, List.copyOf(logbackXmlRoots), List.copyOf(read));
         }
 
         /**
@@ -851,7 +881,7 @@ public final class LogbackPrecompiler {
         static Layer of(Path entry) throws IOException {
             Root root = Root.of(entry);
             String description = root.directory() ? entry.toString() : String.valueOf(entry.getFileName());
-            return new Layer(description, entry, root.names(), root::read, List.of());
+            return new Layer(description, entry, root.names(), root::read, List.of(), List.of(root));
         }
 
         byte[] read(String name) throws IOException {

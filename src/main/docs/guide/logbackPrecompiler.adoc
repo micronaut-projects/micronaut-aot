@@ -55,7 +55,7 @@ The output is the service file and the classes of the package `io.micronaut.aot.
 `LogbackPrecompiler.applicationInputs()` returns, as Ant-style patterns, the entries of the application output that can change the result.
 A build tool may declare its inputs with them, so that the step stays up to date when ordinary classes and resources change.
 Of everything else in the application output the engine reads the name and nothing more.
-On the runtime class path it reads the names of every entry, and the manifests of logback-classic and logback-core.
+On the runtime class path it reads the names of every entry, the manifests of logback-classic and logback-core, and the packaged `application*` and `bootstrap*` configuration files of every entry.
 
 The engine never loads application classes.
 It reads `logback.xml` with Logback's own parser and model builder, taken from the application's Logback jars, in an isolated class loader.
@@ -91,7 +91,7 @@ Besides a file outside the subset, the engine generates nothing when:
 * there is no `logback.xml`, or more than one class path entry or more than one application root has one, which Logback reports at startup;
 * any class path entry has a `logback-test.xml`, a `logback.groovy` or a versioned Logback file under `META-INF/versions/`;
 * any entry of the class path it is given already registers a `Configurator`;
-* a packaged `application*` or `bootstrap*` configuration file, at the root or under `config/`, may set `logger.config` or `logback.configurationFile`. Micronaut applies such a location only without a `Configurator` service, and the generated code cannot see it.
+* a packaged `application*` or `bootstrap*` configuration file, at the root or under `config/` of an application root or of any entry of the runtime class path, may set `logger.config` or `logback.configurationFile`. Micronaut applies such a location only without a `Configurator` service, and the generated code cannot see it (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>). Every such file is read, also one that an earlier entry has under the same name: Micronaut reads the file of a dependency when the application has none of that name, and it can merge the files of every entry, depending on its configuration loading strategy.
 
 == What the configurator does at run time
 

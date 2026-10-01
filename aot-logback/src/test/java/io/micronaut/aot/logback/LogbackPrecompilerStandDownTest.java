@@ -106,12 +106,15 @@ class LogbackPrecompilerStandDownTest {
                 result::message);
     }
 
+    /**
+     * A configuration file of an application root is read even when an earlier root has one of the same name:
+     * where the roots are class path entries of their own, Micronaut can merge both. The message names the root
+     * of a file that an earlier root shadows.
+     */
     @Test
-    void theFirstApplicationRootThatHoldsANameWins() throws IOException {
+    void theConfigurationFileOfEveryApplicationRootIsRead() throws IOException {
         Application application = application(Map.of("logback.xml", LOGBACK_XML,
                 "application.properties", "micronaut.application.name=demo\n"));
-        // The class directory holds another application.properties, which names a location: it is never read,
-        // as a class loader never finds it.
         LogbackTestSupport.write(application.classes().resolve("application.properties"),
                 "logger.config=custom.xml\n");
 
@@ -119,8 +122,71 @@ class LogbackPrecompilerStandDownTest {
         LogbackPrecompiler.Result classesFirst = LogbackPrecompiler.precompile(application.request()
                 .applicationOutput(List.of(application.classes(), application.resources())).build());
 
-        assertEquals(LogbackPrecompiler.Status.GENERATED, resourcesFirst.status(), resourcesFirst::message);
+        assertStoodDown(resourcesFirst, "the packaged application.properties of " + application.classes()
+                + " may set logger.config");
         assertStoodDown(classesFirst, "the packaged application.properties may set logger.config");
+    }
+
+    /**
+     * A configuration file of a dependency is read as one of the application: Micronaut reads it when the
+     * application has none of that name, and can merge it with the application's own when it has one.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"jar application.yml", "directory application.yml", "jar config/bootstrap.properties",
+        "jar application-prod.toml"})
+    void standsDownOnAConfigurationFileOfADependencyThatMaySetALocation(String condition) throws IOException {
+        // The application's own application.yml names no location, and does not hide the dependency's.
+        Application application = application(Map.of("logback.xml", LOGBACK_XML,
+                "application.yml", "micronaut:\n  application:\n    name: demo\n"));
+        boolean jar = condition.startsWith("jar ");
+        String name = condition.substring(condition.indexOf(' ') + 1);
+        String content = switch (name) {
+            case "application.yml" -> "logger:\n  levels:\n    com.example: DEBUG\n  config: custom.xml\n";
+            case "config/bootstrap.properties" -> "logback.configurationFile=custom.xml\n";
+            case "application-prod.toml" -> "logger = { config = \"custom.xml\" }\n";
+            default -> throw new IllegalArgumentException(condition);
+        };
+        Path dependency = dependency(jar, Map.of(name, content, "com/example/Defaults.class", "not a class"));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(withLogback(dependency)).build());
+
+        assertStoodDown(result, "the packaged " + name + " of "
+                + (jar ? "logging-defaults.jar" : dependency.toString()) + " may set logger.config or"
+                + " logback.configurationFile, which Micronaut applies only without a Configurator service");
+    }
+
+    /**
+     * Only what Micronaut reads as configuration counts in a dependency, as in the application: a file at the root
+     * or under {@code config/} that names a location. Logger levels, and files elsewhere, change nothing.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void aDependencyWhoseConfigurationNamesNoLocationIsStillPrecompiled(boolean jar) throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML));
+        Path dependency = dependency(jar, Map.of(
+                "application.yml", "logger:\n  levels:\n    com.example: DEBUG\n",
+                "bootstrap.properties", "micronaut.application.name=library\n",
+                "META-INF/application.yml", "logger:\n  config: custom.xml\n",
+                "com/example/application.properties", "logger.config=custom.xml\n"));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(withLogback(dependency)).build());
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+    }
+
+    /** The application output is read before the runtime class path, so a message names its file first. */
+    @Test
+    void theApplicationsOwnConfigurationFileIsNamedBeforeADependencys() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML,
+                "application.properties", "logger.config=custom.xml\n"));
+        Path dependency = dependency(true, Map.of("application.properties", "logger.config=other.xml\n"));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(withLogback(dependency)).build());
+
+        assertStoodDown(result, "because the packaged application.properties may set logger.config");
     }
 
     /** A directory is listed in the order of its names, so what a message names does not depend on the file system. */
@@ -596,6 +662,29 @@ class LogbackPrecompilerStandDownTest {
 
     private Application application(Map<String, String> files) throws IOException {
         return LogbackTestSupport.application(temporary, files);
+    }
+
+    /** A dependency of the application that holds the given files: a jar, or another project's resources. */
+    private Path dependency(boolean jar, Map<String, String> files) throws IOException {
+        if (jar) {
+            Map<String, byte[]> entries = new LinkedHashMap<>();
+            for (Map.Entry<String, String> file : files.entrySet()) {
+                entries.put(file.getKey(), file.getValue().getBytes(StandardCharsets.UTF_8));
+            }
+            return LogbackTestSupport.jar(temporary.resolve("libs/logging-defaults.jar"), null, entries);
+        }
+        Path directory = temporary.resolve("other-project/build/resources/main");
+        for (Map.Entry<String, String> file : files.entrySet()) {
+            LogbackTestSupport.write(directory.resolve(file.getKey()), file.getValue());
+        }
+        return directory;
+    }
+
+    /** The Logback jars of the test class path, then one more entry. */
+    private static List<Path> withLogback(Path entry) {
+        List<Path> runtimeClasspath = new ArrayList<>(LogbackTestSupport.logbackJars());
+        runtimeClasspath.add(entry);
+        return runtimeClasspath;
     }
 
     private static void assertStoodDown(LogbackPrecompiler.Result result, String reason) {
