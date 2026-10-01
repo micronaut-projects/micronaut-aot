@@ -472,7 +472,7 @@ final class Logback14GeneratorHelper {
         Object converted;
         try {
             converted = StringToObjectConverter.convertArg(conversionContext, value, type);
-        } catch (RuntimeException | LinkageError e) {
+        } catch (RuntimeException | LinkageError _) {
             converted = null;
         }
         if (converted == null) {
@@ -614,7 +614,7 @@ final class Logback14GeneratorHelper {
     private Class<?> loadClass(String className) {
         try {
             return Class.forName(className, false, Logback14GeneratorHelper.class.getClassLoader());
-        } catch (ClassNotFoundException | LinkageError e) {
+        } catch (ClassNotFoundException | LinkageError _) {
             throw unsupportedClass(className, "which cannot be loaded");
         }
     }
@@ -632,7 +632,7 @@ final class Logback14GeneratorHelper {
         try {
             type.getConstructor();
             return true;
-        } catch (NoSuchMethodException e) {
+        } catch (NoSuchMethodException _) {
             return false;
         }
     }
@@ -743,7 +743,7 @@ final class Logback14GeneratorHelper {
         String substituted;
         try {
             substituted = OptionHelper.substVars(value, analysisContext);
-        } catch (ScanException | RuntimeException e) {
+        } catch (ScanException | RuntimeException _) {
             substituted = null;
         }
         if (!value.equals(substituted)) {
