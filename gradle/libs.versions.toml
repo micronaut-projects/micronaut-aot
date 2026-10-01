@@ -2,8 +2,13 @@
 javapoet = "1.13.0"
 micronaut = "5.2.2"
 micronaut-picocli = "6.1.0"
+# The Logback that aot-logback's front end is compiled against and its differential tests run on. It has to be
+# inside LogbackPrecompiler's tested range, which the Logback of the Micronaut catalog is not yet. Widen that
+# range only by testing another version here.
+logback-precompiler = "1.5.37"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 micronaut-picocli = { module = "io.micronaut.picocli:micronaut-picocli-bom", version.ref = "micronaut-picocli" }
+logback-precompiler-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-precompiler" }

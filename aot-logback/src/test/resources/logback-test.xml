@@ -1,0 +1,12 @@
+<configuration>
+    <!-- logback-classic is on this test class path for the differential tests. This keeps the test JVM's own
+         logging quiet, and it is what Logback's default lookup finds when a test hands over to Joran. -->
+    <appender name="AOT-LOGBACK-TESTS" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%-5level %logger - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <root level="WARN">
+        <appender-ref ref="AOT-LOGBACK-TESTS"/>
+    </root>
+</configuration>

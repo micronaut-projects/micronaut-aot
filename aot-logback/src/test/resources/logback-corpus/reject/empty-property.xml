@@ -1,0 +1,12 @@
+<configuration>
+    <!-- Joran makes no setter call for an element without text; setTarget("") would add a warning instead. -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <target></target>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

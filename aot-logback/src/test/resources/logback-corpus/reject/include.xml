@@ -1,0 +1,4 @@
+<configuration>
+    <include resource="included-logback.xml"/>
+    <root level="INFO"/>
+</configuration>
