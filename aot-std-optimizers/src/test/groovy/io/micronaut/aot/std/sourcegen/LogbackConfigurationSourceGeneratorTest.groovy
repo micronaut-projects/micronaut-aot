@@ -887,14 +887,17 @@ public class StaticLogbackConfiguration implements Configurator {
 
     static class CheckedExceptionAppender extends ConsoleAppender<ILoggingEvent> {
         void setLabel(String label) throws IOException {
+            // intentionally empty: only the checked exception in the signature matters
         }
 
         void setTag(CheckedTag tag) {
+            // intentionally empty: only the checked exception of CheckedTag#valueOf matters
         }
     }
 
     static class CheckedConstructorAppender extends ConsoleAppender<ILoggingEvent> {
         CheckedConstructorAppender() throws IOException {
+            // intentionally empty: only the checked exception in the signature matters
         }
     }
 
