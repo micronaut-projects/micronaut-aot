@@ -380,7 +380,8 @@ class LogbackPrecompilerStandDownTest {
         "bootstrap.properties placeholder with two names defaulting to false",
         "application.json placeholder without a default", "application.json placeholder defaulting to false",
         "application.toml placeholder without a default", "bootstrap.toml inline table placeholder defaulting to false",
-        "application.groovy placeholder without a default", "application.groovy placeholder defaulting to false"})
+        "application.groovy placeholder without a default", "application.groovy placeholder defaulting to false",
+        "application.groovy placeholder in a double-quoted string"})
     void warnsOnAPackagedConfigurationThatEnablesTheConfigurationClient(String condition) throws IOException {
         Map<String, String> files = new LinkedHashMap<>();
         files.put("logback.xml", LOGBACK_XML);
@@ -441,6 +442,8 @@ class LogbackPrecompilerStandDownTest {
                     "micronaut { 'config-client' { enabled = '${CONFIG_CLIENT_ENABLED}' } }\n";
             case "application.groovy placeholder defaulting to false" ->
                     "micronaut { 'config-client' { enabled = '${CONFIG_CLIENT_ENABLED:false}' } }\n";
+            case "application.groovy placeholder in a double-quoted string" ->
+                    "micronaut { 'config-client' { enabled = \"\\${CONFIG_CLIENT_ENABLED:false}\" } }\n";
             default -> throw new IllegalArgumentException(condition);
         };
         Path dependency = null;

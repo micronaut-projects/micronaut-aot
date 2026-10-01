@@ -273,10 +273,11 @@ public final class LogbackPrecompiler {
      * An {@code enabled} key that may be {@code true}, in lower-cased text, quoted or not: the word, then {@code :}
      * or {@code =}, with at most a closing quote, a closing bracket and white space in between, then the value,
      * quoted or not. The value is {@code true}, or {@code yes} or {@code on}, which SnakeYAML, with which Micronaut
-     * reads YAML, reads as {@code true}, or a {@link #PLACEHOLDER}.
+     * reads YAML, reads as {@code true}, or a {@link #PLACEHOLDER}, also after the backslash that a double-quoted
+     * Groovy string needs before its {@code $}.
      */
     private static final Pattern ENABLED_MAY_BE_TRUE = Pattern.compile(
-            "(?<![a-z0-9_-])enabled[\"']?\\s*+]?\\s*+[:=]\\s*+[\"']?(?:(?:true|yes|on)(?![a-z0-9_-])|"
+            "(?<![a-z0-9_-])enabled[\"']?\\s*+]?\\s*+[:=]\\s*+[\"']?(?:(?:true|yes|on)(?![a-z0-9_-])|\\\\?"
                     + PLACEHOLDER.pattern() + ")");
 
     /** The name under which Micronaut reads a logging configuration location: a property or an environment variable. */
@@ -684,10 +685,11 @@ public final class LogbackPrecompiler {
      * {@code logger.config}, or has the word {@code logger} and a {@code config} key anywhere, in any order and on
      * any line. It imports when the text names {@code config.import}, or has an {@code import} key and the word
      * {@code config} anywhere. It may enable the client when the text has the word {@code config-client} (or
-     * {@code configClient}) and an {@code enabled} key set to {@code true}, or to a placeholder, quoted or not,
-     * anywhere. That covers nested YAML, flow-style YAML, JSON on one line, TOML tables and inline tables and a
-     * Groovy closure. A false positive only costs the optimisation, or a warning: an {@code enabled} key of another
-     * section, in a file that names {@code config-client}, gives the warning too.</p>
+     * {@code configClient}) and an {@code enabled} key set to {@code true}, or to a placeholder, quoted or not (in a
+     * double-quoted Groovy string, {@code "\${...}"}), anywhere. That covers nested YAML, flow-style YAML, JSON on
+     * one line, TOML tables and inline tables and a Groovy closure. A false positive only costs the optimisation, or
+     * a warning: an {@code enabled} key of another section, in a file that names {@code config-client}, gives the
+     * warning too.</p>
      *
      * <p>A placeholder counts whatever its default, and also without one, such as {@code ${CONFIG_CLIENT_ENABLED}}
      * or {@code ${CONFIG_CLIENT_ENABLED:false}}: Micronaut resolves it at run time, from sources the build cannot
