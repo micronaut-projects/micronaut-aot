@@ -256,6 +256,101 @@ class LogbackPrecompilerStandDownTest {
         assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
     }
 
+    /**
+     * A packaged configuration that imports other configuration with {@code micronaut.config.import} stands the
+     * precompiler down, in every format and whatever the import names: a class path resource of any name, which
+     * Micronaut reads and which may set {@code logger.config}, as well as a file, which the build cannot read.
+     * The imported file itself is not read.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"application.properties classpath", "application.properties indexed",
+        "application.properties structured", "application.properties file", "application.yml nested list",
+        "application.yml flat key", "application.yml flow style", "application.json on one line",
+        "application.toml table", "application.toml dotted key", "application.toml structured table",
+        "application.groovy closure",
+        "bootstrap.yml of a dependency jar"})
+    void standsDownOnAPackagedConfigurationThatImportsConfiguration(String condition) throws IOException {
+        Map<String, String> files = new LinkedHashMap<>();
+        files.put("logback.xml", LOGBACK_XML);
+        // What Micronaut would import: no application* or bootstrap* name, so the scan never reads it.
+        files.put("logging-settings.properties", "logger.config=custom.xml\n");
+        String name = condition.substring(0, condition.indexOf(' '));
+        String content = switch (condition) {
+            case "application.properties classpath" -> "micronaut.application.name=demo\n"
+                    + "micronaut.config.import=classpath://logging-settings.properties\n";
+            case "application.properties indexed" -> "micronaut.config.import[0]=optional:classpath*://shared\n";
+            case "application.properties structured" -> "micronaut.config.import.vault.provider=vault\n";
+            case "application.properties file" -> "micronaut.config.import=optional:file:///etc/demo/logging\n";
+            case "application.yml nested list" -> """
+                    micronaut:
+                      application:
+                        name: demo
+                      config:
+                        import:
+                          - "classpath://logging-settings.properties"
+                    """;
+            case "application.yml flat key" -> "micronaut.config.import: classpath*://logging-settings\n";
+            case "application.yml flow style" -> "micronaut: {config: {import: [classpath://logging-settings]}}\n";
+            case "application.json on one line" ->
+                    "{\"micronaut\":{\"config\":{\"import\":\"classpath://logging-settings.properties\"}}}";
+            case "application.toml table" -> "[micronaut.config]\nimport = [\"classpath://logging-settings\"]\n";
+            case "application.toml dotted key" -> "[micronaut]\nconfig.import = \"classpath://logging-settings\"\n";
+            case "application.toml structured table" ->
+                    "[micronaut.config.import]\nprovider = \"vault\"\npath = \"secret/demo\"\n";
+            case "application.groovy closure" -> "micronaut { config { 'import' = 'classpath://logging-settings' } }\n";
+            case "bootstrap.yml of a dependency jar" ->
+                    "micronaut:\n  config:\n    import: classpath://logging-settings\n";
+            default -> throw new IllegalArgumentException(condition);
+        };
+        Path dependency = null;
+        if (condition.endsWith("dependency jar")) {
+            dependency = dependency(true, Map.of(name, content));
+        } else {
+            files.put(name, content);
+        }
+        Application application = application(files);
+
+        LogbackPrecompiler.Result result = dependency == null ? application.precompile(false)
+                : LogbackPrecompiler.precompile(
+                        application.request().runtimeClasspath(withLogback(dependency)).build());
+
+        assertStoodDown(result, "because the packaged " + name
+                + (dependency == null ? "" : " of logging-defaults.jar") + " may import configuration with"
+                + " micronaut.config.import, which is not read here and may set logger.config or"
+                + " logback.configurationFile; Micronaut applies such a location only without a Configurator service");
+    }
+
+    /**
+     * Only an {@code import} key, in a file that has the word {@code config}, counts as an import: the word in a
+     * comment or a value, a key that only starts with it, a Groovy {@code import} statement and an {@code import}
+     * key in a file without that word do not stand the precompiler down.
+     */
+    @Test
+    void aPackagedConfigurationThatOnlyMentionsImportIsStillPrecompiled() throws IOException {
+        Application application = application(Map.of("logback.xml", LOGBACK_XML,
+                "application.yml", """
+                        # Import nothing here: the settings are below.
+                        micronaut:
+                          application:
+                            name: import-service
+                          config-client:
+                            enabled: false
+                        jpa:
+                          default:
+                            properties:
+                              hibernate.hbm2ddl.import_files: data.sql
+                        """,
+                "application.properties", "app.important=true\napp.import-batch-size=10\n",
+                "application.groovy",
+                "import java.time.Duration\n\napp { config = Duration.ofSeconds(5).toString() }\n",
+                "application.json", "{\"imports\":{\"config\":\"none\"}}\n",
+                "application-dev.yml", "seed:\n  import: data.sql\n"));
+
+        LogbackPrecompiler.Result result = application.precompile(false);
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+    }
+
     // ------------------------------------------------------------------ stand-downs
 
     @ParameterizedTest

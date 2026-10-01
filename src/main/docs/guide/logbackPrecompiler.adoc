@@ -91,7 +91,7 @@ Besides a file outside the subset, the engine generates nothing when:
 * there is no `logback.xml`, or more than one class path entry or more than one application root has one, which Logback reports at startup;
 * any class path entry has a `logback-test.xml`, a `logback.groovy` or a versioned Logback file under `META-INF/versions/`;
 * any entry of the class path it is given already registers a `Configurator`;
-* a packaged `application*` or `bootstrap*` configuration file, at the root or under `config/` of an application root or of any entry of the runtime class path, may set `logger.config` or `logback.configurationFile`. Micronaut applies such a location only without a `Configurator` service, and the generated code cannot see it (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>). Every such file is read, also one that an earlier entry has under the same name: Micronaut reads the file of a dependency when the application has none of that name, and it can merge the files of every entry, depending on its configuration loading strategy. The names are wider than what Micronaut reads by default, which is `application` and `bootstrap`, with an optional environment suffix, at the root of the class path: `config/` is read only when `overrideConfigLocations` adds a location such as `classpath:config/`. A false positive only costs the optimisation.
+* a packaged `application*` or `bootstrap*` configuration file, at the root or under `config/` of an application root or of any entry of the runtime class path, may set `logger.config` or `logback.configurationFile`, or may import configuration with `micronaut.config.import`. Micronaut applies such a location only without a `Configurator` service, and the generated code cannot see it (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>). An import can load a class path resource of any name, a file, an environment variable or what a custom provider supplies, and what it loads can set the location or import more. The engine does not follow imports, so it stands down on any import, whatever it names. Every such file is read, also one that an earlier entry has under the same name: Micronaut reads the file of a dependency when the application has none of that name, and it can merge the files of every entry, depending on its configuration loading strategy. The names are wider than what Micronaut reads by default, which is `application` and `bootstrap`, with an optional environment suffix, at the root of the class path: `config/` is read only when `overrideConfigLocations` adds a location such as `classpath:config/`. A false positive only costs the optimisation.
 
 == What the configurator does at run time
 
@@ -116,13 +116,15 @@ So the generated configurator applies a location only where it can read it itsel
 A location that comes from any other property source is not applied, and the compiled configuration stays in use:
 
 * a program argument, such as `java -jar app.jar --logger.config=custom.xml`. A `-Dlogger.config=custom.xml` written after the jar or the main class is a program argument too, not a system property: Micronaut keeps it in the property source of its command line. The configurator does not read the command line of the process instead, from the `sun.java.command` property or from `ProcessHandle.current().info().arguments()`: the command line does not say which arguments the application passed to Micronaut, and it is only one of the sources listed here;
-* a configuration file outside the class path, such as `config/application.yml` in the working directory or a file named by `micronaut.config.files`;
+* a configuration file that no packaged file names: `config/application.yml` in the working directory; a file named by the `micronaut.config.files` system property or the `MICRONAUT_CONFIG_FILES` environment variable, on the file system or, with a `classpath:` prefix, on the class path; a bootstrap configuration file named by the `micronaut.bootstrap.name` system property;
+* configuration that `micronaut.config.import` imports when one of the sources of this list declares the import, whatever it imports, a class path resource included;
 * any other property source, such as distributed configuration or properties passed to `ApplicationContext.builder()`.
 
 Pass the location as a JVM system property, `java -Dlogger.config=custom.xml -jar app.jar`, or as the `LOGGER_CONFIG` environment variable instead.
 The opt-out does not help: the configurator then runs Logback's default lookup, which reads `logback.xml`, because Micronaut still calls the configurator instead of reading the location.
 https://github.com/micronaut-projects/micronaut-core/issues/13390[micronaut-core#13390] proposes that Micronaut's refresh apply such a location itself, whatever `Configurator` is registered.
-A packaged configuration file is the one source the build can read, so it stands down when one might set the location.
+The build can read the packaged `application*` and `bootstrap*` files, and none of the sources above.
+So it stands down when one of those files might set the location, or might import configuration with `micronaut.config.import`, which the build does not follow, wherever the import points.
 
 [[logbackPrecompilerGuards]]
 == Guards for open class paths
@@ -142,7 +144,7 @@ The first call costs a few milliseconds, most of it the class loader's first loo
 The guards have limits. After any of these changes the generated configurator is still applied, although Joran would give another result:
 
 * A second `logback.xml` is added to the class path after the build. Logback would report it at startup.
-* The class path changes in another way that the build checked. Nothing but the two guards is checked again at run time: not the Logback version, not a `Configurator` that another entry registers, not a packaged `logger.config`. With a Logback outside the tested range, the generated classes are untested and may not even link.
+* The class path changes in another way that the build checked. Nothing but the two guards is checked again at run time: not the Logback version, not a `Configurator` that another entry registers, not a packaged `logger.config` or `micronaut.config.import`. With a Logback outside the tested range, the generated classes are untested and may not even link.
 
 Build again after such a change, or start the application with `-Dmicronaut.logback.precompiled=false`.
 

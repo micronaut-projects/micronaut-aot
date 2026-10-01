@@ -114,7 +114,8 @@ import java.util.zip.ZipFile;
  * configurator and an application that the {@code logback.xml.to.java} optimizer has already optimized; when a
  * packaged {@code application*} or {@code bootstrap*} file, of the application output or of any entry of the
  * runtime class path, might set {@code logger.config} or {@code logback.configurationFile}, which the generated
- * code cannot see; and when the front end finds the file outside its literal subset. Each of these is
+ * code cannot see, or might import configuration with {@code micronaut.config.import}, which is not followed;
+ * and when the front end finds the file outside its literal subset. Each of these is
  * {@link Status#STOOD_DOWN}. A generated name that is already taken, which includes the output of an earlier call
  * that is still in the application output, a class path that cannot be read, or an unexpected failure, is
  * {@link Status#FAILED}.</p>
@@ -216,6 +217,25 @@ public final class LogbackPrecompiler {
      * {@code =}, with at most a closing quote, a closing bracket and white space in between.
      */
     private static final Pattern CONFIG_KEY = Pattern.compile("(?<![a-z0-9_-])config[\"']?\\s*]?\\s*[:=]");
+
+    /** The word {@code config} in lower-cased text, wherever it stands: a key, a TOML table name, a value. */
+    private static final Pattern CONFIG_WORD = Pattern.compile("(?<![a-z0-9_-])config(?![a-z0-9_-])");
+
+    /**
+     * An {@code import} key in lower-cased text, wherever it stands, quoted or not: the word, then {@code :},
+     * {@code =}, {@code .} or {@code [}, with at most a closing quote, a closing bracket and white space in
+     * between. That is a block or flow YAML key, a JSON member, a TOML key and the start of a dotted, indexed or
+     * structured declaration; an {@code import} statement or the word in a sentence is not.
+     */
+    private static final Pattern IMPORT_KEY = Pattern.compile("(?<![a-z0-9_-])import[\"']?\\s*]?\\s*[:=.\\[]");
+
+    /** The dotted {@code config.import} of a flat key or a TOML table name, in lower-cased text. */
+    private static final Pattern CONFIG_IMPORT_PATH = Pattern.compile("(?<![a-z0-9_-])config\\.import(?![a-z0-9_-])");
+
+    /** The key of Micronaut's configuration imports, lower-cased. */
+    private static final String CONFIG_IMPORT = "micronaut.config.import";
+
+    private static final String MAY_SET_A_LOCATION = "may set logger.config or logback.configurationFile";
 
     private static final List<String> APPLICATION_INPUTS = inputPatterns();
 
@@ -501,12 +521,19 @@ public final class LogbackPrecompiler {
      * entry; which strategy the application uses is not known here. The names checked, those of
      * {@link #PACKAGED_CONFIGURATION}, include more than Micronaut reads by default.</p>
      *
-     * <p>A {@code .properties} file is parsed, and sets one when it has either key. Any other format is not
-     * parsed, so the check is on its text, ignoring case, and errs on the side of standing down: the text names
-     * {@code configurationFile} or {@code logger.config}, or it has the word {@code logger} and a {@code config}
-     * key anywhere, in any order and on any line. That covers nested YAML, flow-style YAML, JSON on one line, a
-     * TOML {@code [logger]} table or inline table and a Groovy closure. A false positive only costs the
-     * optimisation.</p>
+     * <p>A file that may import configuration with {@code micronaut.config.import} stands it down too. Such an
+     * import can load a class path resource of any name, a file, an environment variable or what a custom
+     * provider supplies, and an imported file can import further. This check does not follow imports, so it
+     * stands down on any import, whatever it names.</p>
+     *
+     * <p>A {@code .properties} file is parsed, and sets one when it has either key, or imports when it has
+     * {@code micronaut.config.import}, an indexed {@code micronaut.config.import[n]} or a structured
+     * {@code micronaut.config.import.*} key. Any other format is not parsed, so the check is on its text,
+     * ignoring case, and errs on the side of standing down: the text names {@code configurationFile} or
+     * {@code logger.config}, or it has the word {@code logger} and a {@code config} key anywhere, in any order and
+     * on any line; or it names {@code config.import}, or it has an {@code import} key and the word
+     * {@code config} anywhere. That covers nested YAML, flow-style YAML, JSON on one line, TOML tables and inline
+     * tables and a Groovy closure. A false positive only costs the optimisation.</p>
      */
     private static @Nullable String packagedConfigurationReason(List<Layer> layers) throws IOException {
         for (int i = 0; i < layers.size(); i++) {
@@ -518,13 +545,12 @@ public final class LogbackPrecompiler {
                             || name.startsWith("config/")) || !PACKAGED_CONFIGURATION.matcher(name).matches()) {
                         continue;
                     }
-                    if (setsLocation(name, root.read(name))) {
+                    String what = locationReason(name, root.read(name));
+                    if (what != null) {
                         // An application root's file is named by its root only when an earlier root shadows it.
                         String where = i > 0 ? " of " + layer.description()
                                 : seen.contains(name) ? " of " + root.path() : "";
-                        return "the packaged " + name + where + " may set logger.config or"
-                                + " logback.configurationFile, which Micronaut applies only without a Configurator"
-                                + " service";
+                        return "the packaged " + name + where + " " + what;
                     }
                     seen.add(name);
                 }
@@ -533,22 +559,41 @@ public final class LogbackPrecompiler {
         return null;
     }
 
-    private static boolean setsLocation(String name, byte[] content) throws IOException {
+    /**
+     * Why a packaged configuration file stands the precompiler down, or {@code null} when it does not: it may set
+     * a location, or it may import configuration that does.
+     */
+    private static @Nullable String locationReason(String name, byte[] content) throws IOException {
+        boolean setsLocation;
+        boolean imports;
         if (name.endsWith(".properties")) {
             Properties properties = new Properties();
             properties.load(new ByteArrayInputStream(content));
+            setsLocation = false;
+            imports = false;
             for (String key : properties.stringPropertyNames()) {
                 String normalized = key.toLowerCase(Locale.ROOT).replace("-", "");
-                if (normalized.equals("logger.config") || normalized.equals("logback.configurationfile")) {
-                    return true;
-                }
+                setsLocation |= normalized.equals("logger.config") || normalized.equals("logback.configurationfile");
+                imports |= normalized.equals(CONFIG_IMPORT) || normalized.startsWith(CONFIG_IMPORT + ".")
+                        || normalized.startsWith(CONFIG_IMPORT + "[");
             }
-            return false;
+        } else {
+            String lower = new String(content, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
+            setsLocation = lower.contains("configurationfile") || lower.contains("configuration-file")
+                    || lower.contains("logger.config")
+                    || LOGGER_WORD.matcher(lower).find() && CONFIG_KEY.matcher(lower).find();
+            imports = CONFIG_IMPORT_PATH.matcher(lower).find()
+                    || IMPORT_KEY.matcher(lower).find() && CONFIG_WORD.matcher(lower).find();
         }
-        String lower = new String(content, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
-        return lower.contains("configurationfile") || lower.contains("configuration-file")
-                || lower.contains("logger.config")
-                || LOGGER_WORD.matcher(lower).find() && CONFIG_KEY.matcher(lower).find();
+        if (setsLocation) {
+            return MAY_SET_A_LOCATION + ", which Micronaut applies only without a Configurator service";
+        }
+        if (imports) {
+            return "may import configuration with " + CONFIG_IMPORT + ", which is not read here and "
+                    + MAY_SET_A_LOCATION + "; Micronaut applies such a location only without a Configurator"
+                    + " service";
+        }
+        return null;
     }
 
     /**
@@ -639,8 +684,8 @@ public final class LogbackPrecompiler {
              * for their version. The packaged {@code application*} and {@code bootstrap*} configuration files of
              * every entry are read as well, at its root, where Micronaut reads those of a dependency too, and
              * under {@code config/}, which Micronaut reads only when {@code overrideConfigLocations} adds it. The
-             * engine stands down when one might set {@code logger.config} or {@code logback.configurationFile}.
-             * Every entry has to exist.</p>
+             * engine stands down when one might set {@code logger.config} or {@code logback.configurationFile},
+             * or might import configuration with {@code micronaut.config.import}. Every entry has to exist.</p>
              *
              * @param entries jars or directories
              * @return this builder
