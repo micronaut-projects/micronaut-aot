@@ -40,8 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * When {@link LogbackPrecompiler} generates nothing, and what it says: through the public API, with directories
- * and jars as class path entries.
+ * When {@link LogbackPrecompiler} generates nothing, and what it says: through {@code precompile(Request)},
+ * with directories and jars as class path entries.
  */
 class LogbackPrecompilerStandDownTest {
 

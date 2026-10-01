@@ -169,7 +169,7 @@ public final class LogbackPrecompiler {
     /** The lowest Java release that loads the generated classes, which are class files of that release. */
     private static final int MINIMUM_RELEASE = 25;
 
-    private static final String FRONTEND_CLASS = "io.micronaut.aot.logback.frontend.LogbackFrontend";
+    private static final String FRONTEND_CLASS = "io.micronaut.aot.logback.internal.frontend.LogbackFrontend";
 
     private static final String FRONTEND_FILE = "logback-frontend.jar";
 
