@@ -47,7 +47,7 @@ The `Result` has a `status()`, one `message()` for the caller to log, the genera
 * `FAILED`: nothing was generated because a generated name is already taken, the output of an earlier call is still in the application output, the class path could not be read, or the engine failed. The message is worth a warning.
 
 `warnings()` holds lines that the plugin logs at warning level, each on its own, after the message.
-Only a `GENERATED` result can have any, and most have none: the one case today is a packaged file that enables distributed configuration (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>).
+Only a `GENERATED` result can have any, and most have none: the one case today is a packaged file that may enable distributed configuration (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>).
 The list is never `null`.
 
 `precompile` never throws for anything about its inputs, so a build that calls it does not fail because of Logback.
@@ -97,7 +97,7 @@ Besides a file outside the subset, the engine generates nothing when:
 * any entry of the class path it is given already registers a `Configurator`;
 * a packaged `application*` or `bootstrap*` configuration file, at the root or under `config/` of an application root or of any entry of the runtime class path, may set `logger.config` or `logback.configurationFile`, or may import configuration with `micronaut.config.import`. Micronaut applies such a location only without a `Configurator` service, and the generated code cannot see it (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>). An import can load a class path resource of any name, a file, an environment variable or what a custom provider supplies, and what it loads can set the location or import more. The engine does not follow imports, so it stands down on any import, whatever it names. Every such file is read, also one that an earlier entry has under the same name: Micronaut reads the file of a dependency when the application has none of that name, and it can merge the files of every entry, depending on its configuration loading strategy. The names are wider than what Micronaut reads by default, which is `application` and `bootstrap`, with an optional environment suffix, at the root of the class path: `config/` is read only when `overrideConfigLocations` adds a location such as `classpath:config/`. A false positive only costs the optimisation.
 
-One case of these same files does not stand the engine down but adds a warning to a `GENERATED` result: a file that enables Micronaut's distributed configuration client (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>).
+One case of these same files does not stand the engine down but adds a warning to a `GENERATED` result: a file that may enable Micronaut's distributed configuration client (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>).
 
 == What the configurator does at run time
 
@@ -133,14 +133,14 @@ The build can read the packaged `application*` and `bootstrap*` files, and none 
 So it stands down when one of those files might set the location, or might import configuration with `micronaut.config.import`, which the build does not follow, wherever the import points.
 
 Distributed configuration is one of the sources the build cannot read: it cannot know what a configuration server will supply.
-It can see, though, a packaged `application*` or `bootstrap*` file, of an application root or of a dependency, that enables Micronaut's distributed configuration client with `micronaut.config-client.enabled` set to `true`.
+It can see, though, a packaged `application*` or `bootstrap*` file, of an application root or of a dependency, that may enable Micronaut's distributed configuration client: one that sets `micronaut.config-client.enabled` to `true` or to any placeholder.
 The engine then still generates the configurator, and the `GENERATED` result carries one warning for each such file.
-The warning names the file and its root or jar, says that a `logger.config` or `logback.configurationFile` that distributed configuration supplies is not applied while the generated configurator is registered, and gives the workarounds: pass the location as `-Dlogger.config` or `LOGGER_CONFIG`, as above, or turn precompilation off in the build plugin, so that no configurator is generated.
+The warning names the file and its root or jar, says that the file may enable the client, that a `logger.config` or `logback.configurationFile` that distributed configuration supplies is not applied while the generated configurator is registered, and gives the workarounds: pass the location as `-Dlogger.config` or `LOGGER_CONFIG`, as above, or turn precompilation off in the build plugin, so that no configurator is generated.
 It also says that `-Dmicronaut.logback.precompiled=false` does not help, for the reason above.
 A `.properties` file is parsed. In any other format the engine checks the text, ignoring case: the word `config-client` (or `configClient`) and an `enabled` key set to `true`, `yes` or `on` anywhere in the file give the warning.
-In every format, a placeholder whose default is `true`, such as `+${CONFIG_CLIENT_ENABLED:true}+`, counts as `true`: Micronaut resolves it to `true` unless the run time sets the variable.
-A false positive only costs a warning line. `enabled: false`, or a mention of `config-client` without an `enabled` key set to `true`, gives none, unless another `enabled` key of the same file is set to `true`: the text rule does not know which section a key belongs to.
-A client that is enabled only at run time is not seen, and gives no warning: an environment variable such as `MICRONAUT_CONFIG_CLIENT_ENABLED`, a system property, a file outside the application and its dependencies, such as one that `micronaut.config.files` names, or a packaged placeholder without a default of `true`, such as `+${CONFIG_CLIENT_ENABLED}+`, that a run-time variable resolves.
+In every format, quoted or not, a placeholder counts as well, whatever its default and also without one: `+${CONFIG_CLIENT_ENABLED}+`, `+${CONFIG_CLIENT_ENABLED:false}+` and `+${CONFIG_CLIENT_ENABLED:true}+` all give the warning. Micronaut resolves a placeholder at run time, from sources the build cannot see, so it may resolve to `true`.
+A false positive only costs a warning line. `enabled: false`, or a mention of `config-client` without an `enabled` key, gives none, unless another `enabled` key of the same file is set to `true` or to a placeholder: the text rule does not know which section a key belongs to.
+A client that only a source outside the packaged files enables is not seen, and gives no warning: an environment variable such as `MICRONAUT_CONFIG_CLIENT_ENABLED`, a system property, or a file outside the application and its dependencies, such as one that `micronaut.config.files` names.
 
 [[logbackPrecompilerGuards]]
 == Guards for open class paths

@@ -129,12 +129,13 @@ import java.util.zip.ZipFile;
  * <h2>When it warns</h2>
  * <p>One case still generates, as {@link Status#GENERATED}, but adds a line to {@link Result#warnings()}: a
  * packaged {@code application*} or {@code bootstrap*} file, of the application output or of any entry of the
- * runtime class path, that might enable Micronaut's distributed configuration client
- * ({@code micronaut.config-client.enabled} set to {@code true}). A {@code logger.config} or
- * {@code logback.configurationFile} that distributed configuration supplies is not applied while the generated
- * configurator is registered, and the build cannot know whether the configuration server supplies one. A client
- * that only the run time enables, by an environment variable, a system property or a file that is not on the class
- * path given here, is not seen. A stand-down or a failure has no warnings.</p>
+ * runtime class path, that may enable Micronaut's distributed configuration client
+ * ({@code micronaut.config-client.enabled} set to {@code true}, or to any placeholder, which the run time may resolve
+ * to {@code true}). A {@code logger.config} or {@code logback.configurationFile} that distributed configuration
+ * supplies is not applied while the generated configurator is registered, and the build cannot know whether the
+ * configuration server supplies one. A client that is enabled without such a file, by an environment variable, a
+ * system property or a file that is not on the class path given here, is not seen. A stand-down or a failure has no
+ * warnings.</p>
  *
  * @since 3.2.0
  */
@@ -262,22 +263,21 @@ public final class LogbackPrecompiler {
     private static final Pattern CONFIG_CLIENT_WORD = Pattern.compile("(?<![a-z0-9_-])config-?client(?![a-z0-9_-])");
 
     /**
-     * A placeholder whose default is {@code true}, in lower-cased text: {@code ${CONFIG_CLIENT_ENABLED:true}}, or
-     * {@code ${A:B:true}}, whose default is after the last colon. Micronaut resolves it to {@code true} unless a
-     * run-time source sets one of its names, so the packaged value is {@code true}. A placeholder without that
-     * default is a run-time value, which the build cannot see.
+     * A placeholder, whatever its default and also without one: {@code ${CONFIG_CLIENT_ENABLED}},
+     * {@code ${CONFIG_CLIENT_ENABLED:false}}, {@code ${A:B:true}}. Micronaut resolves it at run time, from sources
+     * the build cannot see, such as an environment variable, so it may resolve to {@code true}.
      */
-    private static final Pattern TRUE_BY_DEFAULT = Pattern.compile("\\$\\{(?:[^}:\\n]*+:)++\\s*+true\\s*+}");
+    private static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{[^}\\n]*+}");
 
     /**
-     * An {@code enabled} key set to {@code true} in lower-cased text, quoted or not: the word, then {@code :} or
-     * {@code =}, with at most a closing quote, a closing bracket and white space in between, then the value, quoted
-     * or not. {@code yes} and {@code on} count as well: SnakeYAML, with which Micronaut reads YAML, reads them as
-     * {@code true}. So does a placeholder that {@link #TRUE_BY_DEFAULT} matches.
+     * An {@code enabled} key that may be {@code true}, in lower-cased text, quoted or not: the word, then {@code :}
+     * or {@code =}, with at most a closing quote, a closing bracket and white space in between, then the value,
+     * quoted or not. The value is {@code true}, or {@code yes} or {@code on}, which SnakeYAML, with which Micronaut
+     * reads YAML, reads as {@code true}, or a {@link #PLACEHOLDER}.
      */
-    private static final Pattern ENABLED_TRUE = Pattern.compile(
+    private static final Pattern ENABLED_MAY_BE_TRUE = Pattern.compile(
             "(?<![a-z0-9_-])enabled[\"']?\\s*+]?\\s*+[:=]\\s*+[\"']?(?:(?:true|yes|on)(?![a-z0-9_-])|"
-                    + TRUE_BY_DEFAULT.pattern() + ")");
+                    + PLACEHOLDER.pattern() + ")");
 
     /** The name under which Micronaut reads a logging configuration location: a property or an environment variable. */
     private static final String LOGGER_CONFIG_PROPERTY = "logger.config";
@@ -662,7 +662,7 @@ public final class LogbackPrecompiler {
      * @return one line
      */
     private static String configClientWarning(String file) {
-        return "The packaged " + file + " enables Micronaut's distributed configuration client ("
+        return "The packaged " + file + " may enable Micronaut's distributed configuration client ("
                 + CONFIG_CLIENT_ENABLED + "): a " + LOGGER_CONFIG_PROPERTY + " or logback.configurationFile that"
                 + " distributed configuration supplies is not applied while the generated configurator is registered."
                 + " Pass the location as the JVM system property -D" + LOGGER_CONFIG_PROPERTY + " or the LOGGER_CONFIG"
@@ -675,23 +675,24 @@ public final class LogbackPrecompiler {
      *
      * <p>A {@code .properties} file is parsed. It sets a location when it has {@code logger.config} or
      * {@code logback.configurationFile}; it imports when it has {@code micronaut.config.import}, an indexed
-     * {@code micronaut.config.import[n]} or a structured {@code micronaut.config.import.*} key; and it enables the
-     * client when {@code micronaut.config-client.enabled} is {@code true}, or a placeholder whose default is
-     * {@code true}, such as {@code ${CONFIG_CLIENT_ENABLED:true}}. Keys are compared ignoring case and hyphens, the
-     * value ignoring case and surrounding white space.</p>
+     * {@code micronaut.config.import[n]} or a structured {@code micronaut.config.import.*} key; and it may enable the
+     * client when {@code micronaut.config-client.enabled} is {@code true}, or starts with a placeholder. Keys are
+     * compared ignoring case and hyphens, the value ignoring case and surrounding white space.</p>
      *
      * <p>Any other format is not parsed, so each rule is on its text, ignoring case, and errs on the side of the
      * stand-down or the warning. It sets a location when the text names {@code configurationFile} or
      * {@code logger.config}, or has the word {@code logger} and a {@code config} key anywhere, in any order and on
      * any line. It imports when the text names {@code config.import}, or has an {@code import} key and the word
-     * {@code config} anywhere. It enables the client when the text has the word {@code config-client} (or
-     * {@code configClient}) and an {@code enabled} key set to {@code true}, or to a placeholder whose default is
-     * {@code true}, anywhere. That covers nested YAML, flow-style YAML, JSON on one line, TOML tables and inline
-     * tables and a Groovy closure. A false positive only costs the optimisation, or a warning: an {@code enabled}
-     * key of another section, in a file that names {@code config-client}, gives the warning too.</p>
+     * {@code config} anywhere. It may enable the client when the text has the word {@code config-client} (or
+     * {@code configClient}) and an {@code enabled} key set to {@code true}, or to a placeholder, quoted or not,
+     * anywhere. That covers nested YAML, flow-style YAML, JSON on one line, TOML tables and inline tables and a
+     * Groovy closure. A false positive only costs the optimisation, or a warning: an {@code enabled} key of another
+     * section, in a file that names {@code config-client}, gives the warning too.</p>
      *
-     * <p>A placeholder without a default of {@code true}, such as {@code ${CONFIG_CLIENT_ENABLED}}, is resolved at
-     * run time, and gives no warning.</p>
+     * <p>A placeholder counts whatever its default, and also without one, such as {@code ${CONFIG_CLIENT_ENABLED}}
+     * or {@code ${CONFIG_CLIENT_ENABLED:false}}: Micronaut resolves it at run time, from sources the build cannot
+     * see, so it may resolve to {@code true}. {@code false}, or a file without such an {@code enabled} key, does
+     * not count.</p>
      *
      * @param setsLocation        whether it may set {@code logger.config} or {@code logback.configurationFile}
      * @param imports             whether it may import configuration with {@code micronaut.config.import}
@@ -710,7 +711,7 @@ public final class LogbackPrecompiler {
                             || LOGGER_WORD.matcher(lower).find() && CONFIG_KEY.matcher(lower).find(),
                     CONFIG_IMPORT_PATH.matcher(lower).find()
                             || IMPORT_KEY.matcher(lower).find() && CONFIG_WORD.matcher(lower).find(),
-                    CONFIG_CLIENT_WORD.matcher(lower).find() && ENABLED_TRUE.matcher(lower).find());
+                    CONFIG_CLIENT_WORD.matcher(lower).find() && ENABLED_MAY_BE_TRUE.matcher(lower).find());
         }
 
         private static PackagedFile parse(byte[] content) throws IOException {
@@ -726,14 +727,14 @@ public final class LogbackPrecompiler {
                 imports |= normalized.equals(CONFIG_IMPORT) || normalized.startsWith(CONFIG_IMPORT + ".")
                         || normalized.startsWith(CONFIG_IMPORT + "[");
                 enablesConfigClient |= normalized.equals(CONFIG_CLIENT_ENABLED_KEY)
-                        && isTrue(properties.getProperty(key).strip().toLowerCase(Locale.ROOT));
+                        && mayBeTrue(properties.getProperty(key).strip().toLowerCase(Locale.ROOT));
             }
             return new PackagedFile(setsLocation, imports, enablesConfigClient);
         }
 
-        /** Whether a lower-cased, stripped {@code .properties} value is {@code true} or defaults to it. */
-        private static boolean isTrue(String value) {
-            return value.equals("true") || TRUE_BY_DEFAULT.matcher(value).find();
+        /** Whether a lower-cased, stripped {@code .properties} value is {@code true} or starts with a placeholder. */
+        private static boolean mayBeTrue(String value) {
+            return value.equals("true") || PLACEHOLDER.matcher(value).lookingAt();
         }
 
         /**
@@ -962,11 +963,11 @@ public final class LogbackPrecompiler {
          * <p>Only a {@link Status#GENERATED} result can have any, and most have none. It has one line for each
          * packaged {@code application*} or {@code bootstrap*} file, of the application output or of an entry of
          * the runtime class path, that may enable Micronaut's distributed configuration client
-         * ({@code micronaut.config-client.enabled} set to {@code true}): a {@code logger.config} or
-         * {@code logback.configurationFile} that distributed configuration supplies is not applied while the
-         * generated configurator is registered. A client that is enabled only at run time, by an environment
-         * variable, a system property or a file that is not on the class path of the request, cannot be seen and
-         * gives no line.</p>
+         * ({@code micronaut.config-client.enabled} set to {@code true}, or to any placeholder, which the run time may
+         * resolve to {@code true}): a {@code logger.config} or {@code logback.configurationFile} that distributed
+         * configuration supplies is not applied while the generated configurator is registered. A client that is
+         * enabled without such a file, by an environment variable, a system property or a file that is not on the
+         * class path of the request, cannot be seen and gives no line.</p>
          *
          * @return the lines, unmodifiable, in class path order; empty unless {@link #status()} is
          *         {@link Status#GENERATED}

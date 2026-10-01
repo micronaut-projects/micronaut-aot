@@ -74,8 +74,8 @@ class LogbackPrecompilationTest {
         assertEquals(List.of(result.message()), log);
         assertEquals(result.warnings(), warnings);
         assertEquals(1, warnings.size(), warnings::toString);
-        assertTrue(warnings.get(0).startsWith("The packaged bootstrap.yml of " + processedResources),
-            warnings::toString);
+        assertTrue(warnings.get(0).startsWith("The packaged bootstrap.yml of " + processedResources
+            + " may enable Micronaut's distributed configuration client"), warnings::toString);
     }
 
     /** The processed resources of an application whose logback.xml the precompiler can compile. */

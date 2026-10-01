@@ -97,7 +97,7 @@ class LogbackPrecompilerConsumerTest {
         assertTrue(log.get(0).startsWith("Precompiled logback.xml (application output) into "), log::toString);
         assertEquals(1, warnings.size(), warnings::toString);
         assertTrue(warnings.get(0).startsWith("The packaged bootstrap.yml of " + processedResources
-                + " enables Micronaut's distributed configuration client"), warnings::toString);
+                + " may enable Micronaut's distributed configuration client"), warnings::toString);
         assertEquals(4, result.entries().size());
         assertTrue(LogbackPrecompiler.applicationInputs().contains("logback.xml"));
         try (URLClassLoader application = new URLClassLoader(new URL[] {outputDirectory.toUri().toURL()},
