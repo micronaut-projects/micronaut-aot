@@ -16,6 +16,8 @@
 package io.micronaut.aot.std.sourcegen
 
 import ch.qos.logback.classic.spi.Configurator
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.ConsoleAppender
 import io.micronaut.aot.core.AOTCodeGenerator
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
 
@@ -870,12 +872,35 @@ public class StaticLogbackConfiguration implements Configurator {
         'unknown-class'        | 'refers to class [com.example.MissingAppender], which cannot be loaded'
         'file-collision'       | 'declares appenders [FIRST] and [SECOND] with the same file'
         'malformed'            | 'could not be parsed'
+        // the generated configure method cannot call members which declare checked exceptions
+        'checked-setter'       | "calls ${CheckedExceptionAppender.name}#setLabel, which declares checked exceptions"
+        'checked-value-of'     | "calls ${CheckedTag.name}#valueOf, which declares checked exceptions"
+        'checked-constructor'  | "refers to class [${CheckedConstructorAppender.name}], which cannot be instantiated from generated code"
     }
 
     class TestLogbackConfigurationSourceGenerator extends LogbackConfigurationSourceGenerator {
         @Override
         protected String getLogbackFileName() {
             configFileName
+        }
+    }
+
+    static class CheckedExceptionAppender extends ConsoleAppender<ILoggingEvent> {
+        void setLabel(String label) throws IOException {
+        }
+
+        void setTag(CheckedTag tag) {
+        }
+    }
+
+    static class CheckedConstructorAppender extends ConsoleAppender<ILoggingEvent> {
+        CheckedConstructorAppender() throws IOException {
+        }
+    }
+
+    static class CheckedTag {
+        static CheckedTag valueOf(String value) throws IOException {
+            new CheckedTag()
         }
     }
 }

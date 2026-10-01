@@ -63,6 +63,7 @@ import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serial;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -511,6 +512,7 @@ final class Logback14GeneratorHelper {
         if (valueOf == null || !type.isAssignableFrom(valueOf.getReturnType())) {
             throw unsupported("sets a property of type " + type.getName() + ", whose valueOf method does not return that type");
         }
+        requireNoCheckedExceptions(valueOf);
         return CodeBlock.of("$T.valueOf($S)", type, trimmed);
     }
 
@@ -590,6 +592,7 @@ final class Logback14GeneratorHelper {
     }
 
     private void emitCall(String receiver, Method method, Object argument) {
+        requireNoCheckedExceptions(method);
         code.addStatement("$L.$L($L)", receiver, method.getName(), argument);
     }
 
@@ -630,11 +633,29 @@ final class Logback14GeneratorHelper {
             return false;
         }
         try {
-            type.getConstructor();
-            return true;
+            return !declaresCheckedExceptions(type.getConstructor());
         } catch (NoSuchMethodException _) {
             return false;
         }
+    }
+
+    /**
+     * The generated {@code configure} method does not declare checked exceptions, unlike Joran, which calls
+     * members reflectively.
+     */
+    private static void requireNoCheckedExceptions(Method method) {
+        if (declaresCheckedExceptions(method)) {
+            throw unsupported("calls " + method.getDeclaringClass().getName() + "#" + method.getName() + ", which declares checked exceptions");
+        }
+    }
+
+    private static boolean declaresCheckedExceptions(Executable executable) {
+        for (Class<?> exceptionType : executable.getExceptionTypes()) {
+            if (!RuntimeException.class.isAssignableFrom(exceptionType) && !Error.class.isAssignableFrom(exceptionType)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void requireAccessible(Class<?> type) {
@@ -783,7 +804,7 @@ final class Logback14GeneratorHelper {
         @Serial
         private static final long serialVersionUID = 1L;
 
-        UnsupportedConfigurationException(String reason) {
+        private UnsupportedConfigurationException(String reason) {
             super(reason, null, false, false);
         }
     }
@@ -792,7 +813,7 @@ final class Logback14GeneratorHelper {
      * Builds the Joran model, and exposes Joran's rules for the default class of nested components.
      */
     private static final class ModelBuilder extends JoranConfigurator {
-        DefaultNestedComponentRegistry defaultNestedComponentRegistry() {
+        private DefaultNestedComponentRegistry defaultNestedComponentRegistry() {
             var registry = new DefaultNestedComponentRegistry();
             addDefaultNestedComponentRegistryRules(registry);
             return registry;
