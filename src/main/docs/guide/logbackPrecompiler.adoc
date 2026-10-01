@@ -146,6 +146,8 @@ The guards have limits. After any of these changes the generated configurator is
 * A second `logback.xml` is added to the class path after the build. Logback would report it at startup.
 * The class path changes in another way that the build checked. Nothing but the two guards is checked again at run time: not the Logback version, not a `Configurator` that another entry registers, not a packaged `logger.config` or `micronaut.config.import`. With a Logback outside the tested range, the generated classes are untested and may not even link.
 
-Build again after such a change, or start the application with `-Dmicronaut.logback.precompiled=false`.
+Build again after such a change: the build then stands down, or compiles the class path as it now is.
+Until then, `-Dmicronaut.logback.precompiled=false` gives Joran's result back in two of these cases only: a second `logback.xml`, and another Logback version as long as the generated classes still load. Every call then runs Logback's default lookup, which reads `logback.xml`.
+So the opt-out does not help in the other cases. Where the generated configurator is called instead of a `Configurator` that another entry registers, it runs that lookup, not the other `Configurator`. A packaged `logger.config`, or one that a packaged import loads, stays unapplied, as a location only Micronaut sees (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>): pass it as a JVM system property or as `LOGGER_CONFIG` until the next build.
 
 `closedClassPath(true)` is for a packager whose archive is the whole class path. The build-time checks then guarantee what the guards check, and `ClassPathGuard` is not generated.
