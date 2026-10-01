@@ -103,9 +103,26 @@ On every call, in this order:
 . On an open class path, if a guard fails, it runs Logback's default lookup.
 . Otherwise it applies the content of `logback.xml` literally, in Joran's order.
 
-`-Dmicronaut.logback.precompiled=false` is the opt-out: with it the application behaves as if nothing had been generated.
+`-Dmicronaut.logback.precompiled=false` is the opt-out: with it every call hands over to Joran. It does not bring back a location that only Micronaut sees, described below.
 
-NOTE: A `logger.config` that comes from another property source, such as a configuration file outside the application, is not applied, because Micronaut ignores it when a `Configurator` service is registered. Use the system property or the environment variable.
+[[logbackPrecompilerLocations]]
+=== Locations only Micronaut sees
+
+Micronaut applies `logger.config`, or a `logback.configurationFile` of its own configuration, on its logging refresh. That refresh runs at startup when any `logger.*` property is set, and again on every refresh event.
+Without a `Configurator` service it configures Logback from that location.
+With one, it calls the service's `configure(LoggerContext)` and passes it nothing else: the location stays in Micronaut's `LogbackLoggingSystem`, and Micronaut copies it neither into a system property nor into the `LoggerContext`.
+
+So the generated configurator applies a location only where it can read it itself, as the first two rules above list: the `logback.configurationFile` and `logger.config` system properties, and the `logback.configurationFile`, `LOGGER_CONFIG` and `logger.config` environment variables.
+A location that comes from any other property source is not applied, and the compiled configuration stays in use:
+
+* a program argument, such as `java -jar app.jar --logger.config=custom.xml`. A `-Dlogger.config=custom.xml` written after the jar or the main class is a program argument too, not a system property: Micronaut keeps it in the property source of its command line. The configurator does not read the command line from the `sun.java.command` property instead: that property comes from HotSpot's launcher and is not a system property of a native image, it joins the arguments with spaces so that a value cannot be recovered exactly, and it does not say which arguments the application passed to Micronaut;
+* a configuration file outside the class path, such as `config/application.yml` in the working directory or a file named by `micronaut.config.files`;
+* any other property source, such as distributed configuration or properties passed to `ApplicationContext.builder()`.
+
+Pass the location as a JVM system property, `java -Dlogger.config=custom.xml -jar app.jar`, or as the `LOGGER_CONFIG` environment variable instead.
+The opt-out does not help: the configurator then runs Logback's default lookup, which reads `logback.xml`, because Micronaut still calls the configurator instead of reading the location.
+https://github.com/micronaut-projects/micronaut-core/issues/13390[micronaut-core#13390] proposes that Micronaut's refresh apply such a location itself, whatever `Configurator` is registered.
+A packaged configuration file is the one source the build can read, so it stands down when one might set the location.
 
 [[logbackPrecompilerGuards]]
 == Guards for open class paths

@@ -91,6 +91,8 @@ import java.util.zip.ZipFile;
  *     <li>otherwise applies the configuration literally, in Joran's order, and returns
  *     {@code DO_NOT_INVOKE_NEXT_IF_ANY}.</li>
  * </ol>
+ * <p>A location that only Micronaut's own configuration holds, such as a {@code --logger.config} program argument,
+ * is not applied: Micronaut's refresh calls a registered configurator with the logger context alone.</p>
  *
  * <h2>Build policy</h2>
  * <p>It never loads, initialises or runs application classes. Its front end runs Logback and slf4j-api classes,
