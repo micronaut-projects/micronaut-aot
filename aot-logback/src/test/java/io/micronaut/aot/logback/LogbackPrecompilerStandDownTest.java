@@ -534,9 +534,10 @@ class LogbackPrecompilerStandDownTest {
             case "application.groovy enabled false" -> "micronaut { 'config-client' { enabled = false } }\n";
             case "bootstrap.yml placeholder in another key" ->
                     "micronaut:\n  config-client:\n    read-timeout: ${CONFIG_CLIENT_READ_TIMEOUT:30s}\n";
-            case "bootstrap.properties placeholder in another key" ->
-                    "micronaut.config-client.read-timeout=${CONFIG_CLIENT_READ_TIMEOUT:30s}\n"
-                            + "micronaut.metrics.enabled=${METRICS_ENABLED}\n";
+            case "bootstrap.properties placeholder in another key" -> """
+                    micronaut.config-client.read-timeout=${CONFIG_CLIENT_READ_TIMEOUT:30s}
+                    micronaut.metrics.enabled=${METRICS_ENABLED}
+                    """;
             case "META-INF/bootstrap.yml not read" -> "micronaut:\n  config-client:\n    enabled: true\n";
             case "com/example/application.properties not read" -> "micronaut.config-client.enabled=true\n";
             default -> throw new IllegalArgumentException(condition);
