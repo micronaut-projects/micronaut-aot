@@ -133,9 +133,11 @@ import java.util.zip.ZipFile;
  * ({@code micronaut.config-client.enabled} set to {@code true}, or to any placeholder, which the run time may resolve
  * to {@code true}). A {@code logger.config} or {@code logback.configurationFile} that distributed configuration
  * supplies is not applied while the generated configurator is registered, and the build cannot know whether the
- * configuration server supplies one. A client that is enabled without such a file, by an environment variable, a
- * system property or a file that is not on the class path given here, is not seen. A stand-down or a failure has no
- * warnings.</p>
+ * configuration server supplies one. A client that is enabled in another way is not seen: by an environment
+ * variable, a system property or properties passed to {@code ApplicationContext.builder()}; by a file that is not on
+ * the class path given here, or that the scan does not read, such as a bootstrap file of another name that the
+ * {@code micronaut.bootstrap.name} system property selects; or by a value that a packaged Groovy file computes, such
+ * as from {@code System.getenv}. A stand-down or a failure has no warnings.</p>
  *
  * @since 3.2.0
  */
@@ -968,8 +970,11 @@ public final class LogbackPrecompiler {
          * ({@code micronaut.config-client.enabled} set to {@code true}, or to any placeholder, which the run time may
          * resolve to {@code true}): a {@code logger.config} or {@code logback.configurationFile} that distributed
          * configuration supplies is not applied while the generated configurator is registered. A client that is
-         * enabled without such a file, by an environment variable, a system property or a file that is not on the
-         * class path of the request, cannot be seen and gives no line.</p>
+         * enabled in another way cannot be seen and gives no line: by an environment variable, a system property or
+         * properties passed to {@code ApplicationContext.builder()}; by a file that is not on the class path of the
+         * request, or that the scan does not read, such as a bootstrap file of another name that the
+         * {@code micronaut.bootstrap.name} system property selects; or by a value that a packaged Groovy file
+         * computes, such as from {@code System.getenv}.</p>
          *
          * @return the lines, unmodifiable, in class path order; empty unless {@link #status()} is
          *         {@link Status#GENERATED}

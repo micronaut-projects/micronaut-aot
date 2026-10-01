@@ -505,7 +505,7 @@ class LogbackPrecompilerStandDownTest {
     /**
      * A client that is turned off, a mention of {@code config-client} without an {@code enabled} key, also with a
      * placeholder in another key, an {@code enabled} key of something else, and a file the scan does not read give
-     * no warning.
+     * no warning. So does a value that a Groovy file computes, which the build cannot evaluate: the documented gap.
      */
     @ParameterizedTest
     @ValueSource(strings = {"bootstrap.yml enabled false", "bootstrap.properties enabled false",
@@ -513,7 +513,8 @@ class LogbackPrecompilerStandDownTest {
         "application.yml enabled without the client", "application.json enabled false",
         "application.toml enabled false", "application.groovy enabled false",
         "bootstrap.yml placeholder in another key", "bootstrap.properties placeholder in another key",
-        "META-INF/bootstrap.yml not read", "com/example/application.properties not read"})
+        "application.groovy computed value", "META-INF/bootstrap.yml not read",
+        "com/example/application.properties not read", "logging-bootstrap.yml not read"})
     void aConfigurationClientThatIsNotEnabledGivesNoWarning(String condition) throws IOException {
         String name = condition.substring(0, condition.indexOf(' '));
         String content = switch (condition) {
@@ -538,7 +539,10 @@ class LogbackPrecompilerStandDownTest {
                     micronaut.config-client.read-timeout=${CONFIG_CLIENT_READ_TIMEOUT:30s}
                     micronaut.metrics.enabled=${METRICS_ENABLED}
                     """;
-            case "META-INF/bootstrap.yml not read" -> "micronaut:\n  config-client:\n    enabled: true\n";
+            case "application.groovy computed value" ->
+                    "micronaut { 'config-client' { enabled = System.getenv('CONFIG_CLIENT_ENABLED') ?: false } }\n";
+            case "META-INF/bootstrap.yml not read", "logging-bootstrap.yml not read" ->
+                    "micronaut:\n  config-client:\n    enabled: true\n";
             case "com/example/application.properties not read" -> "micronaut.config-client.enabled=true\n";
             default -> throw new IllegalArgumentException(condition);
         };
