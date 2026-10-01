@@ -583,7 +583,7 @@ class LogbackPrecompilerStandDownTest {
     void theOutputOfAnEarlierCallInAnApplicationRootIsAFailureUntilItIsRemoved() throws IOException {
         Application application = application(Map.of("logback.xml", LOGBACK_XML));
         LogbackPrecompiler.Result first = application.precompile(false);
-        List<Path> written = first.writeTo(application.classes());
+        List<Path> written = LogbackTestSupport.write(first, application.classes());
         assertEquals(4, written.size());
 
         LogbackPrecompiler.Result second = application.precompile(false);
@@ -594,7 +594,6 @@ class LogbackPrecompilerStandDownTest {
                 + "), which stays in use; no Logback configuration was precompiled. Remove that output before"
                 + " precompiling again", second.message());
         assertEquals(Map.of(), second.entries());
-        assertEquals(List.of(), second.writeTo(application.classes()));
         for (Path file : written) {
             String name = application.classes().relativize(file).toString().replace('\\', '/');
             assertArrayEquals(first.entries().get(name), Files.readAllBytes(file), name);
@@ -786,7 +785,6 @@ class LogbackPrecompilerStandDownTest {
 
     private static void assertStoodDown(LogbackPrecompiler.Result result, String reason) {
         assertEquals(LogbackPrecompiler.Status.STOOD_DOWN, result.status(), result::message);
-        assertFalse(result.generated());
         assertEquals(Map.of(), result.entries());
         String line = result.message();
         assertTrue(line.startsWith(STAND_DOWN), line);

@@ -40,8 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The contract of the public API of {@link LogbackPrecompiler} besides what it generates: the names, what
- * {@code writeTo} does, which inputs matter and which are required.
+ * The contract of the API of {@link LogbackPrecompiler} besides what it generates: the names, the entries, which
+ * inputs matter and which are required.
  */
 class LogbackPrecompilerApiTest {
 
@@ -89,60 +89,6 @@ class LogbackPrecompilerApiTest {
 
         assertThrows(UnsupportedOperationException.class, () -> entries.put("other", new byte[0]));
         assertThrows(UnsupportedOperationException.class, entries::clear);
-    }
-
-    // ------------------------------------------------------------------ writeTo
-
-    @Test
-    void writeToWritesExactlyTheEntriesAndLeavesOtherFilesAlone() throws IOException {
-        LogbackPrecompiler.Result result = application().precompile(false);
-        Path directory = temporary.resolve("output");
-        Path other = LogbackTestSupport.write(directory.resolve("com/example/Other.class"), "not ours");
-        Path stale = LogbackTestSupport.write(
-                directory.resolve(LogbackPrecompiler.PACKAGE_PATH + "Stale.class"), "an earlier build's");
-
-        List<Path> written = result.writeTo(directory);
-
-        List<Path> expected = new ArrayList<>();
-        for (Map.Entry<String, byte[]> entry : result.entries().entrySet()) {
-            Path file = directory.resolve(entry.getKey());
-            expected.add(file);
-            assertArrayEquals(entry.getValue(), Files.readAllBytes(file), entry.getKey());
-        }
-        assertEquals(expected, written);
-        assertEquals(4, written.size());
-        assertEquals("not ours", Files.readString(other));
-        // Removing what an earlier build left is the caller's job.
-        assertEquals("an earlier build's", Files.readString(stale));
-        try (Stream<Path> files = Files.walk(directory)) {
-            assertEquals(6, files.filter(Files::isRegularFile).count());
-        }
-    }
-
-    @Test
-    void writeToOverwritesWhatAnEarlierCallWrote() throws IOException {
-        Path directory = temporary.resolve("output");
-        application().precompile(false).writeTo(directory);
-        Path configurator = directory.resolve(LogbackPrecompiler.CONFIGURATOR_ENTRY);
-        byte[] first = Files.readAllBytes(configurator);
-
-        LogbackPrecompiler.Result second = LogbackTestSupport.application(temporary,
-                Map.of("logback.xml", LOGBACK_XML.replace("WARN", "ERROR"))).precompile(false);
-        second.writeTo(directory);
-
-        assertFalse(Arrays.equals(first, Files.readAllBytes(configurator)));
-        assertArrayEquals(second.entries().get(LogbackPrecompiler.CONFIGURATOR_ENTRY),
-                Files.readAllBytes(configurator));
-    }
-
-    @Test
-    void writeToWritesNothingForAResultThatGeneratedNothing() throws IOException {
-        LogbackPrecompiler.Result result = LogbackTestSupport.application(temporary, Map.of()).precompile(false);
-        Path directory = temporary.resolve("untouched");
-
-        assertEquals(LogbackPrecompiler.Status.STOOD_DOWN, result.status());
-        assertEquals(List.of(), result.writeTo(directory));
-        assertFalse(Files.exists(directory));
     }
 
     // ------------------------------------------------------------------ narrow inputs

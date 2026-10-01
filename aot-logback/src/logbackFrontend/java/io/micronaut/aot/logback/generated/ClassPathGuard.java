@@ -29,11 +29,11 @@ import java.util.zip.CRC32;
  * file mounted into a container image.
  *
  * <p>The precompiler copies this class into the application byte for byte, like {@code JoranFallback}, unless the
- * class path is closed. It looks where Joran would: through the class loader that defines logback-classic, which
- * is the one Logback's {@code DefaultJoranConfigurator} searches. It uses Logback and {@code java.base} only, no
- * lambdas and no invokedynamic, and a CRC-32 rather than a message digest, which would load the security providers
- * at startup. Its one Logback reference is {@code LoggerContext}, which is loaded by the time a configurator is
- * called.</p>
+ * class path is closed, and it is package-private like that class. It looks where Joran would: through the class
+ * loader that defines logback-classic, which is the one Logback's {@code DefaultJoranConfigurator} searches. It
+ * uses Logback and {@code java.base} only, no lambdas and no invokedynamic, and a CRC-32 rather than a message
+ * digest, which would load the security providers at startup. Its one Logback reference is {@code LoggerContext},
+ * which is loaded by the time a configurator is called.</p>
  *
  * <p>It keeps nothing between calls. Every call of the configurator looks again, as Joran reads the file again on
  * every configuration: a {@code logback.xml} that is edited while the application runs is what a later call, such
@@ -41,7 +41,7 @@ import java.util.zip.CRC32;
  * its CRC-32 on each call of the configurator, which Logback makes at startup and Micronaut on a logging refresh,
  * never on a log call.</p>
  */
-public final class ClassPathGuard {
+final class ClassPathGuard {
 
     private ClassPathGuard() {
     }
@@ -55,7 +55,7 @@ public final class ClassPathGuard {
      * @param crc  its CRC-32
      * @return {@code false} when the configurator has to hand over to Logback's default lookup
      */
-    public static boolean unchanged(long size, long crc) {
+    static boolean unchanged(long size, long crc) {
         try {
             ClassLoader loader = LoggerContext.class.getClassLoader();
             if (loader == null) {

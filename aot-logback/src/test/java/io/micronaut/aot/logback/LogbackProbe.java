@@ -32,10 +32,10 @@ import java.nio.file.Path;
 public final class LogbackProbe {
 
     /** Starts the description of one configurator call in what {@link #main(String[])} prints. */
-    public static final String CALL_MARKER = "@@call ";
+    static final String CALL_MARKER = "@@call ";
 
     /** Ends what {@link #main(String[])} prints. */
-    public static final String END_MARKER = "@@end";
+    static final String END_MARKER = "@@end";
 
     /** The context {@link #start()} configured, which {@link #refresh()} configures again. */
     private static LoggerContext started;

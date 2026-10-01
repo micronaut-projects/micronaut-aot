@@ -82,7 +82,7 @@ import java.util.function.Function;
 public final class LogbackFrontend implements Function<byte[], Map<String, Object>> {
 
     /** The version of the description this front end returns; the precompiler rejects any other. */
-    public static final int IR_VERSION = 1;
+    private static final int IR_VERSION = 1;
 
     private static final String ENCODER = "encoder";
     private static final String PATTERN = "pattern";
@@ -122,7 +122,7 @@ public final class LogbackFrontend implements Function<byte[], Map<String, Objec
      *
      * @throws Rejection if a member is missing
      */
-    static void requireMembers() {
+    private static void requireMembers() {
         try {
             ClassLoader loader = LogbackFrontend.class.getClassLoader();
             Class<?> context = Class.forName("ch.qos.logback.core.Context", false, loader);

@@ -111,6 +111,23 @@ final class LogbackTestSupport {
         return Files.writeString(file, content, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Writes every entry of a result below a directory, by its name, as a build plugin does.
+     *
+     * @param result    the result
+     * @param directory the directory, created when it does not exist
+     * @return the files written, in the order of the entries
+     */
+    static List<Path> write(LogbackPrecompiler.Result result, Path directory) throws IOException {
+        List<Path> files = new ArrayList<>();
+        for (Map.Entry<String, byte[]> entry : result.entries().entrySet()) {
+            Path file = directory.resolve(entry.getKey());
+            Files.createDirectories(file.getParent());
+            files.add(Files.write(file, entry.getValue()));
+        }
+        return files;
+    }
+
     /** The logback-classic, logback-core and slf4j-api jars of this test class path. */
     static List<Path> logbackJars() {
         List<Path> jars = new ArrayList<>();
@@ -274,11 +291,11 @@ final class LogbackTestSupport {
          */
         Path generate(boolean closed) throws IOException {
             LogbackPrecompiler.Result result = precompile(closed);
-            if (!result.generated()) {
+            if (result.status() != LogbackPrecompiler.Status.GENERATED) {
                 throw new AssertionError("nothing was generated: " + result.message());
             }
             Path generated = directory.resolve("generated");
-            result.writeTo(generated);
+            write(result, generated);
             return generated;
         }
     }

@@ -2,19 +2,22 @@ The `micronaut-aot-logback` module compiles an application's `logback.xml` into 
 Without a `Configurator` service, Logback parses `logback.xml` with its Joran framework on the main thread at every start.
 An application that carries the generated configurator does neither.
 
-WARNING: This module is experimental: its API, the names it generates and its rules may change.
+WARNING: This module is internal to the Micronaut build plugins: its API, the names it generates and its rules may change in any release.
 
 Unlike the `logback.xml.to.java` optimizer, this module is not an AOT optimizer.
-It does not start the application, uses no `AOTContext`, and needs no AOT run: a build tool calls it in-process with plain paths and gets class files back.
+It does not start the application, uses no `AOTContext`, and needs no AOT run: the Micronaut Gradle and Maven plugins and Micronaut Runner call it in-process with plain paths and get class files back.
 Its artifact, `io.micronaut.aot:micronaut-aot-logback`, has no dependencies.
-It is meant for build tool plugins and packagers, not for applications.
+An application does not depend on it: its build plugin calls it.
 
 The engine fails closed.
 Whenever it cannot prove that the generated code builds exactly the `LoggerContext` Joran builds, it generates nothing and says why, and Logback reads `logback.xml` at startup as it always did.
 It also stands down when a `Configurator` is already registered on the class path it is given, which is the case for an application that `logback.xml.to.java` has already optimized.
 It cannot see an optimizer that runs later, on an application that already carries its output: a build that applies both has to decide which one configures Logback.
 
-== Calling it
+== How the build plugins call it
+
+This section describes what the Micronaut build plugins do, for those who maintain them.
+`LogbackPrecompiler` is `@Internal`: it is not an API for applications or for other build tools.
 
 snippet::example.logback.LogbackPrecompilation[project-base="doc-examples/example", source="main", indent="0", tags="precompile"]
 
@@ -35,25 +38,22 @@ The inputs are:
 
 |`closedClassPath`
 |`true` only when the class path given here is exactly the one the application runs on. `false` by default. See <<logbackPrecompilerGuards, Guards for open class paths>>.
-
-|`workDirectory`
-|Where the engine unpacks its front end. A temporary directory, deleted afterwards, when unset.
 |===
 
 The `Result` has a `status()`, one `message()` for the caller to log, and the generated `entries()`:
 
-* `GENERATED`: the message says what was compiled. `writeTo` writes the entries below a directory, which has to be on the application's class path next to its `logback.xml`. A packager can add `entries()` to an archive instead.
+* `GENERATED`: the message says what was compiled. The plugin writes the entries below a directory, which has to be on the application's class path next to its `logback.xml`, or a packager adds them to an archive. All of them go to the same place: the configurator calls the classes copied next to it, which are package-private, so they have to be on the same class loader.
 * `STOOD_DOWN`: nothing was generated, and the message names the reason. This is expected for many applications.
 * `FAILED`: nothing was generated because a generated name is already taken, the output of an earlier call is still in the application output, the class path could not be read, or the engine failed. The message is worth a warning.
 
 `precompile` never throws for anything about its inputs, so a build that calls it does not fail because of Logback.
-`writeTo` only writes: removing the output of an earlier build is the caller's job.
+Removing the output of an earlier build is the caller's job.
 A caller that writes into one of the application roots it passes, such as the class directory, has to remove that output before it calls `precompile` again, not after. While it is there the result is `FAILED` and the earlier output stays in use, whatever has changed in the application since.
 The output is the service file and the classes of the package `io.micronaut.aot.logback.generated`.
 `logback.xml` has to stay in the application, because the fallbacks below read it.
 
 `LogbackPrecompiler.applicationInputs()` returns, as Ant-style patterns, the entries of the application output that can change the result.
-A build tool may declare its inputs with them, so that the step stays up to date when ordinary classes and resources change.
+A build plugin may declare its inputs with them, so that the step stays up to date when ordinary classes and resources change.
 Of everything else in the application output the engine reads the name and nothing more.
 On the runtime class path it reads the names of every entry, the manifests of logback-classic and logback-core, and the packaged `application*` and `bootstrap*` configuration files of every entry.
 

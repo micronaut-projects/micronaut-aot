@@ -31,8 +31,12 @@ import java.net.URL;
  * It is a class of its own so that the configurator's literal path never loads or links Joran: only a fallback
  * touches it. It uses Logback and {@code java.base} only, no lambdas and no invokedynamic, so it runs on any class
  * loader.</p>
+ *
+ * <p>It is package-private, and so are its methods: only the configurator calls them, so application code cannot.
+ * That needs the configurator and this class on the same class loader, which they are, as the precompiler emits
+ * them together.</p>
  */
-public final class JoranFallback {
+final class JoranFallback {
 
     private JoranFallback() {
     }
@@ -44,7 +48,7 @@ public final class JoranFallback {
      * @param context the context to configure
      * @return what Logback's own default configurator returns
      */
-    public static Configurator.ExecutionStatus defaultLookup(LoggerContext context) {
+    static Configurator.ExecutionStatus defaultLookup(LoggerContext context) {
         DefaultJoranConfigurator configurator = new DefaultJoranConfigurator();
         configurator.setContext(context);
         return configurator.configure(context);
@@ -59,7 +63,7 @@ public final class JoranFallback {
      * @return {@link Configurator.ExecutionStatus#DO_NOT_INVOKE_NEXT_IF_ANY}
      * @throws IllegalStateException if nothing is found at the location or Joran cannot read it
      */
-    public static Configurator.ExecutionStatus location(LoggerContext context, String location) {
+    static Configurator.ExecutionStatus location(LoggerContext context, String location) {
         URL resource = JoranFallback.class.getClassLoader().getResource(location);
         if (resource == null) {
             File file = new File(location);

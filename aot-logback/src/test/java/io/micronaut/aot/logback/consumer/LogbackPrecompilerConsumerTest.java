@@ -29,15 +29,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * What a build tool plugin writes, in another package than the engine's and with its public types only: build a
- * request from paths, precompile, log the line, write the result and let Logback find the configurator.
+ * What a Micronaut build plugin writes, in another package than the engine's and with its public types only: build
+ * a request from paths, precompile, log the line, write the entries and let Logback find the configurator, whose
+ * copied classes are package-private and so have to be on its class loader.
  */
 class LogbackPrecompilerConsumerTest {
 
@@ -74,12 +77,15 @@ class LogbackPrecompilerConsumerTest {
                         .targetRelease(25)
                         .build());
         log.add(result.message());
-        List<Path> written = result.writeTo(outputDirectory);
+        for (Map.Entry<String, byte[]> entry : result.entries().entrySet()) {
+            Path file = outputDirectory.resolve(entry.getKey());
+            Files.createDirectories(file.getParent());
+            Files.write(file, entry.getValue());
+        }
 
         assertSame(LogbackPrecompiler.Status.GENERATED, result.status(), result.message());
-        assertTrue(result.generated());
         assertTrue(log.get(0).startsWith("Precompiled logback.xml (application output) into "), log::toString);
-        assertEquals(result.entries().size(), written.size());
+        assertEquals(4, result.entries().size());
         assertTrue(LogbackPrecompiler.applicationInputs().contains("logback.xml"));
         try (URLClassLoader application = new URLClassLoader(new URL[] {outputDirectory.toUri().toURL()},
                 LoggerContext.class.getClassLoader())) {
@@ -90,6 +96,15 @@ class LogbackPrecompilerConsumerTest {
             assertEquals("io.micronaut.aot.logback.generated.LogbackConfigurator",
                     configurators.get(0).getClass().getName());
             assertSame(application, configurators.get(0).getClass().getClassLoader());
+            // The test class path has a logback-test.xml, so the guard hands over to JoranFallback: both
+            // package-private classes link from the configurator written next to them.
+            LoggerContext context = new LoggerContext();
+            try {
+                configurators.get(0).setContext(context);
+                assertNotNull(configurators.get(0).configure(context));
+            } finally {
+                context.stop();
+            }
         }
     }
 }

@@ -88,7 +88,6 @@ class LogbackPrecompilerTest {
         LogbackPrecompiler.Result result = compile(xml);
 
         assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
-        assertTrue(result.generated());
         assertTrue(result.message().startsWith("Precompiled logback.xml (application output) into "
                 + LogbackPrecompiler.CONFIGURATOR_CLASS + ": "), result::message);
         Path classes = write(result);
@@ -182,7 +181,6 @@ class LogbackPrecompilerTest {
         LogbackPrecompiler.Result result = compile(corpus("reject/" + file, null));
 
         assertEquals(LogbackPrecompiler.Status.STOOD_DOWN, result.status());
-        assertFalse(result.generated());
         assertEquals(Map.of(), result.entries());
         String line = result.message();
         assertTrue(line.startsWith("No Logback configuration was precompiled because logback.xml (application"
@@ -440,7 +438,6 @@ class LogbackPrecompilerTest {
                     .invoke(builder, List.of(application.resources(), application.classes()));
             builderType.getMethod("runtimeClasspath", List.class).invoke(builder, LogbackTestSupport.logbackJars());
             builderType.getMethod("targetRelease", int.class).invoke(builder, 25);
-            builderType.getMethod("workDirectory", Path.class).invoke(builder, temporary.resolve("callers-work"));
 
             Object result = precompiler.getMethod("precompile", requestType)
                     .invoke(null, builderType.getMethod("build").invoke(builder));
@@ -466,7 +463,6 @@ class LogbackPrecompilerTest {
         }
 
         assertEquals(LogbackPrecompiler.Status.FAILED, result.status());
-        assertFalse(result.generated());
         assertEquals(Map.of(), result.entries());
         assertTrue(result.message().contains("it could not be compiled: "
                 + ServiceConfigurationError.class.getName() + ": forced provider failure"), result::message);
@@ -529,11 +525,11 @@ class LogbackPrecompilerTest {
                 .precompile(closed);
     }
 
-    /** Writes a result through the public API into a directory of its own. */
+    /** Writes the entries of a result into a directory of its own, as a build plugin does. */
     private Path write(LogbackPrecompiler.Result result) throws IOException {
-        assertTrue(result.generated(), result::message);
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
         Path directory = Files.createTempDirectory(temporary, "generated");
-        result.writeTo(directory);
+        LogbackTestSupport.write(result, directory);
         return directory;
     }
 }

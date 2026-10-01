@@ -27,7 +27,7 @@ description = "Compiles an application's logback.xml into a Logback Configurator
 val logbackFrontend: SourceSet = sourceSets.create("logbackFrontend")
 
 dependencies {
-    // Annotations only, none of which is needed at run time: @Experimental and nullability. micronaut-core is
+    // Annotations only, none of which is needed at run time: @Internal and nullability. micronaut-core is
     // not transitive here, so that the main code compiles against nothing but the JDK besides them.
     compileOnly(mn.micronaut.core) {
         isTransitive = false

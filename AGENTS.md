@@ -14,12 +14,14 @@ that owns the behavior.
   `META-INF/services/io.micronaut.aot.core.AOTCodeGenerator`.
 - `aot-cli` contains the `micronaut-aot` command and classloader isolation used
   by build plugins.
-- `aot-logback` contains the experimental `logback.xml` precompiler that build
-  tools call in-process (`LogbackPrecompiler`). It is not an optimizer: it uses
-  no `AOTContext`, its main code depends on the JDK only, and it publishes no
-  dependency and no platform. Its Logback front end and the classes it copies
-  into applications are a source set of their own, `src/logbackFrontend`, which
-  ships as a jar resource and is never on the module's class path.
+- `aot-logback` contains the `logback.xml` precompiler that the Micronaut
+  build plugins and Micronaut Runner call in-process (`LogbackPrecompiler`). Its
+  API is `@Internal`: keep anything they do not call private or
+  package-private. It is not an optimizer: it uses no `AOTContext`, its main
+  code depends on the JDK only, and it publishes no dependency and no platform.
+  Its Logback front end and the classes it copies into applications are a
+  source set of their own, `src/logbackFrontend`, which ships as a jar resource
+  and is never on the module's class path.
 - `aot-bom` publishes dependency alignment.
 - `src/main/docs/guide` contains the user guide. `toc.yml` is the navigation
   source of truth.

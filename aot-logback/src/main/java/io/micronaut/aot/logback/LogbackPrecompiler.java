@@ -15,7 +15,7 @@
  */
 package io.micronaut.aot.logback;
 
-import io.micronaut.core.annotation.Experimental;
+import io.micronaut.core.annotation.Internal;
 import org.jspecify.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
@@ -67,10 +67,12 @@ import java.util.zip.ZipFile;
  * Compiles an application's {@code logback.xml} into a Logback {@code Configurator} at build time, so that the
  * application does not parse XML and run Joran on the main thread at every start.
  *
- * <p>It is a build-tool-neutral engine: a build tool calls {@link #precompile(Request)} in-process with plain
- * paths and gets class files back. It fails closed: whenever it cannot prove that the generated code reproduces
- * Joran's result exactly, it generates nothing, says why in {@link Result#message()}, and Logback reads
- * {@code logback.xml} with Joran at startup exactly as it would without this class.</p>
+ * <p>It is the engine the Micronaut Gradle and Maven plugins and Micronaut Runner share: they call
+ * {@link #precompile(Request)} in-process with plain paths and get class files back. It is internal to them, not
+ * an API for applications or other build tools, and may change in any release. It fails closed: whenever it
+ * cannot prove that the generated code reproduces Joran's result exactly, it generates nothing, says why in
+ * {@link Result#message()}, and Logback reads {@code logback.xml} with Joran at startup exactly as it would
+ * without this class.</p>
  *
  * <h2>What it generates</h2>
  * <p>Entries under {@value #PACKAGE_PATH}: a {@code LogbackConfigurator} emitted with the ClassFile API, the
@@ -122,20 +124,17 @@ import java.util.zip.ZipFile;
  *
  * @since 3.2.0
  */
-@Experimental
+@Internal
 public final class LogbackPrecompiler {
 
-    /** The package of the generated classes, the same in every packaging. */
-    static final String PACKAGE = "io.micronaut.aot.logback.generated";
-
-    /** The binary name of the generated configurator. */
-    static final String CONFIGURATOR_CLASS = PACKAGE + ".LogbackConfigurator";
+    /** The binary name of the generated configurator, in the same package in every packaging. */
+    static final String CONFIGURATOR_CLASS = "io.micronaut.aot.logback.generated.LogbackConfigurator";
 
     /** The binary name of the class every Joran path goes through. */
-    static final String FALLBACK_CLASS = PACKAGE + ".JoranFallback";
+    static final String FALLBACK_CLASS = "io.micronaut.aot.logback.generated.JoranFallback";
 
     /** The binary name of the class that checks an open class path. */
-    static final String GUARD_CLASS = PACKAGE + ".ClassPathGuard";
+    static final String GUARD_CLASS = "io.micronaut.aot.logback.generated.ClassPathGuard";
 
     /** The entry names of the generated classes. */
     static final String PACKAGE_PATH = "io/micronaut/aot/logback/generated/";
@@ -152,15 +151,6 @@ public final class LogbackPrecompiler {
     /** The system property that, set to {@code false}, hands every call over to Logback's default lookup. */
     static final String OPT_OUT_PROPERTY = "micronaut.logback.precompiled";
 
-    /** The lowest Logback version the generated code is tested against. */
-    static final String MINIMUM_VERSION = "1.5.37";
-
-    /** The first Logback version it is not. */
-    static final String VERSION_LIMIT = "1.6";
-
-    /** The lowest Java release that loads the generated classes, which are class files of that release. */
-    static final int MINIMUM_RELEASE = 25;
-
     /** The front end, which this module carries as a resource and never puts on its own class path. */
     static final String FRONTEND_RESOURCE = "/META-INF/micronaut-aot/logback-frontend.jar";
 
@@ -169,6 +159,15 @@ public final class LogbackPrecompiler {
      * force a front-end or emitter failure; it is never set in production.
      */
     static volatile UnaryOperator<Map<String, Object>> descriptionHook = UnaryOperator.identity();
+
+    /** The lowest Logback version the generated code is tested against. */
+    private static final String MINIMUM_VERSION = "1.5.37";
+
+    /** The first Logback version it is not. */
+    private static final String VERSION_LIMIT = "1.6";
+
+    /** The lowest Java release that loads the generated classes, which are class files of that release. */
+    private static final int MINIMUM_RELEASE = 25;
 
     private static final String FRONTEND_CLASS = "io.micronaut.aot.logback.frontend.LogbackFrontend";
 
@@ -251,8 +250,8 @@ public final class LogbackPrecompiler {
      * propagates.</p>
      *
      * <p>Before it returns, the isolated class loader of the front end is closed and the caller's context class
-     * loader is restored. Calls with distinct {@linkplain Request.Builder#workDirectory(Path) work directories}
-     * are independent of each other.</p>
+     * loader is restored. Each call unpacks the front end into a temporary directory of its own, which it deletes,
+     * so calls are independent of each other.</p>
      *
      * @param request what to compile and for which class path
      * @return what was generated, or why nothing was
@@ -325,7 +324,7 @@ public final class LogbackPrecompiler {
      * ({@code *} matches within a path segment, {@code **}{@code /} any number of directories). Everything else
      * in a root is ignored: its name is read and nothing more, its {@code META-INF/MANIFEST.MF} included.
      *
-     * <p>This is a contract a build tool's input declaration may rely on: a task that declares the application
+     * <p>This is a contract a build plugin's input declaration may rely on: a task that declares the application
      * output filtered by these patterns, plus the runtime class path, stays up to date when ordinary classes and
      * resources change. They are {@code logback.xml}, {@code logback-test.xml}, {@code logback.groovy} and the
      * versioned Logback files; the {@code Configurator} service file; classes under {@code ch/qos/logback/} and
@@ -601,7 +600,7 @@ public final class LogbackPrecompiler {
      *
      * @since 3.2.0
      */
-    @Experimental
+    @Internal
     public static final class Request {
 
         private final List<Path> applicationOutput;
@@ -640,7 +639,7 @@ public final class LogbackPrecompiler {
          *
          * @since 3.2.0
          */
-        @Experimental
+        @Internal
         public static final class Builder {
 
             private @Nullable List<Path> applicationOutput;
@@ -730,13 +729,13 @@ public final class LogbackPrecompiler {
             }
 
             /**
-             * Where the front end jar is unpacked. When unset, a temporary directory that is deleted before
-             * {@link LogbackPrecompiler#precompile(Request)} returns.
+             * Where the front end jar is unpacked, for the tests. When unset, a temporary directory that is
+             * deleted before {@link LogbackPrecompiler#precompile(Request)} returns.
              *
              * @param directory a directory of the caller's, created when it does not exist
              * @return this builder
              */
-            public Builder workDirectory(Path directory) {
+            Builder workDirectory(Path directory) {
                 this.workDirectory = Objects.requireNonNull(directory, "directory");
                 return this;
             }
@@ -758,7 +757,7 @@ public final class LogbackPrecompiler {
      *
      * @since 3.2.0
      */
-    @Experimental
+    @Internal
     public static final class Result {
 
         private final Status status;
@@ -781,15 +780,6 @@ public final class LogbackPrecompiler {
         }
 
         /**
-         * Whether a configurator was generated.
-         *
-         * @return whether {@link #status()} is {@link Status#GENERATED}
-         */
-        public boolean generated() {
-            return status == Status.GENERATED;
-        }
-
-        /**
          * One line for the caller to log: what was compiled, or why nothing was. It is informational for
          * {@link Status#GENERATED} and {@link Status#STOOD_DOWN} and worth a warning for {@link Status#FAILED}.
          *
@@ -800,42 +790,26 @@ public final class LogbackPrecompiler {
         }
 
         /**
-         * The generated entries, for a packager that adds them to an archive: the class files and the
+         * The generated entries: the class files and the
          * {@code META-INF/services/ch.qos.logback.classic.spi.Configurator} file, by entry name, in order.
          *
-         * @return the entries, unmodifiable; empty unless {@link #generated()}
-         */
-        public Map<String, byte[]> entries() {
-            return entries;
-        }
-
-        /**
-         * Writes {@link #entries()} below a directory, which has to be on the application's class path next to
-         * its {@code logback.xml}. It creates directories and writes each entry, nothing else: removing the
-         * output of an earlier build is the caller's job, because only the build tool knows whether the
-         * directory is its own.
+         * <p>The caller writes every entry, by its name, below one directory that is on the application's class
+         * path next to its {@code logback.xml}, or adds every entry to one archive. They have to stay together,
+         * on the same class loader: the generated configurator calls the classes copied next to it, which are
+         * package-private.</p>
          *
-         * <p>A caller that writes into one of the roots it passes as
+         * <p>Removing the output of an earlier build is the caller's job, because only the build tool knows
+         * whether a directory is its own. A caller that writes into one of the roots it passes as
          * {@linkplain Request.Builder#applicationOutput(List) application output}, such as a class directory, has
          * to remove that earlier output <em>before</em> it calls {@link LogbackPrecompiler#precompile(Request)}
          * again, not after: the engine neither replaces nor removes it, and the call is {@link Status#FAILED}
          * while it is there. The output is the service file and the classes of the package
-         * {@value LogbackPrecompiler#PACKAGE}.</p>
+         * {@code io.micronaut.aot.logback.generated}.</p>
          *
-         * @param directory the directory, created when it does not exist
-         * @return the files written, in order; empty, and nothing is touched, unless {@link #generated()}
-         * @throws IOException if a file cannot be written
+         * @return the entries, unmodifiable; empty unless {@link #status()} is {@link Status#GENERATED}
          */
-        public List<Path> writeTo(Path directory) throws IOException {
-            Objects.requireNonNull(directory, "directory");
-            List<Path> files = new ArrayList<>(entries.size());
-            for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
-                Path file = directory.resolve(entry.getKey());
-                Files.createDirectories(file.getParent());
-                Files.write(file, entry.getValue());
-                files.add(file);
-            }
-            return files;
+        public Map<String, byte[]> entries() {
+            return entries;
         }
 
         private static Result standDown(String reason) {
@@ -856,7 +830,7 @@ public final class LogbackPrecompiler {
      *
      * @since 3.2.0
      */
-    @Experimental
+    @Internal
     public enum Status {
 
         /** A configurator was generated. */
@@ -889,8 +863,8 @@ public final class LogbackPrecompiler {
      *                        path entry
      * @param roots           what the layer is made of, in order: every application root, or the one entry
      */
-    record Layer(String description, @Nullable Path source, Collection<String> names, EntryReader reader,
-                 List<Path> logbackXmlRoots, List<Root> roots) {
+    private record Layer(String description, @Nullable Path source, Collection<String> names, EntryReader reader,
+                         List<Path> logbackXmlRoots, List<Root> roots) {
 
         /**
          * The application output: one layer made of every root, where the first root that holds a name wins.
@@ -1011,7 +985,7 @@ public final class LogbackPrecompiler {
 
     /** Reads the content of one entry of a layer. */
     @FunctionalInterface
-    interface EntryReader {
+    private interface EntryReader {
 
         /**
          * Reads one entry.
