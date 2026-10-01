@@ -254,6 +254,7 @@ class LogbackPrecompilerStandDownTest {
         LogbackPrecompiler.Result result = application.precompile(false);
 
         assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertEquals(List.of(), result.warnings());
     }
 
     /**
@@ -351,6 +352,182 @@ class LogbackPrecompilerStandDownTest {
         LogbackPrecompiler.Result result = application.precompile(false);
 
         assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertEquals(List.of(), result.warnings());
+    }
+
+    // ------------------------------------------------------------------ warnings
+
+    /**
+     * A packaged configuration that enables Micronaut's distributed configuration client does not stand the
+     * precompiler down, but adds a warning that names the file and its root or jar: a location that the
+     * configuration server supplies would not be applied. Every format the scan reads counts, in an application
+     * root and in a dependency, at the root and under {@code config/}.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"application.properties", "bootstrap.properties camel case", "bootstrap.yml nested",
+        "bootstrap.yaml flat key", "application-prod.yml yes", "application.yml flow style",
+        "application.json on one line", "application.toml table", "bootstrap.toml inline table",
+        "application.groovy closure", "config/bootstrap.yml", "bootstrap.yml of the class directory",
+        "bootstrap.yml of a dependency jar", "application.properties of a dependency directory"})
+    void warnsOnAPackagedConfigurationThatEnablesTheConfigurationClient(String condition) throws IOException {
+        Map<String, String> files = new LinkedHashMap<>();
+        files.put("logback.xml", LOGBACK_XML);
+        files.put("application.yml", "micronaut:\n  application:\n    name: demo\n");
+        String name = condition.contains(" ") ? condition.substring(0, condition.indexOf(' ')) : condition;
+        String content = switch (condition) {
+            case "application.properties", "application.properties of a dependency directory" ->
+                    "micronaut.application.name=demo\nmicronaut.config-client.enabled=true\n";
+            case "bootstrap.properties camel case" -> "micronaut.configClient.enabled = TRUE \n";
+            case "bootstrap.yml nested", "config/bootstrap.yml", "bootstrap.yml of the class directory",
+                 "bootstrap.yml of a dependency jar" -> """
+                    micronaut:
+                      application:
+                        name: demo
+                      config-client:
+                        enabled: true
+                    """;
+            case "bootstrap.yaml flat key" -> "micronaut.config-client.enabled: true\n";
+            case "application-prod.yml yes" -> "micronaut:\n  config-client:\n    enabled: yes\n";
+            case "application.yml flow style" -> "micronaut: {config-client: {enabled: 'true'}}\n";
+            case "application.json on one line" -> "{\"micronaut\":{\"config-client\":{\"enabled\":true}}}";
+            case "application.toml table" -> "[micronaut.config-client]\nenabled = true\n";
+            case "bootstrap.toml inline table" -> "[micronaut]\nconfig-client = { enabled = true }\n";
+            case "application.groovy closure" -> "micronaut { 'config-client' { enabled = true } }\n";
+            default -> throw new IllegalArgumentException(condition);
+        };
+        Path dependency = null;
+        if (condition.endsWith("dependency jar")) {
+            dependency = dependency(true, Map.of(name, content));
+        } else if (condition.endsWith("dependency directory")) {
+            dependency = dependency(false, Map.of(name, content));
+        } else if (!condition.endsWith("class directory")) {
+            files.put(name, content);
+        }
+        Application application = application(files);
+        if (condition.endsWith("class directory")) {
+            LogbackTestSupport.write(application.classes().resolve(name), content);
+        }
+        String where;
+        if (condition.endsWith("dependency jar")) {
+            where = "logging-defaults.jar";
+        } else if (dependency != null) {
+            where = dependency.toString();
+        } else {
+            where = (condition.endsWith("class directory") ? application.classes() : application.resources())
+                    .toString();
+        }
+
+        LogbackPrecompiler.Result result = dependency == null ? application.precompile(false)
+                : LogbackPrecompiler.precompile(
+                        application.request().runtimeClasspath(withLogback(dependency)).build());
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertEquals(4, result.entries().size());
+        assertTrue(result.message().startsWith("Precompiled logback.xml (application output) into "),
+                result::message);
+        assertEquals(List.of(configClientWarning(name + " of " + where)), result.warnings());
+    }
+
+    /** One line for each file that enables the client, in class path order, and each one names its file. */
+    @Test
+    void warnsOnceForEachFileThatEnablesTheConfigurationClient() throws IOException {
+        String enabled = "micronaut.config-client.enabled=true\n";
+        Application application = application(Map.of("logback.xml", LOGBACK_XML,
+                "bootstrap.properties", enabled, "application.properties", enabled));
+        LogbackTestSupport.write(application.classes().resolve("bootstrap.properties"), enabled);
+        Path dependency = dependency(true, Map.of("bootstrap.properties", enabled));
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application.request().runtimeClasspath(withLogback(dependency)).build());
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertEquals(List.of(
+                configClientWarning("application.properties of " + application.resources()),
+                configClientWarning("bootstrap.properties of " + application.resources()),
+                configClientWarning("bootstrap.properties of " + application.classes()),
+                configClientWarning("bootstrap.properties of logging-defaults.jar")), result.warnings());
+        for (String line : result.warnings()) {
+            assertFalse(line.contains("\n"), line);
+        }
+    }
+
+    /**
+     * A client that is turned off, a mention of {@code config-client} without {@code enabled} set to {@code true},
+     * an {@code enabled} key of something else, and a file the scan does not read give no warning.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"bootstrap.yml enabled false", "bootstrap.properties enabled false",
+        "bootstrap.properties another key enabled", "bootstrap.yml mention without enabled",
+        "application.yml enabled without the client", "application.json enabled false",
+        "application.toml enabled false", "application.groovy enabled false",
+        "META-INF/bootstrap.yml not read", "com/example/application.properties not read"})
+    void aConfigurationClientThatIsNotEnabledGivesNoWarning(String condition) throws IOException {
+        String name = condition.substring(0, condition.indexOf(' '));
+        String content = switch (condition) {
+            case "bootstrap.yml enabled false" -> """
+                    micronaut:
+                      config-client:
+                        enabled: false
+                      server:
+                        port: 8080
+                    """;
+            case "bootstrap.properties enabled false" -> "micronaut.config-client.enabled=false\n";
+            case "bootstrap.properties another key enabled" ->
+                    "micronaut.config-client.read-timeout=30s\nmicronaut.metrics.enabled=true\n";
+            case "bootstrap.yml mention without enabled" -> "micronaut:\n  config-client:\n    read-timeout: 30s\n";
+            case "application.yml enabled without the client" -> "micronaut:\n  metrics:\n    enabled: true\n";
+            case "application.json enabled false" -> "{\"micronaut\":{\"config-client\":{\"enabled\":false}}}";
+            case "application.toml enabled false" -> "[micronaut.config-client]\nenabled = false\n";
+            case "application.groovy enabled false" -> "micronaut { 'config-client' { enabled = false } }\n";
+            case "META-INF/bootstrap.yml not read" -> "micronaut:\n  config-client:\n    enabled: true\n";
+            case "com/example/application.properties not read" -> "micronaut.config-client.enabled=true\n";
+            default -> throw new IllegalArgumentException(condition);
+        };
+        Application application = application(Map.of("logback.xml", LOGBACK_XML, name, content));
+
+        LogbackPrecompiler.Result result = application.precompile(false);
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertEquals(List.of(), result.warnings());
+    }
+
+    /**
+     * A stand-down or a failure has no warnings, also when a file enables the client: in the same file as the
+     * reason, before it in class path order, or anywhere when a later rule stands down or fails.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"the same file sets logger.config", "an earlier file enables the client",
+        "a dependency imports configuration", "subset rejection", "no logback.xml", "taken generated name"})
+    void aResultThatGeneratesNothingHasNoWarnings(String condition) throws IOException {
+        Map<String, String> files = new LinkedHashMap<>();
+        files.put("logback.xml", LOGBACK_XML);
+        files.put("application.yml", "micronaut:\n  config-client:\n    enabled: true\n");
+        List<Path> runtimeClasspath = LogbackTestSupport.logbackJars();
+        LogbackPrecompiler.Status status = LogbackPrecompiler.Status.STOOD_DOWN;
+        switch (condition) {
+            case "the same file sets logger.config" -> files.put("application.yml",
+                    "micronaut:\n  config-client:\n    enabled: true\nlogger:\n  config: custom.xml\n");
+            // application.yml comes before bootstrap.properties in the order of the names.
+            case "an earlier file enables the client" ->
+                    files.put("bootstrap.properties", "logger.config=custom.xml\n");
+            case "a dependency imports configuration" -> runtimeClasspath = withLogback(dependency(true,
+                    Map.of("bootstrap.yml", "micronaut:\n  config:\n    import: classpath://logging\n")));
+            case "subset rejection" -> files.put("logback.xml", LOGBACK_XML.replace("<configuration>",
+                    "<configuration>\n    <property name=\"APP\" value=\"demo\"/>"));
+            case "no logback.xml" -> files.remove("logback.xml");
+            case "taken generated name" -> {
+                files.put(LogbackPrecompiler.CONFIGURATOR_ENTRY, "not ours");
+                status = LogbackPrecompiler.Status.FAILED;
+            }
+            default -> throw new IllegalArgumentException(condition);
+        }
+
+        LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
+                application(files).request().runtimeClasspath(runtimeClasspath).build());
+
+        assertEquals(status, result.status(), result::message);
+        assertEquals(Map.of(), result.entries());
+        assertEquals(List.of(), result.warnings());
     }
 
     // ------------------------------------------------------------------ stand-downs
@@ -790,9 +967,20 @@ class LogbackPrecompilerStandDownTest {
         return runtimeClasspath;
     }
 
+    /** The warning for a packaged file that enables the configuration client, which it names with its root or jar. */
+    private static String configClientWarning(String file) {
+        return "The packaged " + file + " enables Micronaut's distributed configuration client"
+                + " (micronaut.config-client.enabled): a logger.config or logback.configurationFile that distributed"
+                + " configuration supplies is not applied while the generated configurator is registered. Pass the"
+                + " location as the JVM system property -Dlogger.config or the LOGGER_CONFIG environment variable"
+                + " instead, or turn precompilation off in the build plugin; -Dmicronaut.logback.precompiled=false"
+                + " does not help, as Micronaut then still calls the configurator";
+    }
+
     private static void assertStoodDown(LogbackPrecompiler.Result result, String reason) {
         assertEquals(LogbackPrecompiler.Status.STOOD_DOWN, result.status(), result::message);
         assertEquals(Map.of(), result.entries());
+        assertEquals(List.of(), result.warnings());
         String line = result.message();
         assertTrue(line.startsWith(STAND_DOWN), line);
         assertTrue(line.contains(reason), () -> line + "\ndoes not name: " + reason);
@@ -803,6 +991,7 @@ class LogbackPrecompilerStandDownTest {
     private static void assertUnreadable(LogbackPrecompiler.Result result, String what) {
         assertEquals(LogbackPrecompiler.Status.FAILED, result.status(), result::message);
         assertEquals(Map.of(), result.entries());
+        assertEquals(List.of(), result.warnings());
         assertTrue(result.message().startsWith(STAND_DOWN + "the class path could not be read: "), result::message);
         assertTrue(result.message().contains(what), result::message);
         assertTrue(result.message().endsWith(JORAN_AT_STARTUP), result::message);

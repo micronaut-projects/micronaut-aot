@@ -21,7 +21,8 @@ final class LogbackPrecompilation {
                                                 Path classesDirectory,
                                                 List<Path> runtimeClasspath,
                                                 Path outputDirectory,
-                                                Consumer<String> log) throws IOException {
+                                                Consumer<String> log,
+                                                Consumer<String> warn) throws IOException {
         //tag::precompile[]
         LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
             LogbackPrecompiler.Request.builder()
@@ -30,6 +31,7 @@ final class LogbackPrecompilation {
                 .targetRelease(25)
                 .build());
         log.accept(result.message());
+        result.warnings().forEach(warn);
         for (Map.Entry<String, byte[]> entry : result.entries().entrySet()) {
             Path file = outputDirectory.resolve(entry.getKey());
             Files.createDirectories(file.getParent());

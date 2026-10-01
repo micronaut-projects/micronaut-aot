@@ -39,8 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * What a Micronaut build plugin writes, in another package than the engine's and with its public types only: build
- * a request from paths, precompile, log the line, write the entries and let Logback find the configurator, whose
- * copied classes are package-private and so have to be on its class loader.
+ * a request from paths, precompile, log the line and the warnings, write the entries and let Logback find the
+ * configurator, whose copied classes are package-private and so have to be on its class loader.
  */
 class LogbackPrecompilerConsumerTest {
 
@@ -62,6 +62,14 @@ class LogbackPrecompilerConsumerTest {
                     </root>
                 </configuration>
                 """);
+        // An application that reads distributed configuration: still precompiled, with a warning.
+        Files.writeString(processedResources.resolve("bootstrap.yml"), """
+                micronaut:
+                  application:
+                    name: demo
+                  config-client:
+                    enabled: true
+                """);
         Path classesDirectory = Files.createDirectories(temporary.resolve("classes/java/main"));
         List<Path> runtimeClasspath = new ArrayList<>();
         for (Class<?> type : List.of(LoggerContext.class, Context.class, ILoggerFactory.class)) {
@@ -69,6 +77,7 @@ class LogbackPrecompilerConsumerTest {
         }
         Path outputDirectory = temporary.resolve("generated/logback");
         List<String> log = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
 
         LogbackPrecompiler.Result result = LogbackPrecompiler.precompile(
                 LogbackPrecompiler.Request.builder()
@@ -77,6 +86,7 @@ class LogbackPrecompilerConsumerTest {
                         .targetRelease(25)
                         .build());
         log.add(result.message());
+        warnings.addAll(result.warnings());
         for (Map.Entry<String, byte[]> entry : result.entries().entrySet()) {
             Path file = outputDirectory.resolve(entry.getKey());
             Files.createDirectories(file.getParent());
@@ -85,6 +95,9 @@ class LogbackPrecompilerConsumerTest {
 
         assertSame(LogbackPrecompiler.Status.GENERATED, result.status(), result.message());
         assertTrue(log.get(0).startsWith("Precompiled logback.xml (application output) into "), log::toString);
+        assertEquals(1, warnings.size(), warnings::toString);
+        assertTrue(warnings.get(0).startsWith("The packaged bootstrap.yml of " + processedResources
+                + " enables Micronaut's distributed configuration client"), warnings::toString);
         assertEquals(4, result.entries().size());
         assertTrue(LogbackPrecompiler.applicationInputs().contains("logback.xml"));
         try (URLClassLoader application = new URLClassLoader(new URL[] {outputDirectory.toUri().toURL()},

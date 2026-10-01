@@ -90,6 +90,21 @@ class LogbackPrecompilerApiTest {
         assertThrows(UnsupportedOperationException.class, entries::clear);
     }
 
+    /** The warnings are a list of their own, empty or not, that the caller cannot change. */
+    @Test
+    void theWarningsCannotBeChanged() throws IOException {
+        List<String> none = application().precompile(false).warnings();
+        List<String> one = LogbackTestSupport.application(temporary, Map.of("logback.xml", LOGBACK_XML,
+                "bootstrap.properties", "micronaut.config-client.enabled=true\n")).precompile(false).warnings();
+
+        assertEquals(List.of(), none);
+        assertEquals(1, one.size(), one::toString);
+        for (List<String> warnings : List.of(none, one)) {
+            assertThrows(UnsupportedOperationException.class, () -> warnings.add("other"));
+            assertThrows(UnsupportedOperationException.class, warnings::clear);
+        }
+    }
+
     // ------------------------------------------------------------------ narrow inputs
 
     @Test
@@ -255,9 +270,13 @@ class LogbackPrecompilerApiTest {
         }
     }
 
-    /** The same status, the same entries byte for byte and the same line but for the time it took. */
+    /**
+     * The same status, the same entries byte for byte, the same line but for the time it took and the same
+     * warnings.
+     */
     private static void assertSameResult(LogbackPrecompiler.Result expected, LogbackPrecompiler.Result actual) {
         assertEquals(expected.status(), actual.status(), actual::message);
+        assertEquals(expected.warnings(), actual.warnings());
         assertEquals(List.copyOf(expected.entries().keySet()), List.copyOf(actual.entries().keySet()));
         for (String name : expected.entries().keySet()) {
             assertArrayEquals(expected.entries().get(name), actual.entries().get(name), name);

@@ -126,6 +126,16 @@ import java.util.zip.ZipFile;
  * that is still in the application output, a class path that cannot be read, or an unexpected failure, is
  * {@link Status#FAILED}.</p>
  *
+ * <h2>When it warns</h2>
+ * <p>One case still generates, as {@link Status#GENERATED}, but adds a line to {@link Result#warnings()}: a
+ * packaged {@code application*} or {@code bootstrap*} file, of the application output or of any entry of the
+ * runtime class path, that might enable Micronaut's distributed configuration client
+ * ({@code micronaut.config-client.enabled} set to {@code true}). A {@code logger.config} or
+ * {@code logback.configurationFile} that distributed configuration supplies is not applied while the generated
+ * configurator is registered, and the build cannot know whether the configuration server supplies one. A client
+ * that only the run time enables, by an environment variable, a system property or a file that is not on the class
+ * path given here, is not seen. A stand-down or a failure has no warnings.</p>
+ *
  * @since 3.2.0
  */
 @Internal
@@ -239,6 +249,27 @@ public final class LogbackPrecompiler {
     /** The key of Micronaut's configuration imports, lower-cased. */
     private static final String CONFIG_IMPORT = "micronaut.config.import";
 
+    /** The key that enables Micronaut's distributed configuration client. */
+    private static final String CONFIG_CLIENT_ENABLED = "micronaut.config-client.enabled";
+
+    /** {@link #CONFIG_CLIENT_ENABLED} as a {@code .properties} key is compared: lower-cased, without hyphens. */
+    private static final String CONFIG_CLIENT_ENABLED_KEY = CONFIG_CLIENT_ENABLED.replace("-", "");
+
+    /**
+     * The word {@code config-client}, or {@code configClient}, in lower-cased text, wherever it stands: a block or
+     * flow YAML key, a dotted key, a JSON member, a TOML table name, a Groovy closure.
+     */
+    private static final Pattern CONFIG_CLIENT_WORD = Pattern.compile("(?<![a-z0-9_-])config-?client(?![a-z0-9_-])");
+
+    /**
+     * An {@code enabled} key set to {@code true} in lower-cased text, quoted or not: the word, then {@code :} or
+     * {@code =}, with at most a closing quote, a closing bracket and white space in between, then the value, quoted
+     * or not. {@code yes} and {@code on} count as well: SnakeYAML, with which Micronaut reads YAML, reads them as
+     * {@code true}.
+     */
+    private static final Pattern ENABLED_TRUE =
+            Pattern.compile("(?<![a-z0-9_-])enabled[\"']?\\s*+]?\\s*+[:=]\\s*+[\"']?(?:true|yes|on)(?![a-z0-9_-])");
+
     /** The name under which Micronaut reads a logging configuration location: a property or an environment variable. */
     private static final String LOGGER_CONFIG_PROPERTY = "logger.config";
 
@@ -286,6 +317,7 @@ public final class LogbackPrecompiler {
                     + MINIMUM_RELEASE + ", the Java release of the generated classes");
         }
         List<Layer> layers = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
         Survey survey;
         try {
             layers.add(Layer.application(request.applicationOutput));
@@ -303,7 +335,7 @@ public final class LogbackPrecompiler {
             survey = Survey.of(layers);
             String reason = survey.standDownReason();
             if (reason == null) {
-                reason = packagedConfigurationReason(layers);
+                reason = packagedConfigurationReason(layers, warnings);
             }
             if (reason != null) {
                 return Result.standDown(reason);
@@ -325,7 +357,7 @@ public final class LogbackPrecompiler {
             } else {
                 Files.createDirectories(work);
             }
-            return compile(request, layers, survey, work.resolve(FRONTEND_FILE), start);
+            return compile(request, layers, survey, work.resolve(FRONTEND_FILE), start, warnings);
         } catch (VirtualMachineError e) {
             throw e;
         } catch (IOException | ReflectiveOperationException | RuntimeException | Error e) {
@@ -414,8 +446,8 @@ public final class LogbackPrecompiler {
         return 0;
     }
 
-    private static Result compile(Request request, List<Layer> layers, Survey survey, Path frontEnd, long start)
-            throws IOException, ReflectiveOperationException {
+    private static Result compile(Request request, List<Layer> layers, Survey survey, Path frontEnd, long start,
+                                  List<String> warnings) throws IOException, ReflectiveOperationException {
         Layer source = layers.get(survey.logbackXml);
         try (InputStream in = LogbackPrecompiler.class.getResourceAsStream(FRONTEND_RESOURCE)) {
             if (in == null) {
@@ -462,7 +494,7 @@ public final class LogbackPrecompiler {
         int patterns = (Integer) description.get("patterns");
         return new Result(Status.GENERATED, "Precompiled logback.xml (" + source.description() + ") into "
                 + CONFIGURATOR_CLASS + ": " + appenders + (appenders == 1 ? " appender, " : " appenders, ")
-                + patterns + (patterns == 1 ? " pattern, " : " patterns, ") + millis + " ms", entries);
+                + patterns + (patterns == 1 ? " pattern, " : " patterns, ") + millis + " ms", entries, warnings);
     }
 
     private static Path source(List<Layer> layers, int index) throws IOException {
@@ -549,18 +581,19 @@ public final class LogbackPrecompiler {
      * provider supplies, and an imported file can import further. This check does not follow imports, so it
      * stands down on any import, whatever it names.</p>
      *
-     * <p>A {@code .properties} file is parsed, and sets one when it has either key, or imports when it has
-     * {@code micronaut.config.import}, an indexed {@code micronaut.config.import[n]} or a structured
-     * {@code micronaut.config.import.*} key. Any other format is not parsed, so the check is on its text,
-     * ignoring case, and errs on the side of standing down: the text names {@code configurationFile} or
-     * {@code logger.config}, or it has the word {@code logger} and a {@code config} key anywhere, in any order and
-     * on any line; or it names {@code config.import}, or it has an {@code import} key and the word
-     * {@code config} anywhere. That covers nested YAML, flow-style YAML, JSON on one line, TOML tables and inline
-     * tables and a Groovy closure. A false positive only costs the optimisation.</p>
+     * <p>A file that may enable Micronaut's distributed configuration client does not stand it down: a location
+     * that a configuration server supplies is not applied either, but the build cannot know whether the server
+     * supplies one. Such a file adds a line to {@code warnings} instead, which only a generated result
+     * carries. {@link PackagedFile} says what each rule reads.</p>
+     *
+     * @param layers   the class path, the application output first
+     * @param warnings where a line for each file that may enable the client is added, in class path order
+     * @return the reason to stand down, or {@code null}
      */
-    private static @Nullable String packagedConfigurationReason(List<Layer> layers) throws IOException {
+    private static @Nullable String packagedConfigurationReason(List<Layer> layers, List<String> warnings)
+            throws IOException {
         for (int i = 0; i < layers.size(); i++) {
-            String reason = packagedConfigurationReason(layers.get(i), i == 0);
+            String reason = packagedConfigurationReason(layers.get(i), i == 0, warnings);
             if (reason != null) {
                 return reason;
             }
@@ -569,18 +602,24 @@ public final class LogbackPrecompiler {
     }
 
     /**
-     * The reason of {@link #packagedConfigurationReason(List)} for one layer, checking each of its roots in order.
+     * The reason of {@link #packagedConfigurationReason(List, List)} for one layer, checking each of its roots in
+     * order.
      */
-    private static @Nullable String packagedConfigurationReason(Layer layer, boolean application) throws IOException {
+    private static @Nullable String packagedConfigurationReason(Layer layer, boolean application,
+                                                                List<String> warnings) throws IOException {
         Set<String> seen = new HashSet<>();
         for (Root root : layer.roots()) {
             for (String name : root.names()) {
                 if (!isPackagedConfiguration(name)) {
                     continue;
                 }
-                String what = locationReason(name, root.read(name));
+                PackagedFile file = PackagedFile.read(name, root.read(name));
+                String what = file.standDownReason();
                 if (what != null) {
                     return "the packaged " + name + where(layer, root, application, seen.contains(name)) + " " + what;
+                }
+                if (file.enablesConfigClient()) {
+                    warnings.add(configClientWarning(name + where(layer, root, application, true)));
                 }
                 seen.add(name);
             }
@@ -595,51 +634,106 @@ public final class LogbackPrecompiler {
 
     /**
      * How a message names where a packaged configuration file is: by its class path entry, or, for the
-     * application output, by its root only when an earlier root shadows it.
+     * application output, by its root when {@code nameRoot} asks for it. A stand-down names the root only when an
+     * earlier root shadows the file; a warning always names it.
      */
-    private static String where(Layer layer, Root root, boolean application, boolean shadowed) {
+    private static String where(Layer layer, Root root, boolean application, boolean nameRoot) {
         if (!application) {
             return " of " + layer.description();
         }
-        return shadowed ? " of " + root.path() : "";
+        return nameRoot ? " of " + root.path() : "";
     }
 
     /**
-     * Why a packaged configuration file stands the precompiler down, or {@code null} when it does not: it may set
-     * a location, or it may import configuration that does.
+     * The warning for a packaged configuration file that may enable the distributed configuration client: which
+     * file, what is not applied and what to do instead. The run-time opt-out is no remedy: with it the generated
+     * configurator runs Logback's default lookup, and Micronaut still calls it instead of reading the location.
+     *
+     * @param file the file's name in its root, then where it is, as {@link #where} names it
+     * @return one line
      */
-    private static @Nullable String locationReason(String name, byte[] content) throws IOException {
-        boolean setsLocation;
-        boolean imports;
-        if (name.endsWith(".properties")) {
+    private static String configClientWarning(String file) {
+        return "The packaged " + file + " enables Micronaut's distributed configuration client ("
+                + CONFIG_CLIENT_ENABLED + "): a " + LOGGER_CONFIG_PROPERTY + " or logback.configurationFile that"
+                + " distributed configuration supplies is not applied while the generated configurator is registered."
+                + " Pass the location as the JVM system property -D" + LOGGER_CONFIG_PROPERTY + " or the LOGGER_CONFIG"
+                + " environment variable instead, or turn precompilation off in the build plugin; -D"
+                + OPT_OUT_PROPERTY + "=false does not help, as Micronaut then still calls the configurator";
+    }
+
+    /**
+     * What a packaged configuration file may do that the generated code cannot follow.
+     *
+     * <p>A {@code .properties} file is parsed. It sets a location when it has {@code logger.config} or
+     * {@code logback.configurationFile}; it imports when it has {@code micronaut.config.import}, an indexed
+     * {@code micronaut.config.import[n]} or a structured {@code micronaut.config.import.*} key; and it enables the
+     * client when {@code micronaut.config-client.enabled} is {@code true}. Keys are compared ignoring case and
+     * hyphens, the value ignoring case and surrounding white space.</p>
+     *
+     * <p>Any other format is not parsed, so each rule is on its text, ignoring case, and errs on the side of the
+     * stand-down or the warning. It sets a location when the text names {@code configurationFile} or
+     * {@code logger.config}, or has the word {@code logger} and a {@code config} key anywhere, in any order and on
+     * any line. It imports when the text names {@code config.import}, or has an {@code import} key and the word
+     * {@code config} anywhere. It enables the client when the text has the word {@code config-client} (or
+     * {@code configClient}) and an {@code enabled} key set to {@code true} anywhere. That covers nested YAML,
+     * flow-style YAML, JSON on one line, TOML tables and inline tables and a Groovy closure. A false positive only
+     * costs the optimisation, or a warning.</p>
+     *
+     * @param setsLocation        whether it may set {@code logger.config} or {@code logback.configurationFile}
+     * @param imports             whether it may import configuration with {@code micronaut.config.import}
+     * @param enablesConfigClient whether it may enable Micronaut's distributed configuration client
+     */
+    private record PackagedFile(boolean setsLocation, boolean imports, boolean enablesConfigClient) {
+
+        static PackagedFile read(String name, byte[] content) throws IOException {
+            if (name.endsWith(".properties")) {
+                return parse(content);
+            }
+            String lower = new String(content, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
+            return new PackagedFile(
+                    lower.contains("configurationfile") || lower.contains("configuration-file")
+                            || lower.contains(LOGGER_CONFIG_PROPERTY)
+                            || LOGGER_WORD.matcher(lower).find() && CONFIG_KEY.matcher(lower).find(),
+                    CONFIG_IMPORT_PATH.matcher(lower).find()
+                            || IMPORT_KEY.matcher(lower).find() && CONFIG_WORD.matcher(lower).find(),
+                    CONFIG_CLIENT_WORD.matcher(lower).find() && ENABLED_TRUE.matcher(lower).find());
+        }
+
+        private static PackagedFile parse(byte[] content) throws IOException {
             Properties properties = new Properties();
             properties.load(new ByteArrayInputStream(content));
-            setsLocation = false;
-            imports = false;
+            boolean setsLocation = false;
+            boolean imports = false;
+            boolean enablesConfigClient = false;
             for (String key : properties.stringPropertyNames()) {
                 String normalized = key.toLowerCase(Locale.ROOT).replace("-", "");
                 setsLocation |= normalized.equals(LOGGER_CONFIG_PROPERTY)
                         || normalized.equals("logback.configurationfile");
                 imports |= normalized.equals(CONFIG_IMPORT) || normalized.startsWith(CONFIG_IMPORT + ".")
                         || normalized.startsWith(CONFIG_IMPORT + "[");
+                enablesConfigClient |= normalized.equals(CONFIG_CLIENT_ENABLED_KEY)
+                        && properties.getProperty(key).strip().equalsIgnoreCase("true");
             }
-        } else {
-            String lower = new String(content, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
-            setsLocation = lower.contains("configurationfile") || lower.contains("configuration-file")
-                    || lower.contains(LOGGER_CONFIG_PROPERTY)
-                    || LOGGER_WORD.matcher(lower).find() && CONFIG_KEY.matcher(lower).find();
-            imports = CONFIG_IMPORT_PATH.matcher(lower).find()
-                    || IMPORT_KEY.matcher(lower).find() && CONFIG_WORD.matcher(lower).find();
+            return new PackagedFile(setsLocation, imports, enablesConfigClient);
         }
-        if (setsLocation) {
-            return MAY_SET_A_LOCATION + ", which Micronaut applies only without a Configurator service";
+
+        /**
+         * Why the file stands the precompiler down, or {@code null} when it does not: it may set a location, or it
+         * may import configuration that does. Enabling the client is no reason.
+         *
+         * @return the reason, or {@code null}
+         */
+        @Nullable String standDownReason() {
+            if (setsLocation) {
+                return MAY_SET_A_LOCATION + ", which Micronaut applies only without a Configurator service";
+            }
+            if (imports) {
+                return "may import configuration with " + CONFIG_IMPORT + ", which is not read here and "
+                        + MAY_SET_A_LOCATION + "; Micronaut applies such a location only without a Configurator"
+                        + " service";
+            }
+            return null;
         }
-        if (imports) {
-            return "may import configuration with " + CONFIG_IMPORT + ", which is not read here and "
-                    + MAY_SET_A_LOCATION + "; Micronaut applies such a location only without a Configurator"
-                    + " service";
-        }
-        return null;
     }
 
     /**
@@ -731,7 +825,8 @@ public final class LogbackPrecompiler {
              * every entry are read as well, at its root, where Micronaut reads those of a dependency too, and
              * under {@code config/}, which Micronaut reads only when {@code overrideConfigLocations} adds it. The
              * engine stands down when one might set {@code logger.config} or {@code logback.configurationFile},
-             * or might import configuration with {@code micronaut.config.import}. Every entry has to exist.</p>
+             * or might import configuration with {@code micronaut.config.import}, and warns when one might enable
+             * the distributed configuration client. Every entry has to exist.</p>
              *
              * @param entries jars or directories
              * @return this builder
@@ -800,7 +895,9 @@ public final class LogbackPrecompiler {
     }
 
     /**
-     * The outcome of one precompilation.
+     * The outcome of one precompilation: its {@link #status()}, one {@link #message()} for the caller to log, the
+     * generated {@link #entries()}, and the {@link #warnings()} the caller logs at warning level, which most
+     * results do not have.
      *
      * @since 3.2.0
      */
@@ -810,11 +907,13 @@ public final class LogbackPrecompiler {
         private final Status status;
         private final String message;
         private final Map<String, byte[]> entries;
+        private final List<String> warnings;
 
-        private Result(Status status, String message, Map<String, byte[]> entries) {
+        private Result(Status status, String message, Map<String, byte[]> entries, List<String> warnings) {
             this.status = status;
             this.message = message;
             this.entries = Collections.unmodifiableMap(entries);
+            this.warnings = List.copyOf(warnings);
         }
 
         /**
@@ -829,11 +928,32 @@ public final class LogbackPrecompiler {
         /**
          * One line for the caller to log: what was compiled, or why nothing was. It is informational for
          * {@link Status#GENERATED} and {@link Status#STOOD_DOWN} and worth a warning for {@link Status#FAILED}.
+         * Whatever else deserves a warning is in {@link #warnings()}, never in this line.
          *
          * @return the line
          */
         public String message() {
             return message;
+        }
+
+        /**
+         * Lines for the caller to log at warning level, each on its own, after {@link #message()}. Each line is
+         * complete: it names the file it is about, what it means at run time and what to do instead.
+         *
+         * <p>Only a {@link Status#GENERATED} result can have any, and most have none. It has one line for each
+         * packaged {@code application*} or {@code bootstrap*} file, of the application output or of an entry of
+         * the runtime class path, that may enable Micronaut's distributed configuration client
+         * ({@code micronaut.config-client.enabled} set to {@code true}): a {@code logger.config} or
+         * {@code logback.configurationFile} that distributed configuration supplies is not applied while the
+         * generated configurator is registered. A client that is enabled only at run time, by an environment
+         * variable, a system property or a file that is not on the class path of the request, cannot be seen and
+         * gives no line.</p>
+         *
+         * @return the lines, unmodifiable, in class path order; empty unless {@link #status()} is
+         *         {@link Status#GENERATED}
+         */
+        public List<String> warnings() {
+            return warnings;
         }
 
         /**
@@ -860,11 +980,11 @@ public final class LogbackPrecompiler {
         }
 
         private static Result standDown(String reason) {
-            return new Result(Status.STOOD_DOWN, NOT_PRECOMPILED + reason + JORAN_AT_STARTUP, Map.of());
+            return new Result(Status.STOOD_DOWN, NOT_PRECOMPILED + reason + JORAN_AT_STARTUP, Map.of(), List.of());
         }
 
         private static Result failed(String message) {
-            return new Result(Status.FAILED, message, Map.of());
+            return new Result(Status.FAILED, message, Map.of(), List.of());
         }
 
         private static Result failure(String what, Throwable cause) {

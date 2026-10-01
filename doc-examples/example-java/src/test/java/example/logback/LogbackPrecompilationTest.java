@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,6 +36,50 @@ class LogbackPrecompilationTest {
 
     @Test
     void precompilesTheLogbackConfigurationOfAnApplication() throws Exception {
+        Path processedResources = processedResources();
+        Path classesDirectory = Files.createDirectories(temporaryDirectory.resolve("classes/java/main"));
+        Path outputDirectory = temporaryDirectory.resolve("generated/logback");
+        List<String> log = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+
+        LogbackPrecompiler.Result result = LogbackPrecompilation.precompile(processedResources, classesDirectory,
+            applicationRuntimeClasspath(), outputDirectory, log::add, warnings::add);
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result.message());
+        assertEquals(List.of(result.message()), log);
+        assertEquals(List.of(), warnings);
+        assertEquals(4, result.entries().size());
+        for (String entry : result.entries().keySet()) {
+            assertTrue(Files.isRegularFile(outputDirectory.resolve(entry)), entry);
+        }
+    }
+
+    /** An application that enables distributed configuration is still precompiled, with a warning. */
+    @Test
+    void warnsWhenTheApplicationEnablesDistributedConfiguration() throws Exception {
+        Path processedResources = processedResources();
+        Files.writeString(processedResources.resolve("bootstrap.yml"), """
+            micronaut:
+              config-client:
+                enabled: true
+            """);
+        Path classesDirectory = Files.createDirectories(temporaryDirectory.resolve("classes/java/main"));
+        List<String> log = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+
+        LogbackPrecompiler.Result result = LogbackPrecompilation.precompile(processedResources, classesDirectory,
+            applicationRuntimeClasspath(), temporaryDirectory.resolve("generated/logback"), log::add, warnings::add);
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result.message());
+        assertEquals(List.of(result.message()), log);
+        assertEquals(result.warnings(), warnings);
+        assertEquals(1, warnings.size(), warnings::toString);
+        assertTrue(warnings.get(0).startsWith("The packaged bootstrap.yml of " + processedResources),
+            warnings::toString);
+    }
+
+    /** The processed resources of an application whose logback.xml the precompiler can compile. */
+    private Path processedResources() throws IOException {
         Path processedResources = Files.createDirectories(temporaryDirectory.resolve("resources/main"));
         Files.writeString(processedResources.resolve("logback.xml"), """
             <configuration>
@@ -48,19 +93,7 @@ class LogbackPrecompilationTest {
                 </root>
             </configuration>
             """);
-        Path classesDirectory = Files.createDirectories(temporaryDirectory.resolve("classes/java/main"));
-        Path outputDirectory = temporaryDirectory.resolve("generated/logback");
-        List<String> log = new ArrayList<>();
-
-        LogbackPrecompiler.Result result = LogbackPrecompilation.precompile(
-            processedResources, classesDirectory, applicationRuntimeClasspath(), outputDirectory, log::add);
-
-        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result.message());
-        assertEquals(List.of(result.message()), log);
-        assertEquals(4, result.entries().size());
-        for (String entry : result.entries().keySet()) {
-            assertTrue(Files.isRegularFile(outputDirectory.resolve(entry)), entry);
-        }
+        return processedResources;
     }
 
     /**
