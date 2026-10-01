@@ -137,8 +137,10 @@ It can see, though, a packaged `application*` or `bootstrap*` file, of an applic
 The engine then still generates the configurator, and the `GENERATED` result carries one warning for each such file.
 The warning names the file and its root or jar, says that a `logger.config` or `logback.configurationFile` that distributed configuration supplies is not applied while the generated configurator is registered, and gives the workarounds: pass the location as `-Dlogger.config` or `LOGGER_CONFIG`, as above, or turn precompilation off in the build plugin, so that no configurator is generated.
 It also says that `-Dmicronaut.logback.precompiled=false` does not help, for the reason above.
-A `.properties` file is parsed. In any other format the engine checks the text, ignoring case: the word `config-client` (or `configClient`) and an `enabled` key set to `true`, `yes` or `on` anywhere in the file give the warning. A false positive only costs a warning line. `enabled: false`, or a mention of `config-client` without `enabled` set to `true`, gives none.
-A client that is enabled only at run time is not seen, and gives no warning: an environment variable such as `MICRONAUT_CONFIG_CLIENT_ENABLED`, a system property, or a file outside the application and its dependencies, such as one that `micronaut.config.files` names.
+A `.properties` file is parsed. In any other format the engine checks the text, ignoring case: the word `config-client` (or `configClient`) and an `enabled` key set to `true`, `yes` or `on` anywhere in the file give the warning.
+In every format, a placeholder whose default is `true`, such as `+${CONFIG_CLIENT_ENABLED:true}+`, counts as `true`: Micronaut resolves it to `true` unless the run time sets the variable.
+A false positive only costs a warning line. `enabled: false`, or a mention of `config-client` without an `enabled` key set to `true`, gives none, unless another `enabled` key of the same file is set to `true`: the text rule does not know which section a key belongs to.
+A client that is enabled only at run time is not seen, and gives no warning: an environment variable such as `MICRONAUT_CONFIG_CLIENT_ENABLED`, a system property, a file outside the application and its dependencies, such as one that `micronaut.config.files` names, or a packaged placeholder without a default of `true`, such as `+${CONFIG_CLIENT_ENABLED}+`, that a run-time variable resolves.
 
 [[logbackPrecompilerGuards]]
 == Guards for open class paths

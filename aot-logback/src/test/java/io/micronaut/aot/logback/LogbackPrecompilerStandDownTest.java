@@ -361,14 +361,17 @@ class LogbackPrecompilerStandDownTest {
      * A packaged configuration that enables Micronaut's distributed configuration client does not stand the
      * precompiler down, but adds a warning that names the file and its root or jar: a location that the
      * configuration server supplies would not be applied. Every format the scan reads counts, in an application
-     * root and in a dependency, at the root and under {@code config/}.
+     * root and in a dependency, at the root and under {@code config/}. So does a placeholder whose default is
+     * {@code true}, which Micronaut resolves to {@code true} when the run time does not set it.
      */
     @ParameterizedTest
     @ValueSource(strings = {"application.properties", "bootstrap.properties camel case", "bootstrap.yml nested",
         "bootstrap.yaml flat key", "application-prod.yml yes", "application.yml flow style",
         "application.json on one line", "application.toml table", "bootstrap.toml inline table",
         "application.groovy closure", "config/bootstrap.yml", "bootstrap.yml of the class directory",
-        "bootstrap.yml of a dependency jar", "application.properties of a dependency directory"})
+        "bootstrap.yml of a dependency jar", "application.properties of a dependency directory",
+        "bootstrap.yml placeholder", "bootstrap.yml quoted placeholder", "bootstrap.properties placeholder",
+        "bootstrap.properties placeholder with two names"})
     void warnsOnAPackagedConfigurationThatEnablesTheConfigurationClient(String condition) throws IOException {
         Map<String, String> files = new LinkedHashMap<>();
         files.put("logback.xml", LOGBACK_XML);
@@ -393,6 +396,14 @@ class LogbackPrecompilerStandDownTest {
             case "application.toml table" -> "[micronaut.config-client]\nenabled = true\n";
             case "bootstrap.toml inline table" -> "[micronaut]\nconfig-client = { enabled = true }\n";
             case "application.groovy closure" -> "micronaut { 'config-client' { enabled = true } }\n";
+            case "bootstrap.yml placeholder" ->
+                    "micronaut:\n  config-client:\n    enabled: ${CONFIG_CLIENT_ENABLED:true}\n";
+            case "bootstrap.yml quoted placeholder" ->
+                    "micronaut:\n  config-client:\n    enabled: \"${CONFIG_CLIENT_ENABLED:true}\"\n";
+            case "bootstrap.properties placeholder" ->
+                    "micronaut.config-client.enabled=${CONFIG_CLIENT_ENABLED:true}\n";
+            case "bootstrap.properties placeholder with two names" ->
+                    "micronaut.config-client.enabled = ${CONFIG_CLIENT_ENABLED:config.client.enabled:true}\n";
             default -> throw new IllegalArgumentException(condition);
         };
         Path dependency = null;
@@ -453,13 +464,16 @@ class LogbackPrecompilerStandDownTest {
 
     /**
      * A client that is turned off, a mention of {@code config-client} without {@code enabled} set to {@code true},
-     * an {@code enabled} key of something else, and a file the scan does not read give no warning.
+     * an {@code enabled} key of something else, a placeholder without a default of {@code true}, which only the run
+     * time resolves, and a file the scan does not read give no warning.
      */
     @ParameterizedTest
     @ValueSource(strings = {"bootstrap.yml enabled false", "bootstrap.properties enabled false",
         "bootstrap.properties another key enabled", "bootstrap.yml mention without enabled",
         "application.yml enabled without the client", "application.json enabled false",
         "application.toml enabled false", "application.groovy enabled false",
+        "bootstrap.yml placeholder without a default", "bootstrap.yml placeholder defaulting to false",
+        "bootstrap.properties placeholder without a default", "bootstrap.properties placeholder defaulting to false",
         "META-INF/bootstrap.yml not read", "com/example/application.properties not read"})
     void aConfigurationClientThatIsNotEnabledGivesNoWarning(String condition) throws IOException {
         String name = condition.substring(0, condition.indexOf(' '));
@@ -479,6 +493,14 @@ class LogbackPrecompilerStandDownTest {
             case "application.json enabled false" -> "{\"micronaut\":{\"config-client\":{\"enabled\":false}}}";
             case "application.toml enabled false" -> "[micronaut.config-client]\nenabled = false\n";
             case "application.groovy enabled false" -> "micronaut { 'config-client' { enabled = false } }\n";
+            case "bootstrap.yml placeholder without a default" ->
+                    "micronaut:\n  config-client:\n    enabled: ${CONFIG_CLIENT_ENABLED}\n";
+            case "bootstrap.yml placeholder defaulting to false" ->
+                    "micronaut:\n  config-client:\n    enabled: ${CONFIG_CLIENT_ENABLED:false}\n";
+            case "bootstrap.properties placeholder without a default" ->
+                    "micronaut.config-client.enabled=${CONFIG_CLIENT_ENABLED}\n";
+            case "bootstrap.properties placeholder defaulting to false" ->
+                    "micronaut.config-client.enabled=${CONFIG_CLIENT_ENABLED:false}\n";
             case "META-INF/bootstrap.yml not read" -> "micronaut:\n  config-client:\n    enabled: true\n";
             case "com/example/application.properties not read" -> "micronaut.config-client.enabled=true\n";
             default -> throw new IllegalArgumentException(condition);
@@ -489,6 +511,39 @@ class LogbackPrecompilerStandDownTest {
 
         assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
         assertEquals(List.of(), result.warnings());
+    }
+
+    /**
+     * The documented false positive: outside a {@code .properties} file the rule does not know which section an
+     * {@code enabled} key belongs to, so a file that names {@code config-client} and sets another section's
+     * {@code enabled} to {@code true} warns, whatever the client's own {@code enabled} says.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"bootstrap.yml enabled false and metrics enabled true",
+        "bootstrap.yml flow style enabled false and metrics enabled true",
+        "application.yml comment and health enabled true"})
+    void anEnabledKeyOfAnotherSectionAlsoWarns(String condition) throws IOException {
+        String name = condition.substring(0, condition.indexOf(' '));
+        String content = switch (condition) {
+            case "bootstrap.yml enabled false and metrics enabled true" -> """
+                    micronaut:
+                      config-client:
+                        enabled: false
+                      metrics:
+                        enabled: true
+                    """;
+            case "bootstrap.yml flow style enabled false and metrics enabled true" ->
+                    "micronaut: {config-client: {enabled: false}, metrics: {enabled: true}}\n";
+            case "application.yml comment and health enabled true" ->
+                    "# config-client is not used\nendpoints:\n  health:\n    enabled: true\n";
+            default -> throw new IllegalArgumentException(condition);
+        };
+        Application application = application(Map.of("logback.xml", LOGBACK_XML, name, content));
+
+        LogbackPrecompiler.Result result = application.precompile(false);
+
+        assertEquals(LogbackPrecompiler.Status.GENERATED, result.status(), result::message);
+        assertEquals(List.of(configClientWarning(name + " of " + application.resources())), result.warnings());
     }
 
     /**
