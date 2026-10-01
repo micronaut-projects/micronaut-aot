@@ -91,7 +91,7 @@ Besides a file outside the subset, the engine generates nothing when:
 * there is no `logback.xml`, or more than one class path entry or more than one application root has one, which Logback reports at startup;
 * any class path entry has a `logback-test.xml`, a `logback.groovy` or a versioned Logback file under `META-INF/versions/`;
 * any entry of the class path it is given already registers a `Configurator`;
-* a packaged `application*` or `bootstrap*` configuration file, at the root or under `config/` of an application root or of any entry of the runtime class path, may set `logger.config` or `logback.configurationFile`. Micronaut applies such a location only without a `Configurator` service, and the generated code cannot see it (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>). Every such file is read, also one that an earlier entry has under the same name: Micronaut reads the file of a dependency when the application has none of that name, and it can merge the files of every entry, depending on its configuration loading strategy.
+* a packaged `application*` or `bootstrap*` configuration file, at the root or under `config/` of an application root or of any entry of the runtime class path, may set `logger.config` or `logback.configurationFile`. Micronaut applies such a location only without a `Configurator` service, and the generated code cannot see it (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>). Every such file is read, also one that an earlier entry has under the same name: Micronaut reads the file of a dependency when the application has none of that name, and it can merge the files of every entry, depending on its configuration loading strategy. The names are wider than what Micronaut reads by default, which is `application` and `bootstrap`, with an optional environment suffix, at the root of the class path: `config/` is read only when `overrideConfigLocations` adds a location such as `classpath:config/`. A false positive only costs the optimisation.
 
 == What the configurator does at run time
 
@@ -108,14 +108,14 @@ On every call, in this order:
 [[logbackPrecompilerLocations]]
 === Locations only Micronaut sees
 
-Micronaut applies `logger.config`, or a `logback.configurationFile` of its own configuration, on its logging refresh. That refresh runs at startup when any `logger.*` property is set, and again on every refresh event.
+Micronaut applies `logger.config`, or a `logback.configurationFile` of its own configuration, on its logging refresh. When any `logger.*` property is set, that refresh runs at startup and again on every refresh event.
 Without a `Configurator` service it configures Logback from that location.
 With one, it calls the service's `configure(LoggerContext)` and passes it nothing else: the location stays in Micronaut's `LogbackLoggingSystem`, and Micronaut copies it neither into a system property nor into the `LoggerContext`.
 
 So the generated configurator applies a location only where it can read it itself, as the first two rules above list: the `logback.configurationFile` and `logger.config` system properties, and the `logback.configurationFile`, `LOGGER_CONFIG` and `logger.config` environment variables.
 A location that comes from any other property source is not applied, and the compiled configuration stays in use:
 
-* a program argument, such as `java -jar app.jar --logger.config=custom.xml`. A `-Dlogger.config=custom.xml` written after the jar or the main class is a program argument too, not a system property: Micronaut keeps it in the property source of its command line. The configurator does not read the command line from the `sun.java.command` property instead: that property comes from HotSpot's launcher and is not a system property of a native image, it joins the arguments with spaces so that a value cannot be recovered exactly, and it does not say which arguments the application passed to Micronaut;
+* a program argument, such as `java -jar app.jar --logger.config=custom.xml`. A `-Dlogger.config=custom.xml` written after the jar or the main class is a program argument too, not a system property: Micronaut keeps it in the property source of its command line. The configurator does not read the command line of the process instead, from the `sun.java.command` property or from `ProcessHandle.current().info().arguments()`: the command line does not say which arguments the application passed to Micronaut, and it is only one of the sources listed here;
 * a configuration file outside the class path, such as `config/application.yml` in the working directory or a file named by `micronaut.config.files`;
 * any other property source, such as distributed configuration or properties passed to `ApplicationContext.builder()`.
 
@@ -136,8 +136,8 @@ So unless the caller sets `closedClassPath(true)`, the configurator hands over t
 It looks where Joran would, through the class loader that defines logback-classic, and it looks again on every call.
 So a `logback.xml` that is edited while the application runs is read by Joran on the next logging refresh, as it would be without the generated configurator.
 Each call costs two class loader lookups, one read of `logback.xml` and its CRC-32.
-Logback calls the configurator once when it initialises, and Micronaut once per logging refresh; a log call never runs the guards.
-On micronaut-runner's benchmark-large Shadow JAR, in fresh JVMs, the first call took about 5 ms, most of it the class loader's first lookups, which the application makes later anyway; a second call, such as the refresh at startup, took about 0.25 ms, and a warm call about 20 µs.
+Logback calls the configurator once when it initialises, and Micronaut once per logging refresh, which it runs only when a `logger.*` property is set; a log call never runs the guards.
+The first call costs a few milliseconds, most of it the class loader's first lookups, which the application makes later anyway; every later call takes well under a millisecond.
 
 The guards have limits. After any of these changes the generated configurator is still applied, although Joran would give another result:
 

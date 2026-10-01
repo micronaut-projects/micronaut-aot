@@ -157,8 +157,10 @@ class LogbackPrecompilerStandDownTest {
     }
 
     /**
-     * Only what Micronaut reads as configuration counts in a dependency, as in the application: a file at the root
-     * or under {@code config/} that names a location. Logger levels, and files elsewhere, change nothing.
+     * In a dependency, as in the application, only an {@code application*} or {@code bootstrap*} file that names a
+     * location counts: at the root, where Micronaut reads it, or under {@code config/}, a conservative extra that
+     * Micronaut reads only when {@code overrideConfigLocations} adds it. Logger levels, and files elsewhere, change
+     * nothing.
      */
     @ParameterizedTest
     @ValueSource(booleans = {true, false})

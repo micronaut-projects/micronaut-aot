@@ -195,6 +195,13 @@ public final class LogbackPrecompiler {
     private static final List<String> CONFIGURATION_EXTENSIONS =
             List.of("properties", "yml", "yaml", "json", "toml", "groovy");
 
+    /**
+     * The configuration files the {@code logger.config} scan reads. This is wider than what Micronaut reads by
+     * default, which is {@code application} and {@code bootstrap}, with an optional {@code -<environment>}
+     * suffix, at the root of the class path. It takes any name that starts with either word, and the
+     * {@code config/} directory, which Micronaut reads only when {@code overrideConfigLocations} adds a location
+     * such as {@code classpath:config/}. A false positive only costs the optimisation.
+     */
     private static final Pattern PACKAGED_CONFIGURATION = Pattern.compile(
             "(config/)?(application|bootstrap)[^/]*\\.(" + String.join("|", CONFIGURATION_EXTENSIONS) + ")");
 
@@ -491,7 +498,8 @@ public final class LogbackPrecompiler {
      * each application root and those of each entry of the runtime class path, in class path order, including a
      * file that an earlier entry shadows. Micronaut reads a configuration file of a dependency whenever the
      * application has none of that name, and its configuration loading strategy can merge the files of every
-     * entry; which strategy the application uses is not known here.</p>
+     * entry; which strategy the application uses is not known here. The names checked, those of
+     * {@link #PACKAGED_CONFIGURATION}, include more than Micronaut reads by default.</p>
      *
      * <p>A {@code .properties} file is parsed, and sets one when it has either key. Any other format is not
      * parsed, so the check is on its text, ignoring case, and errs on the side of standing down: the text names
@@ -629,9 +637,10 @@ public final class LogbackPrecompiler {
              * of its files. logback-classic, logback-core and slf4j-api are taken from here, never from the
              * caller's own class path, and the {@code META-INF/MANIFEST.MF} of the two Logback entries is read
              * for their version. The packaged {@code application*} and {@code bootstrap*} configuration files of
-             * every entry, at its root or under {@code config/}, are read as well: Micronaut reads those of a
-             * dependency too, and the engine stands down when one might set {@code logger.config} or
-             * {@code logback.configurationFile}. Every entry has to exist.</p>
+             * every entry are read as well, at its root, where Micronaut reads those of a dependency too, and
+             * under {@code config/}, which Micronaut reads only when {@code overrideConfigLocations} adds it. The
+             * engine stands down when one might set {@code logger.config} or {@code logback.configurationFile}.
+             * Every entry has to exist.</p>
              *
              * @param entries jars or directories
              * @return this builder
