@@ -276,8 +276,10 @@ class LogbackPrecompilerStandDownTest {
         files.put("logging-settings.properties", "logger.config=custom.xml\n");
         String name = condition.substring(0, condition.indexOf(' '));
         String content = switch (condition) {
-            case "application.properties classpath" -> "micronaut.application.name=demo\n"
-                    + "micronaut.config.import=classpath://logging-settings.properties\n";
+            case "application.properties classpath" -> """
+                    micronaut.application.name=demo
+                    micronaut.config.import=classpath://logging-settings.properties
+                    """;
             case "application.properties indexed" -> "micronaut.config.import[0]=optional:classpath*://shared\n";
             case "application.properties structured" -> "micronaut.config.import.vault.provider=vault\n";
             case "application.properties file" -> "micronaut.config.import=optional:file:///etc/demo/logging\n";
@@ -406,8 +408,13 @@ class LogbackPrecompilerStandDownTest {
                 reason = "the packaged config/bootstrap.yml may set";
             }
             case "application.toml logger table" -> {
-                files.put("application.toml", "[micronaut.application]\nname = \"demo\"\n\n[logger]\n"
-                        + "config = \"custom.xml\"\n");
+                files.put("application.toml", """
+                        [micronaut.application]
+                        name = "demo"
+
+                        [logger]
+                        config = "custom.xml"
+                        """);
                 reason = "the packaged application.toml may set logger.config";
             }
             case "application.toml inline table" -> {
@@ -655,7 +662,7 @@ class LogbackPrecompilerStandDownTest {
     @ValueSource(booleans = {true, false})
     void aFrontEndOrEmitterFailureIsAFailureAndNothingIsThrown(boolean frontEnd) throws IOException {
         Application application = application(Map.of("logback.xml", LOGBACK_XML));
-        LogbackPrecompiler.descriptionHook = description -> {
+        LogbackPrecompiler.DESCRIPTION_HOOK.set(description -> {
             if (frontEnd) {
                 throw new IllegalStateException("forced front-end failure");
             }
@@ -669,12 +676,12 @@ class LogbackPrecompilerStandDownTest {
             operations.set(0, appender);
             broken.put("operations", operations);
             return broken;
-        };
+        });
         LogbackPrecompiler.Result result;
         try {
             result = application.precompile(false);
         } finally {
-            LogbackPrecompiler.descriptionHook = UnaryOperator.identity();
+            LogbackPrecompiler.DESCRIPTION_HOOK.set(UnaryOperator.identity());
         }
 
         assertEquals(LogbackPrecompiler.Status.FAILED, result.status(), result::message);

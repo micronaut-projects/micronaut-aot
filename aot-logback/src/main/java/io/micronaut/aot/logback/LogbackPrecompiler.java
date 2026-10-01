@@ -34,10 +34,13 @@ import java.lang.constant.MethodTypeDesc;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,6 +54,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -155,10 +159,11 @@ public final class LogbackPrecompiler {
     static final String FRONTEND_RESOURCE = "/META-INF/micronaut-aot/logback-frontend.jar";
 
     /**
-     * Applied to every description the front end returns before code is emitted from it. Tests replace it to
-     * force a front-end or emitter failure; it is never set in production.
+     * Applied to every description the front end returns before code is emitted from it. Tests replace the
+     * function to force a front-end or emitter failure; it is never set in production.
      */
-    static volatile UnaryOperator<Map<String, Object>> descriptionHook = UnaryOperator.identity();
+    static final AtomicReference<UnaryOperator<Map<String, Object>>> DESCRIPTION_HOOK =
+            new AtomicReference<>(UnaryOperator.identity());
 
     /** The lowest Logback version the generated code is tested against. */
     private static final String MINIMUM_VERSION = "1.5.37";
@@ -215,7 +220,7 @@ public final class LogbackPrecompiler {
      * A {@code config} key in lower-cased text, wherever it stands, quoted or not: the word, then {@code :} or
      * {@code =}, with at most a closing quote, a closing bracket and white space in between.
      */
-    private static final Pattern CONFIG_KEY = Pattern.compile("(?<![a-z0-9_-])config[\"']?\\s*]?\\s*[:=]");
+    private static final Pattern CONFIG_KEY = Pattern.compile("(?<![a-z0-9_-])config[\"']?\\s*+]?\\s*+[:=]");
 
     /** The word {@code config} in lower-cased text, wherever it stands: a key, a TOML table name, a value. */
     private static final Pattern CONFIG_WORD = Pattern.compile("(?<![a-z0-9_-])config(?![a-z0-9_-])");
@@ -226,7 +231,7 @@ public final class LogbackPrecompiler {
      * between. That is a block or flow YAML key, a JSON member, a TOML key and the start of a dotted, indexed or
      * structured declaration; an {@code import} statement or the word in a sentence is not.
      */
-    private static final Pattern IMPORT_KEY = Pattern.compile("(?<![a-z0-9_-])import[\"']?\\s*]?\\s*[:=.\\[]");
+    private static final Pattern IMPORT_KEY = Pattern.compile("(?<![a-z0-9_-])import[\"']?\\s*+]?\\s*+[:=.\\[]");
 
     /** The dotted {@code config.import} of a flat key or a TOML table name, in lower-cased text. */
     private static final Pattern CONFIG_IMPORT_PATH = Pattern.compile("(?<![a-z0-9_-])config\\.import(?![a-z0-9_-])");
@@ -234,9 +239,26 @@ public final class LogbackPrecompiler {
     /** The key of Micronaut's configuration imports, lower-cased. */
     private static final String CONFIG_IMPORT = "micronaut.config.import";
 
-    private static final String MAY_SET_A_LOCATION = "may set logger.config or logback.configurationFile";
+    /** The name under which Micronaut reads a logging configuration location: a property or an environment variable. */
+    private static final String LOGGER_CONFIG_PROPERTY = "logger.config";
+
+    private static final String MAY_SET_A_LOCATION =
+            "may set " + LOGGER_CONFIG_PROPERTY + " or logback.configurationFile";
 
     private static final List<String> APPLICATION_INPUTS = inputPatterns();
+
+    /**
+     * The permissions of a temporary work directory, which holds the front end jar that is then run: only its
+     * owner may read, write or list it. They are explicit on a POSIX file system, where the directory is created
+     * in a shared one such as {@code /tmp}. Elsewhere, as on Windows, the directory is created in the user's own
+     * temporary directory and takes its access control list.
+     */
+    private static final FileAttribute<?>[] OWNER_ONLY =
+            FileSystems.getDefault().supportedFileAttributeViews().contains("posix")
+                    ? new FileAttribute<?>[] {
+                        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))
+                    }
+                    : new FileAttribute<?>[0];
 
     private LogbackPrecompiler() {
     }
@@ -299,7 +321,7 @@ public final class LogbackPrecompiler {
         boolean temporary = work == null;
         try {
             if (temporary) {
-                work = Files.createTempDirectory("micronaut-aot-logback");
+                work = Files.createTempDirectory("micronaut-aot-logback", OWNER_ONLY);
             } else {
                 Files.createDirectories(work);
             }
@@ -345,8 +367,10 @@ public final class LogbackPrecompiler {
      * @return whether the generated code is tested against it
      */
     static boolean supported(String version) {
-        if (!version.matches("\\d+(\\.\\d+)*")) {
-            return false;
+        for (String number : version.split("\\.", -1)) {
+            if (number.isEmpty() || !number.chars().allMatch(c -> c >= '0' && c <= '9')) {
+                return false;
+            }
         }
         return compare(version, MINIMUM_VERSION) >= 0 && compare(version, VERSION_LIMIT) < 0;
     }
@@ -421,7 +445,7 @@ public final class LogbackPrecompiler {
         Map<String, Object> description;
         try (URLClassLoader loader = new URLClassLoader("micronaut-aot-logback-frontend", path,
                 ClassLoader.getPlatformClassLoader())) {
-            description = descriptionHook.apply(describe(loader, logbackXml));
+            description = DESCRIPTION_HOOK.get().apply(describe(loader, logbackXml));
             if (!Integer.valueOf(IR_VERSION).equals(description.get("irVersion"))) {
                 throw new IllegalStateException("the Logback front end answered with description version "
                         + description.get("irVersion") + ", not " + IR_VERSION);
@@ -463,7 +487,7 @@ public final class LogbackPrecompiler {
     private static void deleteQuietly(Path path) {
         try {
             Files.deleteIfExists(path);
-        } catch (IOException e) {
+        } catch (IOException _) {
             // A temporary file that stays behind is no reason to fail, or to report anything else than the result.
         }
     }
@@ -536,26 +560,48 @@ public final class LogbackPrecompiler {
      */
     private static @Nullable String packagedConfigurationReason(List<Layer> layers) throws IOException {
         for (int i = 0; i < layers.size(); i++) {
-            Layer layer = layers.get(i);
-            Set<String> seen = new HashSet<>();
-            for (Root root : layer.roots()) {
-                for (String name : root.names()) {
-                    if (!(name.startsWith("application") || name.startsWith("bootstrap")
-                            || name.startsWith("config/")) || !PACKAGED_CONFIGURATION.matcher(name).matches()) {
-                        continue;
-                    }
-                    String what = locationReason(name, root.read(name));
-                    if (what != null) {
-                        // An application root's file is named by its root only when an earlier root shadows it.
-                        String where = i > 0 ? " of " + layer.description()
-                                : seen.contains(name) ? " of " + root.path() : "";
-                        return "the packaged " + name + where + " " + what;
-                    }
-                    seen.add(name);
-                }
+            String reason = packagedConfigurationReason(layers.get(i), i == 0);
+            if (reason != null) {
+                return reason;
             }
         }
         return null;
+    }
+
+    /**
+     * The reason of {@link #packagedConfigurationReason(List)} for one layer, checking each of its roots in order.
+     */
+    private static @Nullable String packagedConfigurationReason(Layer layer, boolean application) throws IOException {
+        Set<String> seen = new HashSet<>();
+        for (Root root : layer.roots()) {
+            for (String name : root.names()) {
+                if (!isPackagedConfiguration(name)) {
+                    continue;
+                }
+                String what = locationReason(name, root.read(name));
+                if (what != null) {
+                    return "the packaged " + name + where(layer, root, application, seen.contains(name)) + " " + what;
+                }
+                seen.add(name);
+            }
+        }
+        return null;
+    }
+
+    private static boolean isPackagedConfiguration(String name) {
+        return (name.startsWith("application") || name.startsWith("bootstrap") || name.startsWith("config/"))
+                && PACKAGED_CONFIGURATION.matcher(name).matches();
+    }
+
+    /**
+     * How a message names where a packaged configuration file is: by its class path entry, or, for the
+     * application output, by its root only when an earlier root shadows it.
+     */
+    private static String where(Layer layer, Root root, boolean application, boolean shadowed) {
+        if (!application) {
+            return " of " + layer.description();
+        }
+        return shadowed ? " of " + root.path() : "";
     }
 
     /**
@@ -572,14 +618,15 @@ public final class LogbackPrecompiler {
             imports = false;
             for (String key : properties.stringPropertyNames()) {
                 String normalized = key.toLowerCase(Locale.ROOT).replace("-", "");
-                setsLocation |= normalized.equals("logger.config") || normalized.equals("logback.configurationfile");
+                setsLocation |= normalized.equals(LOGGER_CONFIG_PROPERTY)
+                        || normalized.equals("logback.configurationfile");
                 imports |= normalized.equals(CONFIG_IMPORT) || normalized.startsWith(CONFIG_IMPORT + ".")
                         || normalized.startsWith(CONFIG_IMPORT + "[");
             }
         } else {
             String lower = new String(content, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
             setsLocation = lower.contains("configurationfile") || lower.contains("configuration-file")
-                    || lower.contains("logger.config")
+                    || lower.contains(LOGGER_CONFIG_PROPERTY)
                     || LOGGER_WORD.matcher(lower).find() && CONFIG_KEY.matcher(lower).find();
             imports = CONFIG_IMPORT_PATH.matcher(lower).find()
                     || IMPORT_KEY.matcher(lower).find() && CONFIG_WORD.matcher(lower).find();
@@ -998,13 +1045,25 @@ public final class LogbackPrecompiler {
     }
 
     /**
-     * What the generated configurator checks on an open class path.
-     *
-     * @param classBytes the {@code ClassPathGuard} class, as the front end jar carries it
-     * @param size       the size of the compiled {@code logback.xml}
-     * @param crc        its CRC-32
+     * What the generated configurator checks on an open class path. Not a record: it holds an array, and nothing
+     * compares it.
      */
-    private record Guard(byte[] classBytes, long size, long crc) {
+    private static final class Guard {
+
+        /** The {@code ClassPathGuard} class, as the front end jar carries it. */
+        private final byte[] classBytes;
+
+        /** The size of the compiled {@code logback.xml}. */
+        private final long size;
+
+        /** Its CRC-32. */
+        private final long crc;
+
+        private Guard(byte[] classBytes, long size, long crc) {
+            this.classBytes = classBytes;
+            this.size = size;
+            this.crc = crc;
+        }
     }
 
     /** One pass over every name of every layer, resolved as a class loader resolves them. */
@@ -1035,8 +1094,7 @@ public final class LogbackPrecompiler {
         }
 
         private void visit(int layer, String name) {
-            if (layer == 0 && applicationLogging == null && name.endsWith(".class")
-                    && (name.startsWith("ch/qos/logback/") || name.startsWith("org/slf4j/"))) {
+            if (layer == 0 && applicationLogging == null && isLoggingClass(name)) {
                 applicationLogging = name;
             }
             if (classic < 0 && name.equals(CLASSIC_MARKER)) {
@@ -1046,17 +1104,29 @@ public final class LogbackPrecompiler {
             } else if (slf4j < 0 && name.equals(SLF4J_MARKER)) {
                 slf4j = layer;
             } else if (name.equals(LOGBACK_XML)) {
-                if (logbackXml < 0) {
-                    logbackXml = layer;
-                } else if (secondLogbackXml == null) {
-                    secondLogbackXml = layers.get(layer).description();
-                }
-            } else if (unsupportedFile == null && (name.equals("logback-test.xml") || name.equals("logback.groovy")
-                    || VERSIONED_LOGBACK_FILE.matcher(name).matches())) {
+                visitLogbackXml(layer);
+            } else if (unsupportedFile == null && isUnsupportedFile(name)) {
                 unsupportedFile = layers.get(layer).description() + " has " + name;
             } else if (configurator == null && name.equals(SERVICE_ENTRY)) {
                 configurator = layers.get(layer).description();
             }
+        }
+
+        private void visitLogbackXml(int layer) {
+            if (logbackXml < 0) {
+                logbackXml = layer;
+            } else if (secondLogbackXml == null) {
+                secondLogbackXml = layers.get(layer).description();
+            }
+        }
+
+        private static boolean isLoggingClass(String name) {
+            return name.endsWith(".class") && (name.startsWith("ch/qos/logback/") || name.startsWith("org/slf4j/"));
+        }
+
+        private static boolean isUnsupportedFile(String name) {
+            return name.equals("logback-test.xml") || name.equals("logback.groovy")
+                    || VERSIONED_LOGBACK_FILE.matcher(name).matches();
         }
 
         @Nullable String standDownReason() throws IOException {
@@ -1176,7 +1246,7 @@ public final class LogbackPrecompiler {
             entries.put(CONFIGURATOR_ENTRY, configurator);
             entries.put(FALLBACK_ENTRY, fallback);
             if (guard != null) {
-                entries.put(GUARD_ENTRY, guard.classBytes());
+                entries.put(GUARD_ENTRY, guard.classBytes);
             }
             for (byte[] bytes : entries.values()) {
                 var errors = classFile.verify(bytes);
@@ -1236,7 +1306,7 @@ public final class LogbackPrecompiler {
                 Label joran = code.newLabel();
                 Label literal = code.newLabel();
 
-                // boolean again = configuredOnce; configuredOnce = true;
+                // Keeps whether an earlier call configured, in the again slot, then records this call.
                 code.getstatic(CONFIGURATOR, CONFIGURED_ONCE, ConstantDescs.CD_boolean).istore(AGAIN_SLOT)
                         .iconst_1().putstatic(CONFIGURATOR, CONFIGURED_ONCE, ConstantDescs.CD_boolean);
 
@@ -1253,11 +1323,11 @@ public final class LogbackPrecompiler {
                 code.iload(AGAIN_SLOT).ifeq(notAgain);
                 environment(code, "logback.configurationFile").astore(LOCATION_SLOT)
                         .aload(LOCATION_SLOT).ifnonnull(useLocation);
-                systemProperty(code, "logger.config").astore(LOCATION_SLOT)
+                systemProperty(code, LOGGER_CONFIG_PROPERTY).astore(LOCATION_SLOT)
                         .aload(LOCATION_SLOT).ifnonnull(useLocation);
                 environment(code, "LOGGER_CONFIG").astore(LOCATION_SLOT)
                         .aload(LOCATION_SLOT).ifnonnull(useLocation);
-                environment(code, "logger.config").astore(LOCATION_SLOT)
+                environment(code, LOGGER_CONFIG_PROPERTY).astore(LOCATION_SLOT)
                         .aload(LOCATION_SLOT).ifnull(notAgain);
                 code.labelBinding(useLocation);
                 code.aload(CONTEXT_SLOT).aload(LOCATION_SLOT)
@@ -1276,7 +1346,7 @@ public final class LogbackPrecompiler {
                 } else {
                     code.ifne(joran);
                     // Rule 4, on an open class path only: what is visible is still what was compiled.
-                    code.loadConstant(guard.size()).loadConstant(guard.crc())
+                    code.loadConstant(guard.size).loadConstant(guard.crc)
                             .invokestatic(GUARD, "unchanged", UNCHANGED).ifne(literal);
                 }
                 code.labelBinding(joran);
@@ -1341,18 +1411,14 @@ public final class LogbackPrecompiler {
                     }
                     code.aload(slot);
                     Object value = step.get("value");
-                    if (value instanceof String text) {
-                        code.ldc(text);
-                    } else if (value instanceof Boolean flag) {
-                        code.loadConstant(flag ? 1 : 0);
-                    } else {
-                        code.loadConstant((Integer) value);
+                    switch (value) {
+                        case String text -> code.ldc(text);
+                        case Boolean flag -> code.loadConstant(Boolean.TRUE.equals(flag) ? 1 : 0);
+                        case null, default -> code.loadConstant((Integer) value);
                     }
                     setter(code, type, (String) step.get("method"), (String) step.get("descriptor"));
                 }
-                if (Boolean.TRUE.equals(operation.get("start"))) {
-                    code.aload(slot).invokeinterface(LIFE_CYCLE, "start", ConstantDescs.MTD_void);
-                }
+                start(code, operation, slot);
             }
 
             /**
@@ -1372,11 +1438,16 @@ public final class LogbackPrecompiler {
                     code.aload(ENCODER_SLOT).aload(appenderSlot);
                     setter(code, type, (String) step.get("parentMethod"), (String) step.get("parentDescriptor"));
                 }
-                if (Boolean.TRUE.equals(step.get("start"))) {
-                    code.aload(ENCODER_SLOT).invokeinterface(LIFE_CYCLE, "start", ConstantDescs.MTD_void);
-                }
+                start(code, step, ENCODER_SLOT);
                 code.aload(appenderSlot).aload(ENCODER_SLOT);
                 setter(code, appender, (String) step.get("method"), (String) step.get("descriptor"));
+            }
+
+            /** Starts what a slot holds when its description asks for it. */
+            private static void start(CodeBuilder code, Map<String, Object> description, int slot) {
+                if (Boolean.TRUE.equals(description.get("start"))) {
+                    code.aload(slot).invokeinterface(LIFE_CYCLE, "start", ConstantDescs.MTD_void);
+                }
             }
 
             private static void setter(CodeBuilder code, ClassDesc owner, String name, String descriptor) {

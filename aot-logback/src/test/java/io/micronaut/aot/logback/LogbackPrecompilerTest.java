@@ -114,7 +114,7 @@ class LogbackPrecompilerTest {
     void theHarnessCatchesAConfiguratorThatDiffersFromJoran() throws Exception {
         Path xml = corpus("accept/rich.xml", null);
         // A negative control: the same description with the root logger's level changed.
-        LogbackPrecompiler.descriptionHook = description -> {
+        LogbackPrecompiler.DESCRIPTION_HOOK.set(description -> {
             Map<String, Object> changed = new LinkedHashMap<>(description);
             List<Object> operations = new ArrayList<>();
             for (Object operation : (List<?>) description.get("operations")) {
@@ -127,12 +127,12 @@ class LogbackPrecompilerTest {
             }
             changed.put("operations", operations);
             return changed;
-        };
+        });
         Path classes;
         try {
             classes = write(compile(xml));
         } finally {
-            LogbackPrecompiler.descriptionHook = UnaryOperator.identity();
+            LogbackPrecompiler.DESCRIPTION_HOOK.set(UnaryOperator.identity());
         }
         LoggerContext joran = LogbackDifferential.joran(xml);
         LoggerContext generated = new LoggerContext();
@@ -452,14 +452,14 @@ class LogbackPrecompilerTest {
 
     @Test
     void anErrorOfTheFrontEndIsAFailureAndGeneratesNothing() throws Exception {
-        LogbackPrecompiler.descriptionHook = description -> {
+        LogbackPrecompiler.DESCRIPTION_HOOK.set(description -> {
             throw new ServiceConfigurationError("forced provider failure");
-        };
+        });
         LogbackPrecompiler.Result result;
         try {
             result = compile(corpus("accept/benchmark-large.xml", null));
         } finally {
-            LogbackPrecompiler.descriptionHook = UnaryOperator.identity();
+            LogbackPrecompiler.DESCRIPTION_HOOK.set(UnaryOperator.identity());
         }
 
         assertEquals(LogbackPrecompiler.Status.FAILED, result.status());
@@ -471,13 +471,13 @@ class LogbackPrecompilerTest {
     @Test
     void aVirtualMachineErrorIsNotTurnedIntoAFailure() throws Exception {
         Path xml = corpus("accept/benchmark-large.xml", null);
-        LogbackPrecompiler.descriptionHook = description -> {
+        LogbackPrecompiler.DESCRIPTION_HOOK.set(description -> {
             throw new OutOfMemoryError("forced");
-        };
+        });
         try {
             assertThrows(OutOfMemoryError.class, () -> compile(xml));
         } finally {
-            LogbackPrecompiler.descriptionHook = UnaryOperator.identity();
+            LogbackPrecompiler.DESCRIPTION_HOOK.set(UnaryOperator.identity());
         }
     }
 

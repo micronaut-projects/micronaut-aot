@@ -216,32 +216,36 @@ final class LogbackDifferential {
         events.add(new Object[] {"first line\nsecond line", null, null});
         events.add(new Object[] {"a secret, héllo wörld ☃ 雪", null, null});
         events.add(new Object[] {"failed", null, FAILURE});
-        try {
-            System.setOut(new PrintStream(capturedOut, true, StandardCharsets.UTF_8));
-            System.setErr(new PrintStream(capturedErr, true, StandardCharsets.UTF_8));
-            for (String name : LOGGER_NAMES) {
-                Logger logger = context.getLogger(name);
-                for (Level level : LEVELS) {
-                    if (!logger.isEnabledFor(level)) {
-                        continue;
-                    }
-                    for (Object[] template : events) {
-                        LoggingEvent event = new LoggingEvent(Logger.FQCN, logger, level, (String) template[0],
-                                (Throwable) template[2], (Object[]) template[1]);
-                        event.setInstant(EVENT_TIME);
-                        event.setThreadName("differential-thread");
-                        event.setMDCPropertyMap(mdc);
-                        event.setCallerData(new StackTraceElement[] {
-                            new StackTraceElement("com.example.Caller", "call", "Caller.java", 42)
-                        });
-                        logger.callAppenders(event);
+        // The capturing streams are closed only after the originals are restored.
+        try (PrintStream capturingOut = new PrintStream(capturedOut, true, StandardCharsets.UTF_8);
+             PrintStream capturingErr = new PrintStream(capturedErr, true, StandardCharsets.UTF_8)) {
+            try {
+                System.setOut(capturingOut);
+                System.setErr(capturingErr);
+                for (String name : LOGGER_NAMES) {
+                    Logger logger = context.getLogger(name);
+                    for (Level level : LEVELS) {
+                        if (!logger.isEnabledFor(level)) {
+                            continue;
+                        }
+                        for (Object[] template : events) {
+                            LoggingEvent event = new LoggingEvent(Logger.FQCN, logger, level, (String) template[0],
+                                    (Throwable) template[2], (Object[]) template[1]);
+                            event.setInstant(EVENT_TIME);
+                            event.setThreadName("differential-thread");
+                            event.setMDCPropertyMap(mdc);
+                            event.setCallerData(new StackTraceElement[] {
+                                new StackTraceElement("com.example.Caller", "call", "Caller.java", 42)
+                            });
+                            logger.callAppenders(event);
+                        }
                     }
                 }
+            } finally {
+                System.setOut(out);
+                System.setErr(err);
+                context.stop();
             }
-        } finally {
-            System.setOut(out);
-            System.setErr(err);
-            context.stop();
         }
         return capturedOut.toString(StandardCharsets.UTF_8) + "--- stderr ---\n"
                 + capturedErr.toString(StandardCharsets.UTF_8);

@@ -35,7 +35,6 @@ import static io.micronaut.aot.logback.LogbackTestSupport.LOGBACK_XML;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -170,15 +169,19 @@ class LogbackPrecompilerApiTest {
         List<Path> output = List.of(application.resources());
         List<Path> classpath = LogbackTestSupport.logbackJars();
 
-        assertEquals("applicationOutput is required", assertThrows(IllegalStateException.class,
-                () -> LogbackPrecompiler.Request.builder().runtimeClasspath(classpath).targetRelease(25).build())
-                .getMessage());
-        assertEquals("runtimeClasspath is required", assertThrows(IllegalStateException.class,
-                () -> LogbackPrecompiler.Request.builder().applicationOutput(output).targetRelease(25).build())
-                .getMessage());
-        assertEquals("targetRelease is required", assertThrows(IllegalStateException.class,
-                () -> LogbackPrecompiler.Request.builder().applicationOutput(output).runtimeClasspath(classpath)
-                        .build()).getMessage());
+        LogbackPrecompiler.Request.Builder withoutOutput = LogbackPrecompiler.Request.builder()
+                .runtimeClasspath(classpath).targetRelease(25);
+        LogbackPrecompiler.Request.Builder withoutClasspath = LogbackPrecompiler.Request.builder()
+                .applicationOutput(output).targetRelease(25);
+        LogbackPrecompiler.Request.Builder withoutRelease = LogbackPrecompiler.Request.builder()
+                .applicationOutput(output).runtimeClasspath(classpath);
+
+        assertEquals("applicationOutput is required",
+                assertThrows(IllegalStateException.class, withoutOutput::build).getMessage());
+        assertEquals("runtimeClasspath is required",
+                assertThrows(IllegalStateException.class, withoutClasspath::build).getMessage());
+        assertEquals("targetRelease is required",
+                assertThrows(IllegalStateException.class, withoutRelease::build).getMessage());
     }
 
     @Test
@@ -259,8 +262,19 @@ class LogbackPrecompilerApiTest {
         for (String name : expected.entries().keySet()) {
             assertArrayEquals(expected.entries().get(name), actual.entries().get(name), name);
         }
-        assertEquals(expected.message().replaceAll("\\d+ ms$", ""), actual.message().replaceAll("\\d+ ms$", ""));
-        assertNotEquals(expected.message(), expected.message().replaceAll("\\d+ ms$", ""));
+        assertEquals(withoutTime(expected.message()), withoutTime(actual.message()));
+    }
+
+    /** A message without the time it took, which ends it: its digits and " ms". */
+    private static String withoutTime(String message) {
+        assertTrue(message.endsWith(" ms"), message);
+        int end = message.length() - " ms".length();
+        int start = end;
+        while (start > 0 && message.charAt(start - 1) >= '0' && message.charAt(start - 1) <= '9') {
+            start--;
+        }
+        assertTrue(start < end, message);
+        return message.substring(0, start);
     }
 
     /** Whether an entry name matches one of the Ant-style patterns of {@code applicationInputs()}. */

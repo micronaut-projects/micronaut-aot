@@ -64,6 +64,7 @@ tasks.named<JavaCompile>("compileLogbackFrontendJava") {
 }
 
 val logbackFrontendJar = tasks.register<Jar>("logbackFrontendJar") {
+    group = BasePlugin.BUILD_GROUP
     description = "Packages the Logback front end that the module carries as a resource"
     archiveFileName.set("logback-frontend.jar")
     destinationDirectory.set(layout.buildDirectory.dir("logback-frontend"))
