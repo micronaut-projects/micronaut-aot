@@ -86,7 +86,8 @@ import java.util.zip.ZipFile;
  *     <li>hands over to Logback's default lookup when {@code logback.debug} or {@code logback.statusListenerClass}
  *     asks for Logback's status output, or {@value #OPT_OUT_PROPERTY} is {@code false};</li>
  *     <li>unless the class path is closed, hands over to Logback's default lookup when a {@code logback-test.xml}
- *     is visible, or the first visible {@code logback.xml} is missing or is not the file that was compiled;</li>
+ *     is visible, or the first visible {@code logback.xml} is missing or is not the file that was compiled, which
+ *     it checks again on every call;</li>
  *     <li>otherwise applies the configuration literally, in Joran's order, and returns
  *     {@code DO_NOT_INVOKE_NEXT_IF_ANY}.</li>
  * </ol>
@@ -631,10 +632,11 @@ public final class LogbackPrecompiler {
              *
              * <p>When it is not, the class path can change after the build: a later test run sees the same
              * output directory, an IDE leaves stale output, a file is mounted into a container image. The
-             * generated configurator then checks at startup, where Logback itself would look, that no
-             * {@code logback-test.xml} is visible and that the first visible {@code logback.xml} is the file that
-             * was compiled, by size and CRC-32, and hands over to Joran otherwise. A closed class path needs
-             * neither check: what was surveyed at build time is what runs.</p>
+             * generated configurator then checks on every call, at startup and on each logging refresh, where
+             * Logback itself would look, that no {@code logback-test.xml} is visible and that the first visible
+             * {@code logback.xml} is the file that was compiled, by size and CRC-32, and hands over to Joran
+             * otherwise. A closed class path needs neither check: what was surveyed at build time is what
+             * runs.</p>
              *
              * @param closed {@code true} only when nothing can be added to or changed on the class path
              * @return this builder

@@ -20,7 +20,6 @@ import ch.qos.logback.classic.spi.Configurator;
 import ch.qos.logback.classic.util.DefaultJoranConfigurator;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -38,6 +37,9 @@ public final class LogbackProbe {
     /** Ends what {@link #main(String[])} prints. */
     public static final String END_MARKER = "@@end";
 
+    /** The context {@link #start()} configured, which {@link #refresh()} configures again. */
+    private static LoggerContext started;
+
     private LogbackProbe() {
     }
 
@@ -53,29 +55,30 @@ public final class LogbackProbe {
     }
 
     /**
-     * Calls the registered configurator on one context, replaces a file, and calls it again after a reset: what
-     * Micronaut's logging refresh does in an application whose {@code logback.xml} was edited while it runs.
+     * Calls the registered configurator on a new context, which stays alive for {@link #refresh()}: what Logback's
+     * initialisation does. A test can change the class path between the two, and look at what each one loaded.
      *
-     * @param file    the file to replace after the first call
-     * @param content its new content
-     * @return for both calls, the returned status, a line break and the description of the context after it
+     * @return the returned status, a line break and the description of the context after the call
      */
-    public static String[] configureChangeAndConfigureAgain(String file, String content) {
-        ClassLoader generated = LogbackProbe.class.getClassLoader();
-        LoggerContext context = new LoggerContext();
-        String[] descriptions = new String[2];
-        descriptions[0] = LogbackDifferential.configure(generated, context) + "\n"
-                + LogbackDifferential.describe(context);
-        try {
-            Files.writeString(Path.of(file), content, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
+    public static String start() {
+        if (started != null) {
+            started.stop();
         }
-        context.reset();
-        descriptions[1] = LogbackDifferential.configure(generated, context) + "\n"
-                + LogbackDifferential.describe(context);
-        context.stop();
-        return descriptions;
+        started = new LoggerContext();
+        return LogbackDifferential.configure(LogbackProbe.class.getClassLoader(), started) + "\n"
+                + LogbackDifferential.describe(started);
+    }
+
+    /**
+     * Resets the context of {@link #start()} and calls the registered configurator on it again: what Micronaut's
+     * logging refresh does.
+     *
+     * @return the returned status, a line break and the description of the context after the call
+     */
+    public static String refresh() {
+        started.reset();
+        return LogbackDifferential.configure(LogbackProbe.class.getClassLoader(), started) + "\n"
+                + LogbackDifferential.describe(started);
     }
 
     /**

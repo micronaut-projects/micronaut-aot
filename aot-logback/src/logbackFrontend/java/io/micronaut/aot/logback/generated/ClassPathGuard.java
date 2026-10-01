@@ -34,37 +34,28 @@ import java.util.zip.CRC32;
  * lambdas and no invokedynamic, and a CRC-32 rather than a message digest, which would load the security providers
  * at startup. Its one Logback reference is {@code LoggerContext}, which is loaded by the time a configurator is
  * called.</p>
+ *
+ * <p>It keeps nothing between calls. Every call of the configurator looks again, as Joran reads the file again on
+ * every configuration: a {@code logback.xml} that is edited while the application runs is what a later call, such
+ * as Micronaut's logging refresh, hands over to Joran. That costs two resource lookups, one read of the file and
+ * its CRC-32 on each call of the configurator, which Logback makes at startup and Micronaut on a logging refresh,
+ * never on a log call.</p>
  */
 public final class ClassPathGuard {
-
-    private static final int UNKNOWN = 0;
-    private static final int UNCHANGED = 1;
-    private static final int CHANGED = 2;
-
-    /** The answer, computed on the first call: the class path of a running application does not change. */
-    private static volatile int answer = UNKNOWN;
 
     private ClassPathGuard() {
     }
 
     /**
-     * Whether Joran would still read the file that was compiled: no {@code logback-test.xml} is visible, and the
-     * first visible {@code logback.xml} has the size and the CRC-32 of the compiled one.
+     * Whether Joran would now read the file that was compiled: no {@code logback-test.xml} is visible, and the
+     * first visible {@code logback.xml} has the size and the CRC-32 of the compiled one. It looks again on every
+     * call.
      *
      * @param size the size of the compiled {@code logback.xml}, in bytes
      * @param crc  its CRC-32
      * @return {@code false} when the configurator has to hand over to Logback's default lookup
      */
     public static boolean unchanged(long size, long crc) {
-        int known = answer;
-        if (known == UNKNOWN) {
-            known = check(size, crc) ? UNCHANGED : CHANGED;
-            answer = known;
-        }
-        return known == UNCHANGED;
-    }
-
-    private static boolean check(long size, long crc) {
         try {
             ClassLoader loader = LoggerContext.class.getClassLoader();
             if (loader == null) {

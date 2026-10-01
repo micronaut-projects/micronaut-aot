@@ -116,12 +116,15 @@ So unless the caller sets `closedClassPath(true)`, the configurator hands over t
 * a `logback-test.xml` is visible, or
 * the first visible `logback.xml` is missing, or differs from the compiled file in size or CRC-32.
 
-It looks where Joran would, through the class loader that defines logback-classic, and keeps the answer.
+It looks where Joran would, through the class loader that defines logback-classic, and it looks again on every call.
+So a `logback.xml` that is edited while the application runs is read by Joran on the next logging refresh, as it would be without the generated configurator.
+Each call costs two class loader lookups, one read of `logback.xml` and its CRC-32.
+Logback calls the configurator once when it initialises, and Micronaut once per logging refresh; a log call never runs the guards.
+On micronaut-runner's benchmark-large Shadow JAR, in fresh JVMs, the first call took about 5 ms, most of it the class loader's first lookups, which the application makes later anyway; a second call, such as the refresh at startup, took about 0.25 ms, and a warm call about 20 µs.
 
 The guards have limits. After any of these changes the generated configurator is still applied, although Joran would give another result:
 
 * A second `logback.xml` is added to the class path after the build. Logback would report it at startup.
-* `logback.xml` is edited while the application runs. The guard keeps its first answer, so a later logging refresh applies the compiled configuration again, where Joran would read the file again.
 * The class path changes in another way that the build checked. Nothing but the two guards is checked again at run time: not the Logback version, not a `Configurator` that another entry registers, not a packaged `logger.config`. With a Logback outside the tested range, the generated classes are untested and may not even link.
 
 Build again after such a change, or start the application with `-Dmicronaut.logback.precompiled=false`.

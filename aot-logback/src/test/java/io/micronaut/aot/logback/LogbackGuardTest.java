@@ -208,30 +208,35 @@ class LogbackGuardTest {
     }
 
     /**
-     * The guard answers once. A {@code logback.xml} that is edited while the application runs is therefore not
-     * picked up by a later call, which is Micronaut's logging refresh: a documented limit, where Joran would read
-     * the file again.
+     * The guard looks again on every call. A {@code logback.xml} that is edited while the application runs is
+     * therefore read by Joran on the next call, which is Micronaut's logging refresh, as it would be without the
+     * generated configurator.
      */
     @Test
-    void theAnswerOfTheGuardIsKeptForLaterCalls() throws Exception {
+    void aLogbackXmlEditedWhileTheApplicationRunsIsReadAgainOnTheNextCall() throws Exception {
         Application application = application();
         Path generated = application.generate(false);
         Path xml = application.resources().resolve("logback.xml");
-        String changed = Files.readString(xml).replace("level=\"WARN\"", "level=\"ERROR\"");
-        String[] calls;
+        String started;
+        String refreshed;
 
         try (IsolatedClassPath classPath = classPath(application.resources(), generated)) {
-            calls = classPath.probe("configureChangeAndConfigureAgain", xml.toString(), changed);
-
+            started = classPath.probe("start");
             assertLiteralPath(classPath);
+
+            Files.writeString(xml, Files.readString(xml).replace("level=\"WARN\"", "level=\"ERROR\""),
+                    StandardCharsets.UTF_8);
+            refreshed = classPath.probe("refresh");
+
+            assertTrue(classPath.loaded(LogbackPrecompiler.FALLBACK_CLASS), "the refresh was not left to Joran");
         }
 
-        assertTrue(calls[0].startsWith(DO_NOT_INVOKE_NEXT + "\n"), calls[0]);
-        assertTrue(calls[0].contains("ROOT level=WARN"), calls[0]);
-        // reset() drops the statuses the first call recorded, so only the tree itself is compared.
-        assertEquals(LogbackTestSupport.tree(calls[0]), LogbackTestSupport.tree(calls[1]));
-        // The limit: Logback's own lookup on that class path now gives the edited file.
-        assertTrue(joranDefault(application.resources(), generated).contains("ROOT level=ERROR"));
+        assertTrue(started.startsWith(DO_NOT_INVOKE_NEXT + "\n"), started);
+        assertTrue(started.contains("ROOT level=WARN"), started);
+        // What Logback's own lookup gives on that class path now: the edited file.
+        String expected = joranDefault(application.resources(), generated);
+        assertTrue(expected.contains("ROOT level=ERROR"), expected);
+        assertEquals(expected, refreshed);
     }
 
     // ------------------------------------------------------------------ why a second logback.xml stands down
