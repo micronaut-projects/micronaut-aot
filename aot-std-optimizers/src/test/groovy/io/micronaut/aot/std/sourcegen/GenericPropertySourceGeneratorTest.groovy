@@ -144,8 +144,14 @@ class GenericPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
         logger.detachAppender(appender)
     }
 
+    /**
+     * Reads the application resource and, when it is listed in property-source-loader.resource-names,
+     * the {@link #OTHER_RESOURCE} resource, each with values for the test environment.
+     */
     @Singleton
     static class MyPropertySourceLoader implements PropertySourceLoader {
+
+        static final String OTHER_RESOURCE = "other"
 
         MyPropertySourceLoader() {
         }
@@ -157,20 +163,31 @@ class GenericPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
                         ["language.short": "en", "greeting": "Hello", "numRepeat": 2]
                 ))
             }
+            if (resourceName == OTHER_RESOURCE) {
+                return Optional.of(new MapPropertySource(resourceName, ["other.greeting": "Hi"]))
+            }
             return Optional.empty()
         }
 
         @Override
         Optional<PropertySource> loadEnv(String resourceName, ResourceLoader resourceLoader, ActiveEnvironment activeEnvironment) {
-            if (resourceName == Environment.DEFAULT_NAME && activeEnvironment.name == Environment.TEST) {
-                return Optional.of(new MapPropertySource(resourceName, ["language.short": "fr", "greeting": "Bonjour"]) {
-                    @Override
-                    int getOrder() {
-                        return 1 + activeEnvironment.getPriority()
-                    }
-                })
+            if (activeEnvironment.name != Environment.TEST) {
+                return Optional.empty()
             }
-            return Optional.empty()
+            Map<String, Object> values
+            if (resourceName == Environment.DEFAULT_NAME) {
+                values = ["language.short": "fr", "greeting": "Bonjour"]
+            } else if (resourceName == OTHER_RESOURCE) {
+                values = ["other.greeting": "Salut"]
+            } else {
+                return Optional.empty()
+            }
+            return Optional.of(new MapPropertySource(resourceName, values) {
+                @Override
+                int getOrder() {
+                    return 1 + activeEnvironment.getPriority()
+                }
+            })
         }
 
         @Override

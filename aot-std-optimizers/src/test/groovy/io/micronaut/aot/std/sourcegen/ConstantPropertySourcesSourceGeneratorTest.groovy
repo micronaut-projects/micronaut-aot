@@ -60,9 +60,15 @@ public class AotConstantPropertySources implements StaticOptimizations.Loader<Co
      */
     private List<Class<?>> loaderTypes = []
 
+    private final List<Runnable> detachAppenders = []
+
     @Override
     protected void customizeContext(ApplicationContextBuilder builder) {
         builder.deduceEnvironment(false).environments(Environment.TEST)
+    }
+
+    def cleanup() {
+        detachAppenders*.run()
     }
 
     @Override
@@ -101,6 +107,8 @@ public class AotConstantPropertySources implements StaticOptimizations.Loader<Co
     def "registers the generated property sources and excludes the files they replace"() {
         given:
         loaderTypes = [GenericPropertySourceGeneratorTest.MyPropertySourceLoader]
+        def genericLogs = captureLogs(GenericPropertySourceGenerator)
+        def constantLogs = captureLogs(ConstantPropertySourcesSourceGenerator)
 
         when:
         generate()
@@ -121,15 +129,14 @@ public class AotConstantPropertySources implements StaticOptimizations.Loader<Co
             }
         }
         excludesResources("application.my", "application-test.my")
+        warnings(genericLogs).empty
+        warnings(constantLogs).empty
     }
 
     def "keeps the files of a resource when two loaders produce a property source with the same name"() {
         given: "both loaders produce application-test"
         loaderTypes = [GenericPropertySourceGeneratorTest.MyPropertySourceLoader, PropertiesPropertySourceLoader]
-        def logger = (Logger) LoggerFactory.getLogger(ConstantPropertySourcesSourceGenerator)
-        def appender = new ListAppender<ILoggingEvent>()
-        appender.start()
-        logger.addAppender(appender)
+        def logs = captureLogs(ConstantPropertySourcesSourceGenerator)
 
         when:
         generate()
@@ -151,12 +158,45 @@ public class AotConstantPropertySources implements StaticOptimizations.Loader<Co
             }
         }
         excludesResources()
-        appender.list.any {
-            it.level == Level.WARN && it.formattedMessage.startsWith("Keeping the configuration files of [application]")
-        }
+        warnings(logs) == ["Keeping the configuration files of [application]: more than one property source loader produced [application-test]"]
+    }
 
-        cleanup:
-        logger.detachAppender(appender)
+    def "only keeps the files of the resource whose property source names clash"() {
+        given: "both loaders produce application-test, while only MyPropertySourceLoader reads the other resource"
+        loaderTypes = [GenericPropertySourceGeneratorTest.MyPropertySourceLoader, PropertiesPropertySourceLoader]
+        props.put(GenericPropertySourceGenerator.RESOURCE_NAMES_OPTION.key(),
+                Environment.DEFAULT_NAME + "," + GenericPropertySourceGeneratorTest.MyPropertySourceLoader.OTHER_RESOURCE)
+        def logs = captureLogs(ConstantPropertySourcesSourceGenerator)
+
+        when:
+        generate()
+
+        then:
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            hasClass("ApplicationMyStaticPropertySource") {
+                containingSources 'super("application", '
+            }
+            hasClass("ApplicationTestMyStaticPropertySource") {
+                containingSources 'super("application-test", '
+            }
+            hasClass("ApplicationTestPropertiesStaticPropertySource") {
+                containingSources 'super("application-test", '
+            }
+            hasClass("OtherMyStaticPropertySource") {
+                containingSources 'super("other", '
+            }
+            hasClass("OtherTestMyStaticPropertySource") {
+                containingSources 'super("other-test", '
+            }
+            hasClass("AotConstantPropertySources") {
+                withSources LOADER_PREFIX + """    propertySources.add(new OtherMyStaticPropertySource());
+    propertySources.add(new OtherTestMyStaticPropertySource());
+""" + LOADER_SUFFIX
+            }
+        }
+        excludesResources("other.my", "other-test.my")
+        warnings(logs) == ["Keeping the configuration files of [application]: more than one property source loader produced [application-test]"]
     }
 
     def "the compiled loader provides the property sources that Micronaut looks up"() {
@@ -186,6 +226,19 @@ public class AotConstantPropertySources implements StaticOptimizations.Loader<Co
         sources["application"].get("numRepeat") == 2
         sources["application-test"].get("greeting") == "Bonjour"
         sources["application-test"].order > sources["application"].order
+    }
+
+    private ListAppender<ILoggingEvent> captureLogs(Class<?> type) {
+        def logger = (Logger) LoggerFactory.getLogger(type)
+        def appender = new ListAppender<ILoggingEvent>()
+        appender.start()
+        logger.addAppender(appender)
+        detachAppenders << ({ logger.detachAppender(appender) } as Runnable)
+        appender
+    }
+
+    private static List<String> warnings(ListAppender<ILoggingEvent> logs) {
+        logs.list.findAll { it.level == Level.WARN }*.formattedMessage
     }
 
     private List<PropertySource> loadConstantPropertySources() {
