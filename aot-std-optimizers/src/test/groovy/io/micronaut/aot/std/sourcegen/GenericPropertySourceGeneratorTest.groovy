@@ -81,7 +81,7 @@ class GenericPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
                 @Generated
                 public class ApplicationTestMyStaticPropertySource extends MapPropertySource {
                   ApplicationTestMyStaticPropertySource() {
-                    super("applicationTest", new HashMap() {{
+                    super("application-test", new HashMap() {{
                         put("language.short", "fr");
                         put("greeting", "Bonjour");
                         }});
@@ -105,7 +105,7 @@ class GenericPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
                 @Generated
                 public class ApplicationTestPropertiesStaticPropertySource extends MapPropertySource {
                   ApplicationTestPropertiesStaticPropertySource() {
-                    super("applicationTest", new HashMap() {{
+                    super("application-test", new HashMap() {{
                         put("my.property.environment", "test");
                         }});
                   }

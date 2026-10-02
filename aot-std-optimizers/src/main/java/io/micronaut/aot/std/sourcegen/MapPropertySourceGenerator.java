@@ -54,6 +54,7 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
 
     private final String namePrefix;
     private final String resourceName;
+    private final String propertySourceName;
     private final Map<String, Object> values;
     @Nullable
     private final Integer order;
@@ -65,8 +66,30 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         @Nullable
         Integer order
     ) {
+        this(namePrefix, resourceName, resourceName, values, order);
+    }
+
+    /**
+     * Creates a generator whose property source name differs from the resource name
+     * used for the class name and the order option.
+     *
+     * @param namePrefix the prefix of the generated class name
+     * @param resourceName the resource name, used for the class name and the order option
+     * @param propertySourceName the name of the generated property source
+     * @param values the property values
+     * @param order the order of the generated property source
+     */
+    MapPropertySourceGenerator(
+        String namePrefix,
+        String resourceName,
+        String propertySourceName,
+        Map<String, Object> values,
+        @Nullable
+        Integer order
+    ) {
         this.namePrefix = namePrefix;
         this.resourceName = resourceName;
+        this.propertySourceName = propertySourceName;
         this.values = values;
         this.order = order;
     }
@@ -93,7 +116,7 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
             .superclass(MapPropertySource.class);
         var generator = new MapGenerator();
         typeBuilder.addMethod(MethodSpec.constructorBuilder()
-                .addStatement("super($S, $L)", resourceName, generator.generateMap(typeBuilder, values))
+                .addStatement("super($S, $L)", propertySourceName, generator.generateMap(typeBuilder, values))
                 .build())
             .addMethod(MethodSpec.methodBuilder("getOrder")
                 .addModifiers(PUBLIC)

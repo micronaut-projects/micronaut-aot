@@ -259,10 +259,13 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
 
             PropertySource ps = optionalSource.get();
             if (ps instanceof MapPropertySource mps) {
+                // The name that ConstantPropertySourceLoader looks up: <resource> or <resource>-<environment>
+                String propertySourceName = resource + (environment == null ? "" : "-" + environment.getName());
                 Map<String, Object> values = mps.asMap();
                 var generator = new MapPropertySourceGenerator(
                     getNamePrefix(loader),
                     resource + (environment == null ? "" : StringUtils.capitalize(environment.getName())),
+                    propertySourceName,
                     values,
                     mps.getOrder() + baseOrder);
                 generator.generate(context);
