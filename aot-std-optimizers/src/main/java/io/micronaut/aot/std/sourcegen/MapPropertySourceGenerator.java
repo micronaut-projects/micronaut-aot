@@ -104,7 +104,7 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
     @Override
     @NonNull
     protected JavaFile generate() {
-        String typeName = computeTypeName();
+        String typeName = typeName();
         String orderKey = BASE_ORDER_OPTION + "." + resourceName;
         Integer configuredOrder = getContext().getConfiguration()
             .optionalValue(orderKey, value ->
@@ -127,7 +127,10 @@ public class MapPropertySourceGenerator extends AbstractSingleClassFileGenerator
         return javaFile(typeBuilder.build());
     }
 
-    private String computeTypeName() {
+    /**
+     * @return the simple name of the generated class
+     */
+    String typeName() {
         return StringUtils.capitalize(resourceName.replaceAll("[^A-Za-z0-9]", "_") + namePrefix + "StaticPropertySource");
     }
 }

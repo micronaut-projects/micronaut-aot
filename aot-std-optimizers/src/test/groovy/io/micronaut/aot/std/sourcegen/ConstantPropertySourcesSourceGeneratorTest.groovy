@@ -15,26 +15,27 @@
  */
 package io.micronaut.aot.std.sourcegen
 
-
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import io.micronaut.aot.core.AOTCodeGenerator
+import io.micronaut.aot.core.AOTContext
+import io.micronaut.aot.core.AOTModule
+import io.micronaut.aot.core.Runtime
 import io.micronaut.aot.core.codegen.AbstractSourceGeneratorSpec
+import io.micronaut.aot.core.config.SourceGeneratorLoader
+import io.micronaut.context.ApplicationContextBuilder
+import io.micronaut.context.env.ConstantPropertySources
+import io.micronaut.context.env.Environment
+import io.micronaut.context.env.PropertiesPropertySourceLoader
+import io.micronaut.context.env.PropertySource
+import io.micronaut.core.optim.StaticOptimizations
+import org.slf4j.LoggerFactory
 
 class ConstantPropertySourcesSourceGeneratorTest extends AbstractSourceGeneratorSpec {
 
-    @Override
-    AOTCodeGenerator newGenerator() {
-        new ConstantPropertySourcesSourceGenerator()
-    }
-
-    def "can generate constant property source class"() {
-        when:
-        generate()
-
-        then:
-        assertThatGeneratedSources {
-            doesNotCreateInitializer()
-            hasClass("AotConstantPropertySources") {
-                withSources """package io.micronaut.test;
+    private static final String LOADER_PREFIX = """package io.micronaut.test;
 
 import io.micronaut.context.env.ConstantPropertySources;
 import io.micronaut.context.env.PropertySource;
@@ -47,11 +48,156 @@ public class AotConstantPropertySources implements StaticOptimizations.Loader<Co
   @Override
   public ConstantPropertySources load() {
     List<PropertySource> propertySources = new ArrayList<PropertySource>();
-    return new ConstantPropertySources(propertySources);
+"""
+
+    private static final String LOADER_SUFFIX = """    return new ConstantPropertySources(propertySources);
   }
 }"""
-            }
-        }
+
+    /**
+     * The property source loaders to convert. When empty, only the
+     * {@link ConstantPropertySourcesSourceGenerator} runs.
+     */
+    private List<Class<?>> loaderTypes = []
+
+    @Override
+    protected void customizeContext(ApplicationContextBuilder builder) {
+        builder.deduceEnvironment(false).environments(Environment.TEST)
     }
 
+    @Override
+    AOTCodeGenerator newGenerator() {
+        if (loaderTypes.isEmpty()) {
+            return new ConstantPropertySourcesSourceGenerator()
+        }
+        props.put(GenericPropertySourceGenerator.ID + ".enabled", "true")
+        props.put(ConstantPropertySourcesSourceGenerator.ID + ".enabled", "true")
+        props.put(GenericPropertySourceGenerator.TYPES_OPTION.key(), loaderTypes*.name.join(","))
+        // Selected and ordered the way the optimizer does it
+        List<AOTCodeGenerator> generators = SourceGeneratorLoader.load(Runtime.JIT, context)
+        assert generators*.class == [GenericPropertySourceGenerator, ConstantPropertySourcesSourceGenerator]
+        return { AOTContext ctx -> generators.each { it.generate(ctx) } } as AOTCodeGenerator
+    }
+
+    def "generates an empty list when no property source was generated"() {
+        when:
+        generate()
+
+        then:
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            hasClass("AotConstantPropertySources") {
+                withSources LOADER_PREFIX + LOADER_SUFFIX
+            }
+        }
+        excludesResources()
+    }
+
+    def "runs after the property source loader generator"() {
+        expect:
+        ConstantPropertySourcesSourceGenerator.getAnnotation(AOTModule).dependencies() == [GenericPropertySourceGenerator.ID] as String[]
+    }
+
+    def "registers the generated property sources and excludes the files they replace"() {
+        given:
+        loaderTypes = [GenericPropertySourceGeneratorTest.MyPropertySourceLoader]
+
+        when:
+        generate()
+
+        then:
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            hasClass("ApplicationMyStaticPropertySource") {
+                containingSources 'super("application", '
+            }
+            hasClass("ApplicationTestMyStaticPropertySource") {
+                containingSources 'super("application-test", '
+            }
+            hasClass("AotConstantPropertySources") {
+                withSources LOADER_PREFIX + """    propertySources.add(new ApplicationMyStaticPropertySource());
+    propertySources.add(new ApplicationTestMyStaticPropertySource());
+""" + LOADER_SUFFIX
+            }
+        }
+        excludesResources("application.my", "application-test.my")
+    }
+
+    def "keeps the files of a resource when two loaders produce a property source with the same name"() {
+        given: "both loaders produce application-test"
+        loaderTypes = [GenericPropertySourceGeneratorTest.MyPropertySourceLoader, PropertiesPropertySourceLoader]
+        def logger = (Logger) LoggerFactory.getLogger(ConstantPropertySourcesSourceGenerator)
+        def appender = new ListAppender<ILoggingEvent>()
+        appender.start()
+        logger.addAppender(appender)
+
+        when:
+        generate()
+
+        then:
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            hasClass("ApplicationMyStaticPropertySource") {
+                containingSources 'super("application", '
+            }
+            hasClass("ApplicationTestMyStaticPropertySource") {
+                containingSources 'super("application-test", '
+            }
+            hasClass("ApplicationTestPropertiesStaticPropertySource") {
+                containingSources 'super("application-test", '
+            }
+            hasClass("AotConstantPropertySources") {
+                withSources LOADER_PREFIX + LOADER_SUFFIX
+            }
+        }
+        excludesResources()
+        appender.list.any {
+            it.level == Level.WARN && it.formattedMessage.startsWith("Keeping the configuration files of [application]")
+        }
+
+        cleanup:
+        logger.detachAppender(appender)
+    }
+
+    def "the compiled loader provides the property sources that Micronaut looks up"() {
+        given:
+        loaderTypes = [GenericPropertySourceGeneratorTest.MyPropertySourceLoader]
+        generate()
+        assertThatGeneratedSources {
+            doesNotCreateInitializer()
+            hasClass("ApplicationMyStaticPropertySource") {
+                containingSources 'super("application", '
+            }
+            hasClass("ApplicationTestMyStaticPropertySource") {
+                containingSources 'super("application-test", '
+            }
+            hasClass("AotConstantPropertySources") {
+                containingSources "propertySources.add("
+                compiles()
+            }
+        }
+
+        when: "the compiled loader is run, as StaticOptimizations does at startup"
+        Map<String, PropertySource> sources = loadConstantPropertySources().collectEntries { [it.name, it] }
+
+        then: "the names are the ones ConstantPropertySourceLoader looks up: <resource> and <resource>-<environment>"
+        sources.keySet() == ["application", "application-test"] as Set
+        sources["application"].get("greeting") == "Hello"
+        sources["application"].get("numRepeat") == 2
+        sources["application-test"].get("greeting") == "Bonjour"
+        sources["application-test"].order > sources["application"].order
+    }
+
+    private List<PropertySource> loadConstantPropertySources() {
+        def compiled = testDirectory.resolve("compiled").toUri().toURL()
+        try (def loader = new URLClassLoader([compiled] as URL[], getClass().classLoader)) {
+            def loaderClass = loader.loadClass("${packageName}.AotConstantPropertySources")
+            def optimizationsLoader = (StaticOptimizations.Loader<ConstantPropertySources>) loaderClass.getDeclaredConstructor().newInstance()
+            def constantPropertySources = optimizationsLoader.load()
+            // getSources() is package-private in Micronaut core
+            def getSources = ConstantPropertySources.getDeclaredMethod("getSources")
+            getSources.accessible = true
+            (List<PropertySource>) getSources.invoke(constantPropertySources)
+        }
+    }
 }
