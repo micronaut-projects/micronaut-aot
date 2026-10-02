@@ -216,21 +216,21 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
         if (generated.isEmpty()) {
             return;
         }
+        Set<String> otherExtensions = context.getAnalyzer().getApplicationContext().getEnvironment()
+            .getPropertySourceLoaders().stream()
+            .filter(loader -> !propertySourceLoaderTypes.contains(loader.getClass().getName()))
+            .flatMap(loader -> loader.getExtensions().stream())
+            .collect(Collectors.toCollection(LinkedHashSet::new));
         Set<String> convertedResources = generated.get().sources().stream()
             .map(GeneratedPropertySources.Source::resource)
             .collect(Collectors.toCollection(LinkedHashSet::new));
         var resourceLoader = new DefaultClassPathResourceLoader(this.getClass().getClassLoader());
-        for (PropertySourceLoader loader : context.getAnalyzer().getApplicationContext().getEnvironment().getPropertySourceLoaders()) {
-            if (propertySourceLoaderTypes.contains(loader.getClass().getName())) {
-                continue;
-            }
-            for (String resource : convertedResources) {
-                for (String propertySourceName : propertySourceNames(resource)) {
-                    for (String extension : loader.getExtensions()) {
-                        String file = propertySourceName + "." + extension;
-                        if (resourceLoader.getResource(file).isPresent()) {
-                            generated.get().addUnconvertedFile(resource, file);
-                        }
+        for (String resource : convertedResources) {
+            for (String propertySourceName : propertySourceNames(resource)) {
+                for (String extension : otherExtensions) {
+                    String file = propertySourceName + "." + extension;
+                    if (resourceLoader.getResource(file).isPresent()) {
+                        generated.get().addUnconvertedFile(resource, file);
                     }
                 }
             }
