@@ -43,9 +43,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -195,7 +197,53 @@ public class GenericPropertySourceGenerator extends AbstractCodeGenerator {
                 }
             }
         }
+        recordUnconvertedFiles(context);
         warnIfNotRegistered(context);
+    }
+
+    /**
+     * Records the files of the converted resources that a property source loader not listed in
+     * {@code property-source-loader.types} reads, for example {@code application.properties} when only
+     * YAML is converted. Such a file is loaded at runtime with its usual order, so it would override
+     * every generated property source of its resource, including {@code application-<env>} ones that
+     * win without AOT. {@link ConstantPropertySourcesSourceGenerator} keeps the files of such a resource.
+     * A loader is only checked for the files named after its extensions.
+     *
+     * @param context the AOT context
+     */
+    private void recordUnconvertedFiles(AOTContext context) {
+        Optional<GeneratedPropertySources> generated = context.get(GeneratedPropertySources.class);
+        if (generated.isEmpty()) {
+            return;
+        }
+        Set<String> convertedResources = generated.get().sources().stream()
+            .map(GeneratedPropertySources.Source::resource)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        var resourceLoader = new DefaultClassPathResourceLoader(this.getClass().getClassLoader());
+        for (PropertySourceLoader loader : context.getAnalyzer().getApplicationContext().getEnvironment().getPropertySourceLoaders()) {
+            if (propertySourceLoaderTypes.contains(loader.getClass().getName())) {
+                continue;
+            }
+            for (String resource : convertedResources) {
+                for (String propertySourceName : propertySourceNames(resource)) {
+                    for (String extension : loader.getExtensions()) {
+                        String file = propertySourceName + "." + extension;
+                        if (resourceLoader.getResource(file).isPresent()) {
+                            generated.get().addUnconvertedFile(resource, file);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private List<String> propertySourceNames(String resource) {
+        List<String> names = new ArrayList<>(environments.size() + 1);
+        names.add(resource);
+        for (ActiveEnvironment environment : environments) {
+            names.add(resource + "-" + environment.getName());
+        }
+        return names;
     }
 
     private static void warnIfNotRegistered(AOTContext context) {

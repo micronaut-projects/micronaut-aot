@@ -29,8 +29,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * Generates a "constant" property source, that is to say a
@@ -52,10 +54,9 @@ public class ConstantPropertySourcesSourceGenerator extends AbstractCodeGenerato
 
     @Override
     public void generate(@NonNull AOTContext context) {
-        List<GeneratedPropertySources.Source> generated = context.get(GeneratedPropertySources.class)
-            .map(GeneratedPropertySources::sources)
+        List<GeneratedPropertySources.Source> registered = context.get(GeneratedPropertySources.class)
+            .map(ConstantPropertySourcesSourceGenerator::withoutKeptResources)
             .orElse(List.of());
-        List<GeneratedPropertySources.Source> registered = withoutAmbiguousResources(generated);
         context.registerStaticOptimization("AotConstantPropertySources", ConstantPropertySources.class, initializer -> {
             initializer.addStatement("$T propertySources = new $T()",
                     ParameterizedTypeName.get(ClassName.get(List.class), ClassName.get(PropertySource.class)),
@@ -72,32 +73,46 @@ public class ConstantPropertySourcesSourceGenerator extends AbstractCodeGenerato
     }
 
     /**
-     * Micronaut only uses the first constant property source with a given name, while it applies
-     * the files of every loader. When two loaders produce a property source with the same name,
-     * for example from application.properties and application.yml, all the files of that resource
-     * are kept: registering only some of its property sources would change which values win,
+     * Returns the generated property sources whose configuration files can be removed. All the files
+     * of a resource are kept, and none of its property sources is registered, when:
+     * <ul>
+     *     <li>two loaders produce a property source with the same name, for example from
+     *     application.properties and application.yml: Micronaut only uses the first constant property
+     *     source with a given name, while it applies the files of every loader;</li>
+     *     <li>a loader that is not converted reads a file of the resource, for example application.properties
+     *     when only YAML is converted: that file would override every generated property source.</li>
+     * </ul>
+     * Registering only some property sources of a resource would change which values win,
      * since a kept application file would then override a generated application-dev source.
      *
      * @param generated the generated property sources
      * @return the property sources which can be registered
      */
-    private static List<GeneratedPropertySources.Source> withoutAmbiguousResources(List<GeneratedPropertySources.Source> generated) {
+    private static List<GeneratedPropertySources.Source> withoutKeptResources(GeneratedPropertySources generated) {
         Set<String> names = new HashSet<>();
-        Set<String> ambiguousNames = new TreeSet<>();
-        Set<String> ambiguousResources = new TreeSet<>();
-        for (GeneratedPropertySources.Source source : generated) {
+        Set<String> clashingNames = new TreeSet<>();
+        Set<String> clashingResources = new TreeSet<>();
+        for (GeneratedPropertySources.Source source : generated.sources()) {
             if (!names.add(source.name())) {
-                ambiguousNames.add(source.name());
-                ambiguousResources.add(source.resource());
+                clashingNames.add(source.name());
+                clashingResources.add(source.resource());
             }
         }
-        if (ambiguousResources.isEmpty()) {
-            return generated;
+        if (!clashingResources.isEmpty()) {
+            LOG.warn("Keeping the configuration files of {}: more than one property source loader produced {}",
+                clashingResources, clashingNames);
         }
-        LOG.warn("Keeping the configuration files of {}: more than one property source loader produced {}",
-            ambiguousResources, ambiguousNames);
-        return generated.stream()
-            .filter(source -> !ambiguousResources.contains(source.resource()))
+        Map<String, Set<String>> unconvertedFiles = generated.unconvertedFiles();
+        if (!unconvertedFiles.isEmpty()) {
+            LOG.warn("Keeping the configuration files of {}: {} are read by property source loaders that are not listed in {}",
+                unconvertedFiles.keySet(),
+                unconvertedFiles.values().stream().flatMap(Set::stream).collect(Collectors.toCollection(TreeSet::new)),
+                GenericPropertySourceGenerator.TYPES_OPTION.key());
+        }
+        Set<String> keptResources = new HashSet<>(clashingResources);
+        keptResources.addAll(unconvertedFiles.keySet());
+        return generated.sources().stream()
+            .filter(source -> !keptResources.contains(source.resource()))
             .toList();
     }
 }
