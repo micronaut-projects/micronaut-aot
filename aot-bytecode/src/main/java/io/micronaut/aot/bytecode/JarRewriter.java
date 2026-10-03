@@ -88,14 +88,8 @@ final class JarRewriter {
             ClassTransformPipeline.JarRun run = pipeline.start(new ClassTransformPipeline.Layer(name, signed,
                     thirdParty));
             if (!run.applies() || repeated != null) {
-                for (ZipEntry entry : entries) {
-                    if (ClassTransformPipeline.isClass(entry.getName())) {
-                        run.pass();
-                    }
-                }
-                String kept = signed ? "the jar is signed"
-                        : repeated != null ? "the jar holds the entry " + repeated + " more than once" : null;
-                return new Outcome(false, run.report(), kept);
+                passClasses(entries, run);
+                return new Outcome(false, run.report(), keptReason(signed, repeated));
             }
             boolean changed = write(zip, entries, target, run);
             return new Outcome(changed, run.report(), null);
@@ -103,6 +97,30 @@ final class JarRewriter {
             throw new IOException("Cannot rewrite the classes of " + name + ": " + ClassTransformPipeline.describe(e),
                     e);
         }
+    }
+
+    /**
+     * Counts every class of a jar that is left as it is, as passed.
+     */
+    private static void passClasses(List<ZipEntry> entries, ClassTransformPipeline.JarRun run) {
+        for (ZipEntry entry : entries) {
+            if (ClassTransformPipeline.isClass(entry.getName())) {
+                run.pass();
+            }
+        }
+    }
+
+    /**
+     * Why a jar is left as it is, or {@code null} when it is only that no step applies to it.
+     */
+    private static String keptReason(boolean signed, String repeated) {
+        if (signed) {
+            return "the jar is signed";
+        }
+        if (repeated != null) {
+            return "the jar holds the entry " + repeated + " more than once";
+        }
+        return null;
     }
 
     /**
@@ -147,33 +165,7 @@ final class JarRewriter {
                 }
                 CRC32 crc = new CRC32();
                 for (ZipEntry entry : entries) {
-                    ZipEntry copy = new ZipEntry(entry);
-                    if (ClassTransformPipeline.isClass(entry.getName())) {
-                        if (run.reads(entry.getSize())) {
-                            byte[] original = read(zip, entry, crc);
-                            byte[] output = run.process(entry.getName(), original);
-                            if (output != original) {
-                                changed = true;
-                                crc.reset();
-                                crc.update(output, 0, output.length);
-                                copy.setSize(output.length);
-                                copy.setCrc(crc.getValue());
-                                if (copy.getMethod() == ZipEntry.STORED) {
-                                    copy.setCompressedSize(output.length);
-                                }
-                            }
-                            put(out, copy);
-                            out.write(output);
-                            out.closeEntry();
-                            continue;
-                        }
-                        run.pass();
-                    }
-                    put(out, copy);
-                    try (InputStream in = zip.getInputStream(entry)) {
-                        in.transferTo(out);
-                    }
-                    out.closeEntry();
+                    changed |= writeEntry(zip, entry, out, run, crc);
                 }
             }
         } catch (IOException | RuntimeException | Error failure) {
@@ -187,6 +179,54 @@ final class JarRewriter {
         if (!changed) {
             delete(target);
         }
+        return changed;
+    }
+
+    /**
+     * Writes one entry of the copy: a class the pipeline reads goes through it, and every other entry is copied.
+     *
+     * @return whether the pipeline rewrote the entry
+     */
+    private static boolean writeEntry(ZipFile zip, ZipEntry entry, ZipOutputStream out,
+                                      ClassTransformPipeline.JarRun run, CRC32 crc) throws IOException {
+        ZipEntry copy = new ZipEntry(entry);
+        if (ClassTransformPipeline.isClass(entry.getName())) {
+            if (run.reads(entry.getSize())) {
+                return writeClass(zip, entry, copy, out, run, crc);
+            }
+            run.pass();
+        }
+        put(out, copy);
+        try (InputStream in = zip.getInputStream(entry)) {
+            in.transferTo(out);
+        }
+        out.closeEntry();
+        return false;
+    }
+
+    /**
+     * Writes one class of the copy as the pipeline returns it, with the size and CRC-32 of its new bytes when it
+     * changed.
+     *
+     * @return whether the pipeline rewrote the class
+     */
+    private static boolean writeClass(ZipFile zip, ZipEntry entry, ZipEntry copy, ZipOutputStream out,
+                                      ClassTransformPipeline.JarRun run, CRC32 crc) throws IOException {
+        byte[] original = read(zip, entry, crc);
+        byte[] output = run.process(entry.getName(), original);
+        boolean changed = output != original;
+        if (changed) {
+            crc.reset();
+            crc.update(output, 0, output.length);
+            copy.setSize(output.length);
+            copy.setCrc(crc.getValue());
+            if (copy.getMethod() == ZipEntry.STORED) {
+                copy.setCompressedSize(output.length);
+            }
+        }
+        put(out, copy);
+        out.write(output);
+        out.closeEntry();
         return changed;
     }
 

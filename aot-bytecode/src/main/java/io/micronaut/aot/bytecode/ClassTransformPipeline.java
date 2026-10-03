@@ -564,34 +564,42 @@ final class ClassTransformPipeline {
                     context = shared;
                     model = context.parse(original);
                 }
-                ClassTransform transform = null;
-                for (Step step : active) {
+                Step first = active.get(0);
+                ClassTransform transform = new Gate(first, attribution).andThen(first.transform(model));
+                for (Step step : active.subList(1, active.size())) {
                     blame = step;
-                    ClassTransform stepTransform = new Gate(step, attribution).andThen(step.transform(model));
-                    transform = transform == null ? stepTransform : transform.andThen(stepTransform);
+                    transform = transform.andThen(new Gate(step, attribution).andThen(step.transform(model)));
                 }
                 blame = active.get(0);
                 transform = transform.andThen(new Gate(null, attribution))
                         .andThen(OriginalFrames.of(model).reattaching());
                 byte[] output = context.transformClass(model, transform);
                 attribution.current = null;
-                if (active.size() == 1 && active.get(0).skipsLargerOutput() && output.length >= original.length) {
-                    return Attempt.UNCHANGED;
-                }
-                List<String> errors = verifier.apply(output);
-                if (!errors.isEmpty()) {
-                    String grown = grown(errors, verifier.apply(original));
-                    if (grown != null) {
-                        return Attempt.failed(active.get(0), "verification: " + grown);
-                    }
-                }
-                return new Attempt(output, active, null, null);
+                return gated(original, output, active);
             } catch (Gate.Failure failure) {
                 return Attempt.failed(failure.step == null ? blame : failure.step, describe(failure.getCause()));
             } catch (RuntimeException | LinkageError | AssertionError | StackOverflowError failure) {
                 Step step = attribution.current == null ? blame : attribution.current;
                 return Attempt.failed(step, describe(failure));
             }
+        }
+
+        /**
+         * Accepts the output of the steps that changed a class, unless it is not smaller and the only step skips
+         * such an output, or it verifies worse than the original.
+         */
+        private Attempt gated(byte[] original, byte[] output, List<Step> active) {
+            if (active.size() == 1 && active.get(0).skipsLargerOutput() && output.length >= original.length) {
+                return Attempt.UNCHANGED;
+            }
+            List<String> errors = verifier.apply(output);
+            if (!errors.isEmpty()) {
+                String grown = grown(errors, verifier.apply(original));
+                if (grown != null) {
+                    return Attempt.failed(active.get(0), "verification: " + grown);
+                }
+            }
+            return new Attempt(output, active, null, null);
         }
     }
 

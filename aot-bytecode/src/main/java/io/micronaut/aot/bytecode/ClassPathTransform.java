@@ -141,13 +141,7 @@ public final class ClassPathTransform {
         List<T> results = new ArrayList<>(tasks.size());
         if (pool == null) {
             for (Callable<T> task : tasks) {
-                try {
-                    results.add(task.call());
-                } catch (IOException | RuntimeException e) {
-                    throw e;
-                } catch (Exception e) {
-                    throw new IOException(e);
-                }
+                results.add(call(task));
             }
             return results;
         }
@@ -156,26 +150,46 @@ public final class ClassPathTransform {
             futures.add(pool.submit(task));
         }
         for (Future<T> future : futures) {
-            try {
-                results.add(future.get());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new InterruptedIOException("Interrupted while rewriting the class path");
-            } catch (ExecutionException e) {
-                Throwable cause = e.getCause();
-                if (cause instanceof IOException io) {
-                    throw io;
-                }
-                if (cause instanceof RuntimeException runtime) {
-                    throw runtime;
-                }
-                if (cause instanceof Error error) {
-                    throw error;
-                }
-                throw new IOException(cause);
-            }
+            results.add(join(future));
         }
         return results;
+    }
+
+    /**
+     * Runs a task on the calling thread.
+     */
+    private static <T> T call(Callable<T> task) throws IOException {
+        try {
+            return task.call();
+        } catch (IOException | RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+
+    /**
+     * Waits for a task on the pool and throws what it threw.
+     */
+    private static <T> T join(Future<T> future) throws IOException {
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InterruptedIOException("Interrupted while rewriting the class path");
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException io) {
+                throw io;
+            }
+            if (cause instanceof RuntimeException runtime) {
+                throw runtime;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new IOException(cause);
+        }
     }
 
     private static Thread thread(Runnable task) {
@@ -319,19 +333,28 @@ public final class ClassPathTransform {
                     if (Files.isDirectory(key)) {
                         throw new IllegalArgumentException("A directory is never stripped: " + jar);
                     }
-                    boolean found = false;
-                    for (int position = 0; position < normalized.size(); position++) {
-                        if (normalized.get(position).equals(key)) {
-                            stripped[position] = true;
-                            found = true;
-                        }
-                    }
-                    if (!found) {
+                    if (!mark(normalized, key, stripped)) {
                         throw new IllegalArgumentException("The jar to strip " + jar
                                 + " is not an entry of the class path");
                     }
                 }
                 return new Request(classPath, outputDirectory, stripped, parallelism);
+            }
+
+            /**
+             * Marks every position of the class path that holds a jar.
+             *
+             * @return whether the jar is an entry of the class path
+             */
+            private static boolean mark(List<Path> normalized, Path key, boolean[] stripped) {
+                boolean found = false;
+                for (int position = 0; position < normalized.size(); position++) {
+                    if (normalized.get(position).equals(key)) {
+                        stripped[position] = true;
+                        found = true;
+                    }
+                }
+                return found;
             }
 
             /**

@@ -251,13 +251,21 @@ final class LocalVariableStripper implements ClassTransformPipeline.Step {
                 return true;
             }
         }
-        Optional<RecordAttribute> record = model.findAttribute(Attributes.record());
-        if (record.isPresent()) {
-            for (RecordComponentInfo component : record.get().components()) {
-                for (Attribute<?> attribute : component.attributes()) {
-                    if (attribute instanceof UnknownAttribute) {
-                        return true;
-                    }
+        return hasUnknownRecordComponentAttribute(model);
+    }
+
+    /**
+     * Whether any attribute of a record component of a class is one the JDK does not know.
+     */
+    private static boolean hasUnknownRecordComponentAttribute(ClassModel model) {
+        Optional<RecordAttribute> recordAttribute = model.findAttribute(Attributes.record());
+        if (recordAttribute.isEmpty()) {
+            return false;
+        }
+        for (RecordComponentInfo component : recordAttribute.get().components()) {
+            for (Attribute<?> attribute : component.attributes()) {
+                if (attribute instanceof UnknownAttribute) {
+                    return true;
                 }
             }
         }
