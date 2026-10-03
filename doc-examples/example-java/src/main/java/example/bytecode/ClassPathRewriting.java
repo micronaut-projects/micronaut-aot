@@ -20,6 +20,7 @@ import io.micronaut.aot.bytecode.ClassPathTransform;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -46,7 +47,13 @@ final class ClassPathRewriting {
                 .build());
         log.accept(result.summary());
         result.warnings().forEach(warn);
-        Files.writeString(reportFile, result.report());
+        List<String> report = new ArrayList<>();
+        for (ClassPathTransform.Result.Entry jar : result.entries()) {
+            report.add("%s\t%d\t%d\t%d\t%d\t%s".formatted(jar.path(), jar.classesStripped(),
+                jar.classesUnchanged(), jar.fallbacks(), jar.bytesSaved(), jar.kept().orElse("")));
+            report.addAll(jar.notes());
+        }
+        Files.write(reportFile, report);
         List<Path> packaged = result.classPath();
         //end::strip[]
         return packaged;

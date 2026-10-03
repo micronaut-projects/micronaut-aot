@@ -50,7 +50,13 @@ class ClassPathRewritingTest {
         assertTrue(log.get(0).startsWith("Stripped local-variable tables from "), log::toString);
         assertEquals(List.of(), warnings);
         assertTrue(Files.size(packaged.get(1)) < Files.size(core), "the copy is smaller");
-        assertTrue(Files.readString(reportFile).startsWith("entry\tstep\t"));
+        List<String> report = Files.readAllLines(reportFile);
+        assertEquals(1, report.size(), report::toString);
+        String[] counts = report.get(0).split("\t", -1);
+        assertEquals(core.toString(), counts[0]);
+        assertTrue(Integer.parseInt(counts[1]) > 0, report::toString);
+        assertEquals("0", counts[3], "no fallback");
+        assertEquals("", counts[5], "the jar went through the step");
     }
 
     private static Path jarOf(Class<?> type) throws Exception {

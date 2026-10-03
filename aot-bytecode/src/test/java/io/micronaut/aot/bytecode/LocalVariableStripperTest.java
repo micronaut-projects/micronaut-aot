@@ -47,6 +47,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.zip.ZipEntry;
@@ -99,10 +100,9 @@ class LocalVariableStripperTest {
         ClassPathTransform.Result result = strip(temp.resolve("release-" + release + "/out"), dependency);
         Map<String, byte[]> stripped = classes(result.classPath().get(1));
 
-        ClassTransformPipeline.StepCount report = counts(result, dependency);
-        assertEquals(LocalVariableStripper.NAME, report.step());
-        assertEquals(0, report.fallbacks(), result::report);
-        assertTrue(report.rewritten() >= 1, result::report);
+        ClassPathTransform.Result.Entry report = entry(result, dependency);
+        assertEquals(0, report.fallbacks(), report::toString);
+        assertTrue(report.classesStripped() >= 1, report::toString);
         assertEquals(original.keySet(), stripped.keySet(), "no class is added or removed");
         assertTrue(stripped.get(FIXTURE_ENTRY).length < original.get(FIXTURE_ENTRY).length, "the class shrank");
 
@@ -162,13 +162,12 @@ class LocalVariableStripperTest {
         assertEquals(List.of(applicationClasses, plain, signed), result.classPath(),
                 "an unknown attribute declines the class, and a signed jar and module-info are left alone");
         assertEquals(List.of(), ClassPathTransformTest.written(output), "nothing is written");
-        assertTrue(result.report().contains("kept\t" + signed + "\tthe jar is signed\n"), result::report);
-        ClassTransformPipeline.StepCount plainCounts = counts(result, plain);
-        ClassTransformPipeline.StepCount signedCounts = counts(result, signed);
-        assertEquals(0, plainCounts.rewritten() + signedCounts.rewritten(), result::report);
-        assertEquals(0, plainCounts.fallbacks() + signedCounts.fallbacks(), result::report);
-        assertEquals(3, plainCounts.unchanged(), result::report);
-        assertEquals(classes.size(), signedCounts.unchanged(), result::report);
+        ClassPathTransform.Result.Entry plainCounts = entry(result, plain);
+        ClassPathTransform.Result.Entry signedCounts = entry(result, signed);
+        assertEquals(Optional.of("the jar is signed"), signedCounts.kept(), signedCounts::toString);
+        assertEquals(Optional.empty(), plainCounts.kept(), plainCounts::toString);
+        ClassPathTransformTest.assertCounts(0, 3, 0, plainCounts);
+        ClassPathTransformTest.assertCounts(0, classes.size(), 0, signedCounts);
     }
 
     @Test
@@ -188,11 +187,9 @@ class LocalVariableStripperTest {
         assertEquals(temp.resolve("project-module/out/2/library.jar"), result.classPath().get(2));
         // Only the library's copy of the class with code carries anything to strip; its annotation interfaces
         // do not, and no class of the module is counted.
-        ClassTransformPipeline.StepCount report = counts(result, library);
-        assertEquals(1, report.rewritten(), result::report);
-        assertEquals(classes.size() - 1, report.unchanged(), result::report);
-        assertEquals(0, report.fallbacks(), result::report);
-        assertFalse(result.report().contains(module.toString()), result::report);
+        assertEquals(List.of(library), result.entries().stream().map(ClassPathTransform.Result.Entry::path).toList(),
+                "only the named jar has an entry");
+        ClassPathTransformTest.assertCounts(1, classes.size() - 1, 0, entry(result, library));
         assertTrue(result.summary().startsWith("Stripped local-variable tables from 1 of " + classes.size()
                 + " dependency classes in 1 jars ("), result::summary);
     }
@@ -253,9 +250,9 @@ class LocalVariableStripperTest {
 
         assertEquals(List.of("LineNumberTable", "StackMapTable"), codeAttributes(stripped.get(entry), "twice"));
         assertTrue(stripped.get(entry).length < original.get(entry).length, "the class shrank");
-        ClassTransformPipeline.StepCount report = counts(result, dependency);
-        assertEquals(1, report.rewritten(), result::report);
-        assertEquals(0, report.fallbacks(), result::report);
+        ClassPathTransform.Result.Entry report = entry(result, dependency);
+        assertEquals(1, report.classesStripped(), report::toString);
+        assertEquals(0, report.fallbacks(), report::toString);
         Method twice = load(stripped, "fixture.Ranged").getMethod("twice", int.class);
         assertEquals(14, twice.invoke(null, 7));
         assertEquals(100, twice.invoke(null, 70));
@@ -291,12 +288,12 @@ class LocalVariableStripperTest {
         assertArrayEquals(entries.get("bad/BadIface.class"), rewritten.get("bad/BadIface.class"));
         assertTrue(rewritten.get("bad/Good.class").length < compiled.get("bad/Good.class").length,
                 "the class next to them is stripped");
-        ClassTransformPipeline.StepCount report = counts(result, dependency);
-        assertEquals(1, report.rewritten(), result::report);
-        assertEquals(2, report.fallbacks(), result::report);
-        assertEquals(3, report.classes(), result::report);
-        assertEquals(2, result.report().lines().filter(line -> line.startsWith("fallback\t")).count(),
-                result::report);
+        ClassPathTransform.Result.Entry report = entry(result, dependency);
+        ClassPathTransformTest.assertCounts(1, 0, 2, report);
+        assertEquals(2, report.notes().size(), report::toString);
+        for (String note : report.notes()) {
+            assertTrue(note.startsWith(dependency + "\tbad/Bad"), note);
+        }
     }
 
     /** The structural comparison of one class, as compiled and as stripped. */
@@ -488,16 +485,14 @@ class LocalVariableStripperTest {
                 .build());
     }
 
-    /** The counts of the strip step on one jar, read back from the report. */
-    static ClassTransformPipeline.StepCount counts(ClassPathTransform.Result result, Path jar) {
-        for (String line : result.report().lines().toList()) {
-            String[] fields = line.split("\t");
-            if (fields.length == 6 && fields[0].equals(jar.toString())) {
-                return new ClassTransformPipeline.StepCount(fields[1], Integer.parseInt(fields[2]),
-                        Integer.parseInt(fields[3]), Integer.parseInt(fields[4]), Long.parseLong(fields[5]));
+    /** The entry of one jar in a result. */
+    static ClassPathTransform.Result.Entry entry(ClassPathTransform.Result result, Path jar) {
+        for (ClassPathTransform.Result.Entry entry : result.entries()) {
+            if (entry.path().equals(jar)) {
+                return entry;
             }
         }
-        throw new AssertionError("no counts for " + jar + " in\n" + result.report());
+        throw new AssertionError("no entry for " + jar + " in " + result.entries());
     }
 
     /** The classes of a jar, by entry name. */

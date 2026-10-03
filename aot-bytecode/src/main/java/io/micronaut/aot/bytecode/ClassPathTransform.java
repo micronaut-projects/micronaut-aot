@@ -43,8 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * verifies worse than the original, or on which the step fails, is written as it was. A jar with a rewritten class is
  * copied whole, under its own file name, into a directory of its own below the request's output directory; every
  * other class path entry keeps its own path, its bytes and its hash. The transform never loads a class of the class
- * path, and it logs nothing: the {@link Result} carries a summary, warnings and a report for the caller to log or
- * write.</p>
+ * path, and it logs nothing: the {@link Result} carries a summary and warnings for the caller to log, and the counts
+ * of each jar as numbers, for the caller to report in its own format.</p>
  *
  * <p>The rewritten bytes depend on the JDK that runs the transform: they are reproducible with the same JDK build,
  * whatever the parallelism.</p>
@@ -87,7 +87,7 @@ public final class ClassPathTransform {
                         + reader.get().layer() + " contains " + reader.get().entry()
                         + ", which reads local-variable tables at run time");
                 return new Result(classPath, "Stripped no local-variable table, because a library on the class"
-                        + " path reads them at run time", warnings, "");
+                        + " path reads them at run time", warnings, List.of());
             }
             ClassTransformPipeline pipeline = new ClassTransformPipeline(List.of(new LocalVariableStripper()), model);
             List<Integer> positions = new ArrayList<>();
@@ -107,14 +107,16 @@ public final class ClassPathTransform {
 
             List<Path> result = new ArrayList<>(classPath);
             List<ClassTransformPipeline.JarReport> reports = new ArrayList<>(outcomes.size());
+            List<Result.Entry> entries = new ArrayList<>(outcomes.size());
             for (int i = 0; i < outcomes.size(); i++) {
-                reports.add(outcomes.get(i).report());
-                if (outcomes.get(i).written()) {
+                JarRewriter.Outcome outcome = outcomes.get(i);
+                reports.add(outcome.report());
+                entries.add(new Result.Entry(classPath.get(positions.get(i)), outcome));
+                if (outcome.written()) {
                     result.set(positions.get(i), targets.get(i));
                 }
             }
-            return new Result(result, String.join("\n", pipeline.summaries(reports)), warnings,
-                    report(outcomes));
+            return new Result(result, String.join("\n", pipeline.summaries(reports)), warnings, entries);
         } finally {
             if (pool != null) {
                 pool.shutdownNow();
@@ -128,33 +130,6 @@ public final class ClassPathTransform {
         } catch (IOException e) {
             throw new IOException("Cannot read the class path entry " + entry + ": " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * The tab-separated report: a header, one line per jar and step with its counts, one line per jar left as it
-     * was, and one line per class that fell back, in class-path order.
-     */
-    private static String report(List<JarRewriter.Outcome> outcomes) {
-        StringBuilder text = new StringBuilder("entry\tstep\trewritten\tunchanged\tfallbacks\tbytesSaved\n");
-        for (JarRewriter.Outcome outcome : outcomes) {
-            for (ClassTransformPipeline.StepCount count : outcome.report().counts()) {
-                text.append(outcome.report().jar()).append('\t').append(count.step()).append('\t')
-                        .append(count.rewritten()).append('\t').append(count.unchanged()).append('\t')
-                        .append(count.fallbacks()).append('\t').append(count.bytesSaved()).append('\n');
-            }
-        }
-        for (JarRewriter.Outcome outcome : outcomes) {
-            if (outcome.kept() != null) {
-                text.append("kept\t").append(outcome.report().jar()).append('\t').append(outcome.kept())
-                        .append('\n');
-            }
-        }
-        for (JarRewriter.Outcome outcome : outcomes) {
-            for (String note : outcome.report().notes()) {
-                text.append("fallback\t").append(note).append('\n');
-            }
-        }
-        return text.toString();
     }
 
     /**
@@ -361,13 +336,13 @@ public final class ClassPathTransform {
         private final List<Path> classPath;
         private final String summary;
         private final List<String> warnings;
-        private final String report;
+        private final List<Entry> entries;
 
-        private Result(List<Path> classPath, String summary, List<String> warnings, String report) {
+        private Result(List<Path> classPath, String summary, List<String> warnings, List<Entry> entries) {
             this.classPath = List.copyOf(classPath);
             this.summary = summary;
             this.warnings = List.copyOf(warnings);
-            this.report = report;
+            this.entries = List.copyOf(entries);
         }
 
         /**
@@ -401,15 +376,118 @@ public final class ClassPathTransform {
         }
 
         /**
-         * A tab-separated report for the caller to write to a file, in class-path order: a header line, one line per
-         * rewritten jar and step with the classes rewritten, left unchanged and fallen back and the bytes saved,
-         * one {@code kept} line per jar left as it was with the reason, and one {@code fallback} line per class
-         * written as it was, with the step and the first error. Empty when no step ran.
+         * What the strip step did to each jar it was given, in class-path order: one element per class path entry
+         * named by {@link Request.Builder#stripLocalVariables(Collection)}, whether it was rewritten or not. The
+         * counts are numbers, for the caller to write its report in its own format. Empty when no step ran, because
+         * a library on the class path reads local-variable tables.
          *
-         * @return the report
+         * @return the entries
          */
-        public String report() {
-            return report;
+        public List<Entry> entries() {
+            return entries;
+        }
+
+        /**
+         * What the strip step did to one jar. Every class of the jar is counted once, as stripped, unchanged or
+         * fallen back.
+         */
+        @Internal
+        public static final class Entry {
+
+            private final Path path;
+            private final int classesStripped;
+            private final int classesUnchanged;
+            private final int fallbacks;
+            private final long bytesSaved;
+            private final String kept;
+            private final List<String> notes;
+
+            private Entry(Path path, JarRewriter.Outcome outcome) {
+                // The pipeline runs one step, the strip step, so its count is the only one.
+                ClassTransformPipeline.StepCount count = outcome.report().counts().get(0);
+                this.path = path;
+                this.classesStripped = count.rewritten();
+                this.classesUnchanged = count.unchanged();
+                this.fallbacks = count.fallbacks();
+                this.bytesSaved = count.bytesSaved();
+                this.kept = outcome.kept();
+                this.notes = outcome.report().notes();
+            }
+
+            /**
+             * The jar, as the request's class path gave it.
+             *
+             * @return the jar
+             */
+            public Path path() {
+                return path;
+            }
+
+            /**
+             * The classes written without their local-variable tables.
+             *
+             * @return the number of classes stripped
+             */
+            public int classesStripped() {
+                return classesStripped;
+            }
+
+            /**
+             * The classes the step left as they were: nothing to strip, a {@code module-info}, an attribute the JDK
+             * does not know, a rewrite that is not smaller, a class too large to read, or a jar left as it is
+             * ({@link #kept()}).
+             *
+             * @return the number of classes unchanged
+             */
+            public int classesUnchanged() {
+                return classesUnchanged;
+            }
+
+            /**
+             * The classes written as they were because the step failed on them or their rewrite verified worse than
+             * the original. Each has a line in {@link #notes()}.
+             *
+             * @return the number of fallbacks
+             */
+            public int fallbacks() {
+                return fallbacks;
+            }
+
+            /**
+             * How many bytes smaller the stripped classes became, uncompressed.
+             *
+             * @return the bytes saved
+             */
+            public long bytesSaved() {
+                return bytesSaved;
+            }
+
+            /**
+             * Why no class of the jar went through the step, such as {@code the jar is signed}; empty when they
+             * did.
+             *
+             * @return the reason, if the jar was left as it is
+             */
+            public Optional<String> kept() {
+                return Optional.ofNullable(kept);
+            }
+
+            /**
+             * One line per fallback, for the caller to log or write: tab-separated, the jar, the class, the step and
+             * the first error.
+             *
+             * @return the notes, never {@code null}
+             */
+            public List<String> notes() {
+                return notes;
+            }
+
+            @Override
+            public String toString() {
+                return "Entry[path=" + path + ", classesStripped=" + classesStripped + ", classesUnchanged="
+                        + classesUnchanged + ", fallbacks=" + fallbacks + ", bytesSaved=" + bytesSaved
+                        + (kept == null ? "" : ", kept=" + kept) + ", notes=" + notes + "]";
+            }
         }
     }
 }

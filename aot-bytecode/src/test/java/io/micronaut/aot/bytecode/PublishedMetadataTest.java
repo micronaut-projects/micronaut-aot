@@ -77,9 +77,18 @@ class PublishedMetadataTest {
                     + "Lio/micronaut/aot/bytecode/ClassPathTransform$Request$Builder;",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result#classPath()Ljava/util/List;",
-            "io.micronaut.aot.bytecode.ClassPathTransform$Result#report()Ljava/lang/String;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result#entries()Ljava/util/List;",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result#summary()Ljava/lang/String;",
-            "io.micronaut.aot.bytecode.ClassPathTransform$Result#warnings()Ljava/util/List;");
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result#warnings()Ljava/util/List;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#bytesSaved()J",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#classesStripped()I",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#classesUnchanged()I",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#fallbacks()I",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#kept()Ljava/util/Optional;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#notes()Ljava/util/List;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#path()Ljava/nio/file/Path;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#toString()Ljava/lang/String;");
 
     @Test
     void thePomDeclaresNoDependencyAndNoPlatform() throws Exception {

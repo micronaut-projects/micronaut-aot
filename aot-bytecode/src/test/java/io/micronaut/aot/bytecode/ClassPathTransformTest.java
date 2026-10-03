@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
@@ -207,17 +208,21 @@ class ClassPathTransformTest {
         assertEquals(List.of(), result.warnings());
         assertEquals("Stripped local-variable tables from 4 of 7 dependency classes in 5 jars ("
                 + saved(result) + " bytes saved, 0 fallbacks)", result.summary());
-        List<String> lines = result.report().lines().toList();
-        assertEquals("entry\tstep\trewritten\tunchanged\tfallbacks\tbytesSaved", lines.get(0));
-        assertEquals(List.of(thirdParty, signed, moduleJar, multiReleaseJar, vendor).stream()
-                .map(Path::toString).toList(), lines.subList(1, 6).stream().map(line -> line.split("\t")[0]).toList(),
-                "one line per named jar, in class-path order");
-        assertEquals(List.of("kept\t" + signed + "\tthe jar is signed"), lines.subList(6, lines.size()));
-        assertEquals(new ClassTransformPipeline.StepCount(LocalVariableStripper.NAME, 1, 1, 0,
-                LocalVariableStripperTest.counts(result, moduleJar).bytesSaved()),
-                LocalVariableStripperTest.counts(result, moduleJar), "module-info is left alone");
-        assertEquals(new ClassTransformPipeline.StepCount(LocalVariableStripper.NAME, 0, 1, 0, 0),
-                LocalVariableStripperTest.counts(result, vendor), "an unknown attribute declines the class");
+        assertEquals(List.of(thirdParty, signed, moduleJar, multiReleaseJar, vendor),
+                result.entries().stream().map(ClassPathTransform.Result.Entry::path).toList(),
+                "one entry per named jar, in class-path order, as the request spelled it");
+        assertEquals(List.of(Optional.empty(), Optional.of("the jar is signed"), Optional.empty(), Optional.empty(),
+                Optional.empty()), result.entries().stream().map(ClassPathTransform.Result.Entry::kept).toList());
+        assertCounts(1, 0, 0, result.entries().get(0));
+        assertCounts(0, 1, 0, result.entries().get(1));
+        assertCounts(1, 1, 0, result.entries().get(2), "module-info is left alone");
+        assertCounts(2, 0, 0, result.entries().get(3));
+        assertCounts(0, 1, 0, result.entries().get(4), "an unknown attribute declines the class");
+        assertEquals(0, result.entries().get(1).bytesSaved() + result.entries().get(4).bytesSaved());
+        for (ClassPathTransform.Result.Entry entry : result.entries()) {
+            assertEquals(List.of(), entry.notes(), entry::toString);
+            assertEquals(entry.classesStripped() > 0, entry.bytesSaved() > 0, entry::toString);
+        }
     }
 
     @Test
@@ -288,8 +293,10 @@ class ClassPathTransformTest {
                 .build());
 
         assertEquals(List.of(application, jar), result.classPath());
-        assertTrue(result.report().contains("kept\t" + jar + "\tthe jar holds the entry " + LIBRARY_ENTRY
-                + " more than once\n"), result::report);
+        assertEquals(1, result.entries().size(), result.entries()::toString);
+        assertEquals(Optional.of("the jar holds the entry " + LIBRARY_ENTRY + " more than once"),
+                result.entries().get(0).kept());
+        assertCounts(0, 2, 0, result.entries().get(0));
         assertEquals(List.of(), written(temp.resolve("repeated/out")));
     }
 
@@ -315,7 +322,7 @@ class ClassPathTransformTest {
         assertTrue(result.warnings().get(0).contains(readerJar.toString()), result.warnings()::toString);
         assertTrue(result.warnings().get(0).contains(reader), result.warnings()::toString);
         assertTrue(result.summary().startsWith("Stripped no local-variable table"), result::summary);
-        assertEquals("", result.report());
+        assertEquals(List.of(), result.entries());
     }
 
     @Test
@@ -363,7 +370,7 @@ class ClassPathTransformTest {
 
         for (ClassPathTransform.Result result : results.subList(1, results.size())) {
             assertEquals(results.get(0).summary(), result.summary());
-            assertEquals(results.get(0).report(), result.report());
+            assertEquals(results.get(0).entries().toString(), result.entries().toString());
             for (int position = 1; position < classPath.size(); position++) {
                 Path copy = result.classPath().get(position);
                 assertNotEquals(classPath.get(position), copy);
@@ -451,14 +458,18 @@ class ClassPathTransformTest {
     }
 
     private static long saved(ClassPathTransform.Result result) {
-        long saved = 0;
-        for (String line : result.report().lines().skip(1).toList()) {
-            String[] fields = line.split("\t");
-            if (fields.length == 6) {
-                saved += Long.parseLong(fields[5]);
-            }
-        }
-        return saved;
+        return result.entries().stream().mapToLong(ClassPathTransform.Result.Entry::bytesSaved).sum();
+    }
+
+    /** The counts of the strip step on one jar. */
+    static void assertCounts(int stripped, int unchanged, int fallbacks, ClassPathTransform.Result.Entry entry) {
+        assertCounts(stripped, unchanged, fallbacks, entry, "");
+    }
+
+    static void assertCounts(int stripped, int unchanged, int fallbacks, ClassPathTransform.Result.Entry entry,
+                             String message) {
+        assertEquals(List.of(stripped, unchanged, fallbacks),
+                List.of(entry.classesStripped(), entry.classesUnchanged(), entry.fallbacks()), message + " " + entry);
     }
 
     private static Manifest manifest(boolean multiRelease) {

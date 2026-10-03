@@ -40,10 +40,15 @@ The `Result` has:
 * `classPath()`: the class path to package, in the order of the request. A jar with a rewritten class is replaced by its copy, which keeps the jar's file name, so the `Class-Path` attribute of a manifest that names it stays valid. Every other entry is returned as it was given, and keeps its bytes and its hash.
 * `summary()`: one line to log, such as `Stripped local-variable tables from 7102 of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)`.
 * `warnings()`: lines to log as warnings, each on its own. Usually empty, never `null`.
-* `report()`: a tab-separated report to write under the build's reports. It has a header line, then one line per named jar with the classes rewritten, left unchanged and given up on, and the bytes saved; one `kept` line per jar left as it was, with the reason; and one `fallback` line per class written as it was, with the step and the first verification error or failure.
+* `entries()`: what the step did to each jar named by `stripLocalVariables`, in class-path order, for the plugin to write under the build's reports in its own format; empty when the step stood down because of a library that reads local-variable tables. The counts are numbers, so nothing needs parsing. Each `Entry` has:
+** `path()`: the jar, as `classPath` gave it;
+** `classesStripped()`, `classesUnchanged()` and `fallbacks()`: the jar's classes that lost their tables, that were left as they were, and that were written as they were because the step failed on them or their rewrite verified worse. Each class of the jar counts once;
+** `bytesSaved()`: how many bytes smaller the stripped classes became, uncompressed;
+** `kept()`: why no class of the jar went through the step, such as `the jar is signed`, or empty;
+** `notes()`: one line per fallback, tab-separated: the jar, the class, the step and the first verification error or failure.
 
 `run` throws only when it cannot read a jar it rewrites, or cannot write a copy.
-A class that it cannot parse, rewrite or verify is written as it was, and the report names it.
+A class that it cannot parse, rewrite or verify is written as it was, and a note of its jar's entry names it.
 The module logs nothing.
 
 A copy holds every entry of the original jar, in the same order, with the same name, comment, time and compression method, and the manifest as it was.

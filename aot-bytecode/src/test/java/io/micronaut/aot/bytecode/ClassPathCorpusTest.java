@@ -95,8 +95,10 @@ class ClassPathCorpusTest {
         System.out.println(application + ": " + jars.size() + " jars, " + millis + " ms");
         System.out.println(application + ": " + result.summary());
         result.warnings().forEach(warning -> System.out.println(application + ": warning: " + warning));
-        result.report().lines().filter(line -> !line.startsWith("entry\t") && line.split("\t").length != 6)
-                .forEach(line -> System.out.println(application + ": " + line));
+        for (ClassPathTransform.Result.Entry entry : result.entries()) {
+            entry.kept().ifPresent(reason -> System.out.println(application + ": kept " + entry.path() + ": " + reason));
+            entry.notes().forEach(note -> System.out.println(application + ": fallback " + note));
+        }
 
         // Every class the run rewrote, verified again on both sides against a model of the original class path, with
         // the gate's comparison, which ignores the bytecode offset an error names: a rebuilt pool moves the errors a
@@ -129,9 +131,11 @@ class ClassPathCorpusTest {
                 }
             }
         }
-        for (String line : result.report().lines().toList()) {
-            if (line.startsWith("fallback\t") && line.split("\t", 5)[4].startsWith("verification: ")) {
-                grown.add(line.replace('\t', ' '));
+        for (ClassPathTransform.Result.Entry entry : result.entries()) {
+            for (String note : entry.notes()) {
+                if (note.split("\t", 4)[3].startsWith("verification: ")) {
+                    grown.add(note.replace('\t', ' '));
+                }
             }
         }
         System.out.println(application + ": " + rewritten + " rewritten classes verified again");
