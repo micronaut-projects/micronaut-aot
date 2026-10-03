@@ -100,7 +100,8 @@ final class JarRewriter {
             boolean changed = write(zip, entries, target, run);
             return new Outcome(changed, run.report(), null);
         } catch (IOException e) {
-            throw new IOException("Cannot rewrite the classes of " + name + ": " + e.getMessage(), e);
+            throw new IOException("Cannot rewrite the classes of " + name + ": " + ClassTransformPipeline.describe(e),
+                    e);
         }
     }
 
@@ -128,7 +129,8 @@ final class JarRewriter {
     }
 
     /**
-     * Writes the copy and keeps it only when a class changed.
+     * Writes the copy and keeps it only when a class changed. When the copy fails, it is deleted and the failure is
+     * thrown, with a failure to delete it added as suppressed.
      *
      * @return whether a class changed, so the copy was kept
      */
@@ -136,7 +138,6 @@ final class JarRewriter {
                                  ClassTransformPipeline.JarRun run) throws IOException {
         Files.createDirectories(target.getParent());
         boolean changed = false;
-        boolean written = false;
         try {
             try (OutputStream file = Files.newOutputStream(target);
                  ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(file, COPY_BUFFER_SIZE))) {
@@ -175,18 +176,30 @@ final class JarRewriter {
                     out.closeEntry();
                 }
             }
-            written = true;
-        } finally {
-            if (!written || !changed) {
-                Files.deleteIfExists(target);
-                try {
-                    Files.deleteIfExists(target.getParent());
-                } catch (DirectoryNotEmptyException e) {
-                    // The caller's directory holds other files: only the copy is this method's.
-                }
+        } catch (IOException | RuntimeException | Error failure) {
+            try {
+                delete(target);
+            } catch (IOException cleanup) {
+                failure.addSuppressed(cleanup);
             }
+            throw failure;
+        }
+        if (!changed) {
+            delete(target);
         }
         return changed;
+    }
+
+    /**
+     * Deletes a copy, and its directory when nothing else is in it.
+     */
+    private static void delete(Path target) throws IOException {
+        Files.deleteIfExists(target);
+        try {
+            Files.deleteIfExists(target.getParent());
+        } catch (DirectoryNotEmptyException e) {
+            // The caller's directory holds other files: only the copy is this method's.
+        }
     }
 
     /**

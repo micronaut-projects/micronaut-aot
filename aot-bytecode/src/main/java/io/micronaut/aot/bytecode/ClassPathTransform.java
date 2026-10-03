@@ -128,7 +128,8 @@ public final class ClassPathTransform {
         try {
             return ClassPathModel.scan(entry, entry.toString(), LocalVariableStripper::isKnownReader);
         } catch (IOException e) {
-            throw new IOException("Cannot read the class path entry " + entry + ": " + e.getMessage(), e);
+            throw new IOException("Cannot read the class path entry " + entry + ": "
+                    + ClassTransformPipeline.describe(e), e);
         }
     }
 

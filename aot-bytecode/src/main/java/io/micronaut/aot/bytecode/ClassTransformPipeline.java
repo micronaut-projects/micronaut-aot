@@ -246,7 +246,13 @@ final class ClassTransformPipeline {
         return BYTECODE_OFFSET.matcher(error).replaceAll("@");
     }
 
-    private static String describe(Throwable failure) {
+    /**
+     * A failure in a note or a message: its simple class name, then its message when it has one.
+     *
+     * @param failure the failure
+     * @return for example {@code ZipException: invalid END header}, or {@code EOFException}
+     */
+    static String describe(Throwable failure) {
         String message = failure.getMessage();
         return failure.getClass().getSimpleName() + (message == null ? "" : ": " + message);
     }
