@@ -1,0 +1,9 @@
+<configuration>
+    <conversionRule conversionWord="caller2" class="ch.qos.logback.classic.pattern.LineOfCallerConverter"/>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder><pattern>%caller2 %msg%n</pattern></encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

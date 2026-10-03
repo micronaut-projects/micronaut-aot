@@ -25,16 +25,24 @@ import com.squareup.javapoet.TypeSpec;
 import io.micronaut.aot.core.AOTContext;
 import io.micronaut.aot.core.AOTModule;
 import io.micronaut.aot.core.codegen.AbstractSingleClassFileGenerator;
+import io.micronaut.aot.std.sourcegen.Logback14GeneratorHelper.UnsupportedConfigurationException;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
+import java.net.URL;
 import java.util.Locale;
+import java.util.Objects;
 
 import static io.micronaut.aot.std.sourcegen.Logback14GeneratorHelper.configureMethod;
 
 /**
  * A source generator responsible for converting a logback.xml configuration into
  * Java configuration.
+ *
+ * <p>The generated configurator builds the same logger context as Joran. If the configuration
+ * uses something which cannot be converted faithfully, nothing is generated, a diagnostic is
+ * reported, and Logback configures itself from the XML file at runtime.</p>
  */
 @AOTModule(
         id = LogbackConfigurationSourceGenerator.ID,
@@ -52,7 +60,7 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(Configurator.class)
                 .addField(contextField())
-                .addMethod(configureMethod(getLogbackFileName(), getContext()))
+                .addMethod(configureMethod(Objects.requireNonNull(findLogbackFile(getContext()))))
                 .addMethod(setContextMethod())
                 .addMethod(getContextMethod())
                 .addMethod(addStatusMethod())
@@ -87,14 +95,24 @@ public class LogbackConfigurationSourceGenerator extends AbstractSingleClassFile
     @Override
     public void generate(@NonNull AOTContext context) {
         String logbackFileName = getLogbackFileName();
-        ClassLoader classLoader = context.getAnalyzer().getApplicationContext().getClass().getClassLoader();
-        if (classLoader.getResource(logbackFileName) == null) {
+        if (findLogbackFile(context) == null) {
             context.addDiagnostics(ID, "Skipping logback configuration conversion because " + logbackFileName + " was not found on the application classpath.");
             return;
         }
-        super.generate(context);
+        try {
+            super.generate(context);
+        } catch (UnsupportedConfigurationException e) {
+            context.addDiagnostics(ID, "Skipping logback configuration conversion because " + logbackFileName + " " + e.getMessage()
+                + ". Logback will configure itself from " + logbackFileName + " at runtime.");
+            return;
+        }
         context.registerExcludedResource(logbackFileName);
         context.registerServiceImplementation(Configurator.class, "StaticLogbackConfiguration");
+    }
+
+    private @Nullable URL findLogbackFile(AOTContext context) {
+        ClassLoader classLoader = context.getAnalyzer().getApplicationContext().getClass().getClassLoader();
+        return classLoader.getResource(getLogbackFileName());
     }
 
     private static MethodSpec addStatusMethod() {

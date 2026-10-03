@@ -1,0 +1,8 @@
+<configuration>
+    <appender name="STDOUT" class="io.micronaut.aot.std.sourcegen.LogbackConfigurationSourceGeneratorTest$CheckedConstructorAppender">
+        <encoder><pattern>%msg%n</pattern></encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
