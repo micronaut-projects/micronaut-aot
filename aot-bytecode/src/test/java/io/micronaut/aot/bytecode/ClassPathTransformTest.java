@@ -226,6 +226,54 @@ class ClassPathTransformTest {
     }
 
     @Test
+    void theOutputDirectoryMustNotHoldAnEntryOfTheClassPath() throws Exception {
+        Path jar = ClassFixtures.jar(temp.resolve("rerun/library.jar"), library);
+        Path output = temp.resolve("rerun/out");
+        ClassPathTransform.Result first = ClassPathTransform.run(ClassPathTransform.Request.builder()
+                .classPath(List.of(application, jar))
+                .outputDirectory(output)
+                .stripLocalVariables(List.of(jar))
+                .build());
+        Path copy = first.classPath().get(1);
+        assertEquals(output.resolve("1/library.jar"), copy);
+        byte[] written = Files.readAllBytes(copy);
+
+        // A run into the same directory would write its copy over the jar it reads.
+        IllegalArgumentException rerun = assertThrows(IllegalArgumentException.class,
+                () -> ClassPathTransform.Request.builder()
+                        .classPath(first.classPath())
+                        .outputDirectory(output)
+                        .stripLocalVariables(List.of(copy))
+                        .build());
+        assertEquals("The class path entry " + copy + " is inside the output directory " + output,
+                rerun.getMessage());
+        // An entry that is only read is rejected too, as is the output directory itself, and another spelling of it.
+        assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
+                .classPath(List.of(application, jar, copy)).outputDirectory(output)
+                .stripLocalVariables(List.of(jar)).build());
+        assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
+                .classPath(List.of(output, jar)).outputDirectory(output).stripLocalVariables(List.of(jar)).build());
+        Path link = temp.resolve("rerun/link");
+        try {
+            Files.createSymbolicLink(link, output);
+        } catch (UnsupportedOperationException | IOException e) {
+            link = null;
+        }
+        if (link != null) {
+            Path linked = link;
+            assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
+                    .classPath(List.of(application, jar, linked.resolve("1/library.jar"))).outputDirectory(output)
+                    .stripLocalVariables(List.of(jar)).build());
+            assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
+                    .classPath(List.of(application, jar, copy)).outputDirectory(linked)
+                    .stripLocalVariables(List.of(jar)).build());
+        }
+
+        assertArrayEquals(written, Files.readAllBytes(copy), "the first run's copy is left as it was");
+        assertEquals(List.of(copy), written(output));
+    }
+
+    @Test
     void twoJarsWithTheSameFileNameGetSeparateCopiesAndARunOverTheOutputRewritesNothing() throws Exception {
         Path first = ClassFixtures.jar(temp.resolve("same-name/a/library.jar"), library);
         Path second = ClassFixtures.jar(temp.resolve("same-name/b/library.jar"), library);

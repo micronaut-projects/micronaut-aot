@@ -239,7 +239,9 @@ public final class ClassPathTransform {
 
             /**
              * Where rewritten copies are written: each under a subdirectory named by its entry's index in the class
-             * path, with the entry's own file name. Required. The caller owns the directory and cleans it.
+             * path, with the entry's own file name. Required. The caller owns the directory and cleans it. It must
+             * not hold an entry of the class path, such as a copy that an earlier run wrote there, because a run
+             * replaces and deletes files in it.
              *
              * @param directory the output directory
              * @return this builder
@@ -288,6 +290,7 @@ public final class ClassPathTransform {
              * @throws IllegalStateException    if the class path or the output directory is missing, or no step is
              *                                  enabled
              * @throws IllegalArgumentException if a jar to strip is not an entry of the class path, or is a
+             *                                  directory, or if an entry of the class path is inside the output
              *                                  directory
              */
             public Request build() {
@@ -300,9 +303,14 @@ public final class ClassPathTransform {
                 if (stripLocalVariables.isEmpty()) {
                     throw new IllegalStateException("No step is enabled: name the jars to strip");
                 }
+                Path output = real(outputDirectory);
                 List<Path> normalized = new ArrayList<>(classPath.size());
                 for (Path entry : classPath) {
                     normalized.add(entry.toAbsolutePath().normalize());
+                    if (real(entry).startsWith(output)) {
+                        throw new IllegalArgumentException("The class path entry " + entry
+                                + " is inside the output directory " + outputDirectory);
+                    }
                 }
                 boolean[] stripped = new boolean[classPath.size()];
                 for (Path jar : stripLocalVariables) {
@@ -323,6 +331,19 @@ public final class ClassPathTransform {
                     }
                 }
                 return new Request(classPath, outputDirectory, stripped, parallelism);
+            }
+
+            /**
+             * A path with its symbolic links resolved when it exists, so that two spellings of one file compare
+             * equal; otherwise absolute and normalized, as nothing can be inside a directory that does not exist.
+             */
+            private static Path real(Path path) {
+                Path absolute = path.toAbsolutePath().normalize();
+                try {
+                    return absolute.toRealPath();
+                } catch (IOException e) {
+                    return absolute;
+                }
             }
         }
     }
