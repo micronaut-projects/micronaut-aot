@@ -15,6 +15,13 @@ that owns the behavior.
 - `aot-cli` contains the `micronaut-aot` command and classloader isolation used
   by build plugins.
 - `aot-bom` publishes dependency alignment.
+- `aot-bytecode` rewrites the class files of an application's runtime class
+  path for the Micronaut build plugins, which call it in-process
+  (`ClassPathTransform`); today it strips the local-variable tables of the
+  third-party jars they name. Its API is `@Internal`: keep anything they do
+  not call private or package-private. It is not an optimizer: it uses no
+  `AOTContext`, its main code depends on the JDK only, and it publishes no
+  dependency and no platform.
 - `src/main/docs/guide` contains the user guide. `toc.yml` is the navigation
   source of truth.
 
@@ -72,4 +79,8 @@ that owns the behavior.
 - CLI behavior changes: include `./gradlew :aot-cli:test`.
 - Standard optimizer changes: include `./gradlew :aot-std-optimizers:test` and
   `./gradlew :aot-std-optimizers:generateConfigProps`.
+- Class path transform changes: run `./gradlew :micronaut-aot-bytecode:test`
+  and `./gradlew :micronaut-aot-bytecode:classPathCorpusTest`, which rewrites the
+  class paths of real Micronaut applications and fails when a rewritten class
+  verifies worse than its original (the "Class path corpus" workflow runs it).
 - Broad changes or pre-PR confidence: run `./gradlew check` and `./gradlew docs`.
