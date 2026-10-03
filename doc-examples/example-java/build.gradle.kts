@@ -11,6 +11,7 @@ dependencies {
     implementation(platform(mn.micronaut.core.bom))
     implementation(mn.micronaut.context)
     implementation(projects.micronautAotCore)
+    implementation(projects.micronautAotBytecode)
 
     testImplementation(mnTest.junit.jupiter.api)
     testRuntimeOnly(mnTest.junit.jupiter.engine)

@@ -1,0 +1,78 @@
+/*
+ * Copyright 2017-2021 original authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// This script is using Groovy because of Gradle bug
+// https://github.com/gradle/gradle/issues/18663
+//
+// What every published module shares, without any dependency: a module that
+// must publish none (micronaut-aot-logback) applies this plugin directly, the
+// others apply io.micronaut.build.internal.aot-project.
+plugins {
+    id "io.micronaut.build.internal.base-module"
+}
+
+repositories {
+    mavenCentral()
+}
+
+micronautBuild {
+    enableProcessing = false
+    enableBom = false
+}
+
+pluginManager.withPlugin("java-test-fixtures") {
+    // Workaround for incorrect capabilities published because of the renaming
+    // of the modules at publication time
+    ["testFixturesApiElements", "testFixturesRuntimeElements"].each {
+        def outgoing = configurations.getByName(it).outgoing
+        outgoing.capability("$group:micronaut-${project.name}-test-fixtures:$projectVersion")
+    }
+}
+
+// compileOnlyApi dependencies end up as `<scope>compile</scope>` in Maven
+// which isn't correct so we need to fix them and mark them as provided
+publishing {
+    publications.withType(MavenPublication) {
+        pom.withXml {
+            configurations.all {
+                if (it.name == 'compileOnlyApi') {
+                    def compileOnlyApi = it
+                    def deps = compileOnlyApi.dependencies.findAll {
+                        it instanceof ExternalModuleDependency
+                    }.collect {
+                        it.name
+                    } as Set<String>
+                    asNode().dependencies.dependency.findAll { xmlDep ->
+                        if (xmlDep.artifactId.text() in deps) {
+                            def scope = xmlDep.scope[0]
+                            if (!scope) {
+                                scope = xmlDep.appendNode('scope')
+                            }
+                            scope.value = 'provided'
+                        }
+                    }
+                }
+            }
+            // We don't need any optional dependency in the POM, especially
+            // because those come from test fixtures
+            asNode().dependencies.each { dependencies ->
+                dependencies.children().removeAll(dependencies.dependency.findAll {
+                    def opt = it.optional[0]
+                    opt && opt.text() == 'true'
+                })
+            }
+        }
+    }
+}

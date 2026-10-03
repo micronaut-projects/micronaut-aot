@@ -2,8 +2,12 @@
 javapoet = "1.13.0"
 micronaut = "5.2.2"
 micronaut-picocli = "6.1.0"
+# The Micronaut platform of the class path corpus that aot-bytecode's classPathCorpusTest transforms: the one
+# micronaut-runner's sample applications use, so that its counts compare with micronaut-runner's.
+corpus-micronaut-platform = "5.1.5"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 micronaut-picocli = { module = "io.micronaut.picocli:micronaut-picocli-bom", version.ref = "micronaut-picocli" }
+corpus-micronaut-platform = { module = "io.micronaut.platform:micronaut-platform", version.ref = "corpus-micronaut-platform" }
