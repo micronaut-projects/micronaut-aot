@@ -128,7 +128,7 @@ A location that comes from any other property source is not applied, and the com
 
 Pass the location as a JVM system property, `java -Dlogger.config=custom.xml -jar app.jar`, or as the `LOGGER_CONFIG` environment variable instead.
 The opt-out does not help: the configurator then runs Logback's default lookup, which reads `logback.xml`, because Micronaut still calls the configurator instead of reading the location.
-https://github.com/micronaut-projects/micronaut-core/issues/13390[micronaut-core#13390] proposes that Micronaut's refresh apply such a location itself, whatever `Configurator` is registered.
+From Micronaut 5.3, the refresh applies such a location itself, whatever `Configurator` is registered: see https://github.com/micronaut-projects/micronaut-core/pull/13400[micronaut-core#13400].
 The build can read the packaged `application*` and `bootstrap*` files, and none of the sources above.
 So it stands down when one of those files might set the location, or might import configuration with `micronaut.config.import`, which the build does not follow, wherever the import points.
 
