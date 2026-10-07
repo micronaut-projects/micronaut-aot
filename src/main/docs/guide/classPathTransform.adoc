@@ -1,0 +1,113 @@
+The `micronaut-aot-bytecode` module rewrites the class files of an application's runtime class path at build time.
+A build plugin gives it the class path and gets back a class path to package: each entry as it was, or a rewritten copy of it.
+The one step it has today strips the local-variable tables of the third-party jars that the plugin names (<<classPathTransformStrip, Stripping local-variable tables>>).
+
+WARNING: This module is internal to the Micronaut build plugins, and the step is experimental: its API, its rules and its output may change in any release.
+
+Unlike the optimizers of Micronaut AOT, this module does not start the application, uses no `AOTContext`, and needs no AOT run.
+It reads class files and writes copies, and never loads a class of the class path.
+Its artifact, `io.micronaut.aot:micronaut-aot-bytecode`, has no dependencies, and needs Java 25 to run, for the ClassFile API.
+An application does not depend on it: its build plugin calls it.
+
+== How the build plugins call it
+
+This section describes what a build plugin does, for those who maintain one.
+`ClassPathTransform` is `@Internal`: it is not an API for applications.
+
+snippet::example.bytecode.ClassPathRewriting[project-base="doc-examples/example", source="main", indent="0", tags="strip"]
+
+The request takes:
+
+[cols="1,3"]
+|===
+|Input |Meaning
+
+|`classPath`
+|The runtime class path, in the order the application's class loader searches it, the application's own output first: jars or directories. Required. Every class on it is part of the model that a rewritten class is verified against, so pass the whole class path, not only the jars to rewrite.
+
+|`outputDirectory`
+|Where the rewritten copies go. Required. A copy is written under a subdirectory named by the index of its entry in `classPath`, with the entry's own file name, so two entries with the same file name never collide. The caller owns the directory and cleans it. It must not hold an entry of `classPath`, such as a copy that an earlier run wrote there, because a run replaces and deletes files in it: the request is rejected otherwise. Run again from the original class path into a clean directory.
+
+|`stripLocalVariables`
+|The jars whose classes are stripped: third-party jars only, each an entry of `classPath`. Never pass the application's output, a module of the application's own build, such as a Gradle project dependency or a module of the Maven reactor, or a directory: their classes are user code, and users debug their locals. The request is rejected when a jar is not an entry of `classPath`, when it is a directory, and when no jar is named, because the request then enables no step.
+
+|`parallelism`
+|The number of worker threads, by default the available processors. The output does not depend on it.
+|===
+
+The `Result` has:
+
+* `classPath()`: the class path to package, in the order of the request. A jar with a rewritten class is replaced by its copy, which keeps the jar's file name, so the `Class-Path` attribute of a manifest that names it stays valid. Every other entry is returned as it was given, and keeps its bytes and its hash.
+* `summary()`: one line to log, such as `Stripped local-variable tables from 7102 of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)`.
+* `warnings()`: lines to log as warnings, each on its own. Usually empty, never `null`.
+* `entries()`: what the step did to each jar named by `stripLocalVariables`, in class-path order, for the plugin to write under the build's reports in its own format; empty when the step stood down because of a library that reads local-variable tables. The counts are numbers, so nothing needs parsing. Each `Entry` has:
+** `path()`: the jar, as `classPath` gave it;
+** `classesStripped()`, `classesUnchanged()` and `fallbacks()`: the jar's classes that lost their tables, that were left as they were, and that were written as they were because the step failed on them or their rewrite verified worse. Each class of the jar counts once;
+** `bytesSaved()`: how many bytes smaller the stripped classes became, uncompressed;
+** `kept()`: why no class of the jar went through the step, such as `the jar is signed`, or empty;
+** `notes()`: one line per fallback, tab-separated: the jar, the class, the step and the first verification error or failure.
+
+`run` throws only when it cannot read a jar it rewrites, or cannot write a copy.
+A class that it cannot parse, rewrite or verify is written as it was, and a note of its jar's entry names it.
+The module logs nothing.
+
+A copy holds every entry of the original jar, in the same order, with the same name, comment, time and compression method, and the manifest as it was.
+Only the classes that a step rewrote change; every other entry keeps its content.
+`DEFLATED` entries are compressed again, so the copy's compressed bytes depend on the JDK that writes it.
+A signed jar, and a jar that holds an entry name twice, are left as they are.
+
+The rewritten bytes depend on the JDK build that runs the transform, for example through the order of the constant pool.
+The output is reproducible, whatever the parallelism, only with the same JDK build.
+A plugin therefore runs the transform on the project's Java toolchain and makes the toolchain's version an input of its task.
+
+The transform belongs to packaging, not to development.
+A plugin applies it to fat JARs and Docker images, and runs it before anything that records the jars' sizes or modification times, such as the training of a JDK AOT cache.
+It does not apply it to run tasks, tests, IDE class paths or native images, which do not package the class path or do not load class files at run time.
+
+[[classPathTransformStrip]]
+== Stripping local-variable tables
+
+Compilers write the names and types of local variables into class files, for debuggers.
+At run time, only debuggers, the variable names in helpful `NullPointerException` messages and a few libraries that parse class files read them.
+Without a JDK AOT cache, the JVM still parses them, and the constant-pool entries that only they use, for every class it loads.
+The step removes them from the classes of the jars named by `stripLocalVariables`.
+The jars get somewhat smaller, and a start without a JDK AOT cache slightly faster.
+With a JDK AOT cache, which holds classes already parsed, the step makes no difference worth having, and it is off unless a plugin turns it on.
+
+The step drops:
+
+* `LocalVariableTable`, `LocalVariableTypeTable` and `CharacterRangeTable`;
+* the type annotations of method code, which hold bytecode offsets that a rebuilt constant pool can move;
+* `RuntimeInvisibleTypeAnnotations` on classes, fields and methods, which nothing reads at run time.
+
+It then rebuilds the constant pool, which removes the names and signatures of the locals: dropping the attributes alone would save almost nothing.
+
+It keeps `LineNumberTable`, `SourceFile`, `SourceDebugExtension`, `MethodParameters`, `Signature` and every other annotation.
+Stack traces keep their `File.java:N` frames, and reflection sees the same parameter names, generic signatures and annotations.
+
+It leaves a class as it was:
+
+* when the class has an attribute that the JDK does not know, because such an attribute may hold constant-pool indexes that a rebuilt pool would break;
+* when the class is a `module-info`;
+* when the jar is signed, because its manifest holds a digest of every entry;
+* when the rewritten class is not smaller;
+* when the step fails on the class, or when the rewritten class verifies worse than the original.
+
+Each rewritten class is verified with `ClassFile.verify` against a model of the whole class path, never against the class path of the build tool.
+A class that already failed to verify, for example because it references an optional dependency that is absent, is accepted when the rewrite fails in the same way.
+
+=== Costs
+
+All of them fall on the code of the stripped jars only:
+
+* A helpful `NullPointerException` message names a local variable by position, `because "<local1>" is null`. The line number is still there.
+* A debugger shows no local-variable names.
+* `getDeclaredMethods()` can return a class's methods in another order. That order is unspecified, but code that relies on it can notice, such as a JSON mapper that orders the properties of a dependency's type by method.
+* A rewritten class has new bytes, and software composition analysis tools may report the rewritten jars as modified.
+* The output is reproducible only with the same JDK build. A Docker image layer that holds the rewritten jars changes when the JDK build that runs the transform changes.
+
+=== Libraries that read local-variable tables
+
+Paranamer's `BytecodeReadingParanamer`, AspectJ's weaver and Spring's `LocalVariableTableParameterNameDiscoverer` (before Spring 6.1) read local-variable tables at run time.
+When any entry of `classPath` contains one of them, by entry name, the step strips nothing, and `warnings()` holds one line that names the entry and the class.
+A plugin documents how to silence the warning: turn its option off.

@@ -1,7 +1,10 @@
 [versions]
 javapoet = "1.13.0"
-micronaut = "5.2.2"
+micronaut = "5.2.13"
 micronaut-picocli = "6.1.0"
+# The Micronaut platform of the class path corpus that aot-bytecode's classPathCorpusTest transforms: the one
+# micronaut-runner's sample applications use, so that its counts compare with micronaut-runner's.
+corpus-micronaut-platform = "5.1.5"
 # The Logback that aot-logback's front end is compiled against and its differential tests run on. It has to be
 # inside LogbackPrecompiler's tested range, which the Logback of the Micronaut catalog is not yet. Widen that
 # range only by testing another version here.
@@ -11,4 +14,5 @@ logback-precompiler = "1.5.37"
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 micronaut-picocli = { module = "io.micronaut.picocli:micronaut-picocli-bom", version.ref = "micronaut-picocli" }
+corpus-micronaut-platform = { module = "io.micronaut.platform:micronaut-platform", version.ref = "corpus-micronaut-platform" }
 logback-precompiler-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-precompiler" }

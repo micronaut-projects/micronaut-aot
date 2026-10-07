@@ -17,6 +17,7 @@ dependencies {
     implementation(platform(mn.micronaut.core.bom))
     implementation(mn.micronaut.context)
     implementation(projects.micronautAotCore)
+    implementation(projects.micronautAotBytecode)
     implementation(projects.micronautAotLogback)
 
     logbackApplicationRuntime(libs.logback.precompiler.classic)

@@ -8,4 +8,6 @@ logbackPrecompiler:
   title: Precompiling logback.xml
 diagnosticsReport:
   title: Diagnostics Report
+classPathTransform:
+  title: Rewriting the Runtime Class Path
 repository: Repository
