@@ -1,7 +1,9 @@
 # This workflow is specific to micronaut-aot and is NOT synced from micronaut-project-template.
 # It runs aot-bytecode's ClassPathTransform over the runtime class paths of real Micronaut applications and fails when
-# a rewritten class verifies worse than the class it replaced. Resolving those class paths downloads a few hundred
-# jars, so it is not part of check: it runs when aot-bytecode or its corpus changes, weekly and on demand.
+# a rewritten class verifies worse than the class it replaced, or a generated class does not verify. It then desugars a
+# small Micronaut application with its runtime class path and starts it under -Xverify:all. Resolving those class paths
+# downloads a few hundred jars, so it is not part of check: it runs when aot-bytecode or its corpus changes, weekly and
+# on demand.
 name: Class path corpus
 on:
   push:
@@ -56,13 +58,15 @@ jobs:
                 '' }}
 
       - name: "🔬 Transform and verify"
-        run: ./gradlew :micronaut-aot-bytecode:classPathCorpusTest --no-daemon
+        run: ./gradlew :micronaut-aot-bytecode:classPathCorpusTest :micronaut-aot-bytecode:endToEndTest --no-daemon
 
       - name: "📜 Upload the test report"
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: class-path-corpus-report
-          path: aot-bytecode/build/reports/tests/classPathCorpusTest/**
+          path: |
+            aot-bytecode/build/reports/tests/classPathCorpusTest/**
+            aot-bytecode/build/reports/tests/endToEndTest/**
           if-no-files-found: warn
           retention-days: 30
