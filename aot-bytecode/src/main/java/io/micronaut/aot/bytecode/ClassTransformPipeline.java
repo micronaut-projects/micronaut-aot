@@ -15,6 +15,7 @@
  */
 package io.micronaut.aot.bytecode;
 
+import java.io.IOException;
 import java.lang.classfile.ClassBuilder;
 import java.lang.classfile.ClassElement;
 import java.lang.classfile.ClassFile;
@@ -22,10 +23,14 @@ import java.lang.classfile.ClassHierarchyResolver;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -34,10 +39,19 @@ import java.util.regex.Pattern;
  * verifies the result and hands it back once.
  *
  * <h2>Steps</h2>
- * <p>A {@link Step} supplies a pre-filter that sees the entry name and the bytes as read from the jar, a check of
+ * <p>A {@link Step} supplies a pre-filter that sees the entry name and the bytes as read from the entry, a check of
  * whether it changes a parsed class, and the {@link ClassTransform} that makes the change. Enabled steps run in a
- * fixed order; their transforms are composed with {@link ClassTransform#andThen(ClassTransform)}, so a class is
- * parsed and written once whatever runs.</p>
+ * fixed order: {@linkplain LambdaDesugarer desugaring lambdas} first, then
+ * {@linkplain LocalVariableStripper stripping}; their transforms are composed with
+ * {@link ClassTransform#andThen(ClassTransform)}, so a class is parsed and written once whatever runs.</p>
+ *
+ * <h2>Planned nests</h2>
+ * <p>Desugaring changes several classes together: a host, its nest host and the classes it generates. It therefore
+ * {@linkplain JarRun#plan(JarClasses) plans} a whole entry before any of it is written, because a nest host may come
+ * after its members, and the pipeline treats each planned nest as a unit. Every enabled step runs over the unit's
+ * existing classes, the generated classes skip the later steps, and the gate verifies every class of the unit. The
+ * accepted bytes are kept until the entry loop reaches them ({@link JarRun#planned(String)}), and a host's generated
+ * classes are written right after it.</p>
  *
  * <h2>Rules the pipeline owns</h2>
  * <ol type="a">
@@ -61,17 +75,20 @@ import java.util.regex.Pattern;
  * typically because it references an optional dependency that is not on the class path, or because another jar's
  * copy of a class it uses wins. Two errors are the same when their messages differ at most in the bytecode offset
  * they name ({@link #grown(List, List)}): a rebuilt constant pool moves the instructions of a method, and an error
- * the class already had moves with them.</p>
+ * the class already had moves with them. A generated class has no original, so it must verify cleanly.</p>
  *
  * <p>The fallback rule is the same for every step. When step S throws, or the rewrite verifies worse, the class
  * starts again from its original bytes without S (for a verification failure, without the earliest step that
- * changed the class) and is gated again. Only if that attempt fails too is the class written as it was. One note
- * names the class, the dropped step and the first error; a false positive costs one step on one class.</p>
+ * changed the class, which is desugaring whenever it did) and is gated again. Only if that attempt fails too is the
+ * class written as it was. One note names the class, the dropped step and the first error; a false positive costs
+ * one step on one class. A planned nest falls back as a whole: without desugaring it is no unit any more, and its
+ * classes go through the entry loop for the other steps one by one; without another step, the nest is desugared
+ * again and gated again.</p>
  *
- * <p>The pipeline never logs. Each jar's {@link JarRun} counts and notes what happened, and hands its
+ * <p>The pipeline never logs. Each entry's {@link JarRun} counts and notes what happened, and hands its
  * {@link JarReport} back to the caller, which reports them in class-path order. The output does not depend on the
  * thread count, and a pipeline is safe to share between threads: it holds immutable ClassFile contexts and the
- * class path model, and all per-jar state lives in the jar's run.</p>
+ * class path model, and all per-entry state lives in the entry's run.</p>
  */
 final class ClassTransformPipeline {
 
@@ -91,6 +108,9 @@ final class ClassTransformPipeline {
     private static final Pattern BYTECODE_OFFSET = Pattern.compile("@\\d+");
 
     private final List<Step> steps;
+    /** The step that plans whole nests, and its position among the steps; {@code null} and -1 without one. */
+    private final LambdaDesugarer desugarer;
+    private final int desugarIndex;
     private final ClassFile rebuilt;
     private final ClassFile shared;
     private final Function<byte[], List<String>> verifier;
@@ -119,6 +139,16 @@ final class ClassTransformPipeline {
             throw new IllegalArgumentException("A class transform pipeline needs at least one step");
         }
         this.verifier = Objects.requireNonNull(verifier, "verifier");
+        LambdaDesugarer planning = null;
+        int planningIndex = -1;
+        for (int i = 0; i < this.steps.size(); i++) {
+            if (this.steps.get(i) instanceof LambdaDesugarer found) {
+                planning = found;
+                planningIndex = i;
+            }
+        }
+        this.desugarer = planning;
+        this.desugarIndex = planningIndex;
         ClassFile.ClassHierarchyResolverOption resolver =
                 ClassFile.ClassHierarchyResolverOption.of(Objects.requireNonNull(hierarchy, "hierarchy"));
         List<ClassFile.Option> rebuiltOptions = new ArrayList<>(LocalVariableStripper.OPTIONS);
@@ -193,9 +223,9 @@ final class ClassTransformPipeline {
     }
 
     /**
-     * Starts the run over one jar. The run is confined to the thread that rewrites the jar.
+     * Starts the run over one class path entry. The run is confined to the thread that rewrites the entry.
      *
-     * @param layer the jar
+     * @param layer the entry
      * @return its run
      */
     JarRun start(Layer layer) {
@@ -203,43 +233,53 @@ final class ClassTransformPipeline {
     }
 
     /**
-     * Adds up the reports of every jar, one total per step, in step order.
+     * Adds up the reports of every entry, one total per step, in step order.
      *
-     * @param reports one report per jar, in class-path order
+     * @param reports one report per entry, in class-path order
      * @return the totals, each named after its step
      */
     List<StepCount> totals(List<JarReport> reports) {
         List<StepCount> totals = new ArrayList<>(steps.size());
         for (int i = 0; i < steps.size(); i++) {
-            int rewritten = 0;
-            int unchanged = 0;
-            int fallbacks = 0;
-            long saved = 0;
-            for (JarReport report : reports) {
-                StepCount count = report.counts().get(i);
-                rewritten += count.rewritten();
-                unchanged += count.unchanged();
-                fallbacks += count.fallbacks();
-                saved += count.bytesSaved();
-            }
-            totals.add(new StepCount(steps.get(i).name(), rewritten, unchanged, fallbacks, saved));
+            totals.add(total(i, reports));
         }
         return totals;
     }
 
     /**
-     * The line the caller logs for each step once every jar is rewritten, in step order.
+     * The line the caller logs for each step once every entry is rewritten, in step order. Each step is told about
+     * the entries it ran over only.
      *
-     * @param reports one report per jar, in class-path order
+     * @param reports one report per entry, in class-path order
      * @return one line per step
      */
     List<String> summaries(List<JarReport> reports) {
-        List<StepCount> totals = totals(reports);
         List<String> lines = new ArrayList<>(steps.size());
         for (int i = 0; i < steps.size(); i++) {
-            lines.add(steps.get(i).summary(totals.get(i), reports.size()));
+            List<JarReport> ran = new ArrayList<>(reports.size());
+            for (JarReport report : reports) {
+                if (report.ran().get(i)) {
+                    ran.add(report);
+                }
+            }
+            lines.add(steps.get(i).summary(total(i, ran), ran));
         }
         return lines;
+    }
+
+    private StepCount total(int step, List<JarReport> reports) {
+        int rewritten = 0;
+        int unchanged = 0;
+        int fallbacks = 0;
+        long saved = 0;
+        for (JarReport report : reports) {
+            StepCount count = report.counts().get(step);
+            rewritten += count.rewritten();
+            unchanged += count.unchanged();
+            fallbacks += count.fallbacks();
+            saved += count.bytesSaved();
+        }
+        return new StepCount(steps.get(step).name(), rewritten, unchanged, fallbacks, saved);
     }
 
     private static String withoutOffset(String error) {
@@ -284,16 +324,17 @@ final class ClassTransformPipeline {
         String name();
 
         /**
-         * Whether the step applies to any class of a jar at all.
+         * Whether the step runs over the classes of a class path entry at all. Its classes are then counted for the
+         * step, and rewritten unless the entry is a signed jar, which no step rewrites.
          *
-         * @param layer the jar
+         * @param layer the entry
          * @return whether it applies
          */
         boolean appliesTo(Layer layer);
 
         /**
-         * A cheap pre-filter on the bytes as read from the jar. A class no enabled step's filter matches is written
-         * byte for byte, without being parsed.
+         * A cheap pre-filter on the bytes as read from the entry. A class no enabled step's filter matches is
+         * written byte for byte, without being parsed.
          *
          * @param entryName the entry name
          * @param bytes     the class bytes
@@ -339,33 +380,109 @@ final class ClassTransformPipeline {
         }
 
         /**
-         * The line the caller logs for the step once every jar is rewritten.
+         * The line the caller logs for the step once every entry is rewritten.
          *
-         * @param total what the step did, over every jar
-         * @param jars  the number of jars the pipeline ran over
+         * @param total   what the step did, over every entry it ran over
+         * @param reports the reports of those entries, in class-path order
          * @return the line
          */
-        String summary(StepCount total, int jars);
+        String summary(StepCount total, List<JarReport> reports);
     }
 
     /**
-     * The jar a run works on.
+     * The class path entry a run works on.
      *
      * @param name       what notes and reports call it: the class path entry as the caller gave it
-     * @param signed     whether it carries signature files
+     * @param index      its position in the class path, which the class path model numbers its entries by
+     * @param signed     whether it is a jar that carries signature files
      * @param thirdParty whether the caller declared it a third-party jar, which the strip step applies to
      */
-    record Layer(String name, boolean signed, boolean thirdParty) {
+    record Layer(String name, int index, boolean signed, boolean thirdParty) {
     }
 
     /**
-     * What one step did to one jar.
+     * The classes of one class path entry, as a planning step reads them before any entry is written.
+     */
+    interface JarClasses {
+
+        /**
+         * Every class entry, in entry order; a name the entry carries twice is listed once.
+         *
+         * @return the entries
+         */
+        List<ClassEntry> classes();
+
+        /**
+         * The uncompressed size of an entry.
+         *
+         * @param entryName the entry name
+         * @return its size, or {@code -1} when the entry has no class of that name
+         */
+        long size(String entryName);
+
+        /**
+         * Whether the entry's {@code META-INF/versions/N/} variants count: a jar whose manifest says
+         * {@code Multi-Release: true}.
+         *
+         * @return whether it is multi-release
+         */
+        boolean multiRelease();
+
+        /**
+         * Whether the entry is written as it is whatever the steps would do, such as a jar that holds an entry name
+         * twice, so that none of its classes can be rewritten.
+         *
+         * @return whether the entry is kept whole
+         */
+        boolean kept();
+
+        /**
+         * Reads a class, checked against its recorded size and CRC-32 where the source records them.
+         *
+         * @param entryName the entry name
+         * @return its bytes
+         * @throws IOException if it cannot be read
+         */
+        byte[] read(String entryName) throws IOException;
+    }
+
+    /**
+     * One class entry of a class path entry.
+     *
+     * @param name its entry name
+     * @param size its uncompressed size
+     */
+    record ClassEntry(String name, long size) {
+    }
+
+    /**
+     * A class a step generated.
+     *
+     * @param name  its entry name
+     * @param bytes its content
+     */
+    record Generated(String name, byte[] bytes) {
+    }
+
+    /**
+     * What is written for a class of a planned nest.
+     *
+     * @param bytes     the class's accepted bytes, the original array when nothing changed it
+     * @param generated the classes written right after it, in order
+     * @param rewritten whether a step changed the class, so {@code bytes} are not the original's
+     */
+    record Planned(byte[] bytes, List<Generated> generated, boolean rewritten) {
+    }
+
+    /**
+     * What one step did to one class path entry.
      *
      * @param step       the step's name
      * @param rewritten  the classes it rewrote
      * @param unchanged  the classes it left alone
      * @param fallbacks  the classes it gave up on
-     * @param bytesSaved how much smaller the classes it rewrote became
+     * @param bytesSaved how much smaller the classes it rewrote became; for desugaring, less the size of the
+     *                   classes it generated
      */
     record StepCount(String step, int rewritten, int unchanged, int fallbacks, long bytesSaved) {
 
@@ -380,50 +497,114 @@ final class ClassTransformPipeline {
     }
 
     /**
-     * What the pipeline did to one jar.
+     * What desugaring did to the lambda call sites of one class path entry.
      *
-     * @param jar    what the run calls the jar
-     * @param counts one count per enabled step, in step order
-     * @param notes  one line per fallback, tab-separated: the jar, the class, the dropped step and the first error
+     * @param sites         the sites rewritten
+     * @param generated     the classes generated
+     * @param bridges       the bridge methods added
+     * @param nestFallbacks the planned nests that fell back to their original classes
+     * @param left          the sites left as {@code invokedynamic}, by reason, without the reasons that have none
      */
-    record JarReport(String jar, List<StepCount> counts, List<String> notes) {
+    record Desugared(int sites, int generated, int bridges, int nestFallbacks,
+                     Map<LambdaDesugarer.Reason, Integer> left) {
+
+        /**
+         * Makes the map immutable, in the order of the reasons.
+         *
+         * @param sites         the sites rewritten
+         * @param generated     the classes generated
+         * @param bridges       the bridges added
+         * @param nestFallbacks the nests that fell back
+         * @param left          the sites left, by reason
+         */
+        Desugared {
+            Map<LambdaDesugarer.Reason, Integer> ordered = new EnumMap<>(LambdaDesugarer.Reason.class);
+            ordered.putAll(left);
+            left = Collections.unmodifiableMap(ordered);
+        }
+
+        /**
+         * The number of sites left as {@code invokedynamic}.
+         *
+         * @return the sum over every reason
+         */
+        int leftTotal() {
+            int total = 0;
+            for (int count : left.values()) {
+                total += count;
+            }
+            return total;
+        }
+    }
+
+    /**
+     * What the pipeline did to one class path entry.
+     *
+     * @param jar       what the run calls the entry
+     * @param counts    one count per enabled step, in step order; zero for a step that did not run over the entry
+     * @param ran       for each step, in step order, whether it ran over the entry
+     * @param notes     one line per fallback, tab-separated: the entry, the class or {@code the nest of} its nest
+     *                  host, the dropped step and the first error
+     * @param desugared what desugaring did to the entry's lambda call sites, which in a signed jar is only to count
+     *                  them, or {@code null} when the pipeline does not desugar
+     */
+    record JarReport(String jar, List<StepCount> counts, List<Boolean> ran, List<String> notes,
+                     Desugared desugared) {
 
         /**
          * Makes the lists immutable.
          *
-         * @param jar    the jar
-         * @param counts the counts
-         * @param notes  the notes
+         * @param jar       the entry
+         * @param counts    the counts
+         * @param ran       which steps ran over it
+         * @param notes     the notes
+         * @param desugared what desugaring did
          */
         JarReport {
             counts = List.copyOf(counts);
+            ran = List.copyOf(ran);
             notes = List.copyOf(notes);
         }
     }
 
     /**
-     * The pipeline's work on one jar. It is confined to one thread: it holds the jar's counters and its notes.
+     * The pipeline's work on one class path entry. It is confined to one thread: it holds the entry's counters, its
+     * notes and the accepted classes of its planned nests.
      */
     final class JarRun {
 
         private final Layer layer;
         private final boolean[] applies;
+        /** Whether a step counts this entry's classes, because it runs over the entry. */
+        private final boolean[] counted;
+        /** Whether a step other than the planning one applies, so classes are worth reading in the entry loop. */
         private final boolean any;
         private final int[] rewritten;
         private final int[] unchanged;
         private final int[] fallbacks;
         private final long[] saved;
         private final List<String> notes = new ArrayList<>();
+        /** The accepted classes of the planned nests, by entry name, until the entry loop takes them. */
+        private final Map<String, Planned> planned = new HashMap<>();
+        /** The classes of the nests that fell back from desugaring, which the entry loop processes as usual. */
+        private final Set<String> declined = new HashSet<>();
+        private final int[] left = new int[LambdaDesugarer.Reason.values().length];
+        private int sites;
+        private int generated;
+        private int bridges;
+        private int nestFallbacks;
 
         private JarRun(Layer layer) {
             this.layer = Objects.requireNonNull(layer, "layer");
             int count = steps.size();
             applies = new boolean[count];
+            counted = new boolean[count];
             boolean applicable = false;
             for (int i = 0; i < count; i++) {
+                counted[i] = steps.get(i).appliesTo(layer);
                 // Rule d: nothing in a signed jar is rewritten, whatever the step says.
-                applies[i] = !layer.signed() && steps.get(i).appliesTo(layer);
-                applicable |= applies[i];
+                applies[i] = !layer.signed() && counted[i];
+                applicable |= applies[i] && i != desugarIndex;
             }
             any = applicable;
             rewritten = new int[count];
@@ -433,17 +614,29 @@ final class ClassTransformPipeline {
         }
 
         /**
-         * Whether any step applies to this jar, so that its classes are worth reading at all.
+         * Whether a step other than the planning one applies to this entry, so that its classes are worth reading
+         * one by one at all.
          *
-         * @return whether a step applies
+         * @return whether such a step applies
          */
         boolean applies() {
             return any;
         }
 
         /**
+         * Whether the entry may change: a step other than the planning one applies, or a planned nest was accepted.
+         * An entry that may not change need not be copied.
+         *
+         * @return whether a class of the entry may be rewritten
+         */
+        boolean rewrites() {
+            return any || !planned.isEmpty();
+        }
+
+        /**
          * Whether a class of this size is read into memory and given to {@link #process(String, byte[])}. A class
-         * that is not must be passed to {@link #pass()} instead.
+         * that is not must be passed to {@link #pass(String)} instead. A class of a planned nest is neither:
+         * {@link #planned(String)} hands back what to write for it.
          *
          * @param size the class's uncompressed size
          * @return whether the class goes through the pipeline
@@ -453,65 +646,253 @@ final class ClassTransformPipeline {
         }
 
         /**
-         * Counts a class that is written without being read: it is too large, or no step applies to the jar.
+         * Counts a class that is written without being read: it is too large, no step applies to the entry, or no
+         * step but the planning one does and the class is not part of an accepted nest. A class whose nest fell back
+         * from desugaring counts as a fallback of that step.
+         *
+         * @param entryName the class's entry name
          */
-        void pass() {
+        void pass(String entryName) {
             for (int i = 0; i < unchanged.length; i++) {
-                unchanged[i]++;
+                if (!counted[i]) {
+                    continue;
+                }
+                if (i == desugarIndex && declined.contains(entryName)) {
+                    fallbacks[i]++;
+                } else {
+                    unchanged[i]++;
+                }
             }
+        }
+
+        /**
+         * Plans the entry before any of its classes is written, when a step plans whole nests: each planned nest is
+         * rewritten, verified and either accepted or given up on here, and its classes wait for
+         * {@link #planned(String)}. In a signed jar, which no step rewrites, the planning step only counts the
+         * lambda call sites it leaves.
+         *
+         * @param classes the entry's classes
+         * @throws IOException if a class cannot be read
+         */
+        void plan(JarClasses classes) throws IOException {
+            if (desugarer == null) {
+                return;
+            }
+            LambdaDesugarer.JarPlan plan = desugarer.plan(layer, classes);
+            for (int reason = 0; reason < left.length; reason++) {
+                left[reason] += plan.left()[reason];
+            }
+            if (!applies[desugarIndex]) {
+                // Rule d: whatever the plan says, nothing of a signed jar is rewritten.
+                return;
+            }
+            for (LambdaDesugarer.Unit unit : plan.units()) {
+                run(unit);
+            }
+        }
+
+        /**
+         * Whether this run plans nests, or counts the lambda call sites of a signed jar, so that
+         * {@link #plan(JarClasses)} has work to do.
+         *
+         * @return whether the pipeline has a planning step
+         */
+        boolean plans() {
+            return desugarer != null;
+        }
+
+        /**
+         * Takes what is written for a class of an accepted nest. Each class is handed out once.
+         *
+         * @param entryName the class's entry name
+         * @return the class's bytes and the generated classes that follow it, or {@code null} when the class is not
+         * part of an accepted nest
+         */
+        Planned planned(String entryName) {
+            return planned.isEmpty() ? null : planned.remove(entryName);
         }
 
         /**
          * Runs the enabled steps over one class.
          *
          * @param entryName the class's entry name
-         * @param original  its bytes, as read from the jar
+         * @param original  its bytes, as read from the entry
          * @return the bytes to write: {@code original} itself when no step changed the class
          */
         byte[] process(String entryName, byte[] original) {
+            // The planning step is no candidate here: it changes a class only as part of a planned nest.
             List<Step> candidates = candidates(entryName, original, null);
             if (candidates.isEmpty()) {
-                pass();
+                pass(entryName);
                 return original;
             }
-            Attempt first = attempt(original, candidates);
+            Attempt first = attempt(original, candidates, null);
             if (first.failed == null) {
-                return settle(original, first, null, null);
+                return settle(entryName, original, first, null, null);
             }
             List<Step> remaining = new ArrayList<>(candidates);
             remaining.remove(first.failed);
-            Attempt second = remaining.isEmpty() ? Attempt.UNCHANGED : attempt(original, remaining);
+            Attempt second = remaining.isEmpty() ? Attempt.UNCHANGED : attempt(original, remaining, null);
             String error = first.error;
             if (second.failed != null) {
                 error = oneLine(error + "; the class was kept as it was because " + second.failed.name()
                         + " failed too: " + second.error);
             }
             notes.add(String.join("\t", oneLine(layer.name()), oneLine(entryName), first.failed.name(), error));
-            return settle(original, second.failed == null ? second : Attempt.UNCHANGED, first.failed,
+            return settle(entryName, original, second.failed == null ? second : Attempt.UNCHANGED, first.failed,
                     second.failed);
         }
 
         /**
-         * What the pipeline did to this jar.
+         * What the pipeline did to this entry.
          *
          * @return the report
          */
         JarReport report() {
             List<StepCount> counts = new ArrayList<>(steps.size());
+            List<Boolean> ran = new ArrayList<>(steps.size());
             for (int i = 0; i < steps.size(); i++) {
                 counts.add(new StepCount(steps.get(i).name(), rewritten[i], unchanged[i], fallbacks[i], saved[i]));
+                ran.add(counted[i]);
             }
-            return new JarReport(layer.name(), counts, notes);
+            Desugared desugared = null;
+            if (plans()) {
+                Map<LambdaDesugarer.Reason, Integer> reasons = new EnumMap<>(LambdaDesugarer.Reason.class);
+                for (LambdaDesugarer.Reason reason : LambdaDesugarer.Reason.values()) {
+                    if (left[reason.ordinal()] > 0) {
+                        reasons.put(reason, left[reason.ordinal()]);
+                    }
+                }
+                desugared = new Desugared(sites, generated, bridges, nestFallbacks, reasons);
+            }
+            return new JarReport(layer.name(), counts, ran, notes, desugared);
         }
 
         /**
-         * The steps, other than {@code without}, whose pre-filter matches a class.
+         * Rewrites one planned nest as a unit, under the fallback rule.
+         */
+        private void run(LambdaDesugarer.Unit unit) {
+            UnitAttempt first = attempt(unit, null);
+            if (first.failed == null) {
+                accept(unit, first, null, null);
+                return;
+            }
+            String error = first.error;
+            UnitAttempt second = null;
+            if (first.failed != desugarer) {
+                // Without desugaring the nest is no unit any more: the entry loop processes its classes one by one.
+                // Without another step, the nest is desugared again, and gated again.
+                second = attempt(unit, first.failed);
+                if (second.failed != null) {
+                    error = oneLine(error + "; the nest was kept as it was because " + second.failed.name()
+                            + " failed too: " + second.error);
+                }
+            }
+            notes.add(String.join("\t", oneLine(layer.name()), "the nest of " + oneLine(unit.nestHostEntry()),
+                    first.failed.name(), error));
+            if (first.failed == desugarer) {
+                declined.addAll(unit.classes().keySet());
+                abandon(unit);
+            } else if (second.failed == null) {
+                accept(unit, second, first.failed, null);
+            } else {
+                accept(unit, null, first.failed, second.failed);
+                abandon(unit);
+            }
+        }
+
+        private void abandon(LambdaDesugarer.Unit unit) {
+            nestFallbacks++;
+            left[LambdaDesugarer.Reason.NEST_FALLBACK.ordinal()] += unit.sites();
+        }
+
+        /**
+         * Runs every enabled step but one over the existing classes of a nest, generates its classes and verifies
+         * them all.
+         *
+         * @param without the step to leave out, or {@code null}
+         */
+        private UnitAttempt attempt(LambdaDesugarer.Unit unit, Step without) {
+            Map<String, Attempt> results = new HashMap<>();
+            for (Map.Entry<String, LambdaDesugarer.ClassPlan> entry : unit.classes().entrySet()) {
+                byte[] original = entry.getValue().original();
+                List<Step> candidates = candidates(entry.getKey(), original, without);
+                candidates.add(0, desugarer);
+                Attempt result = attempt(original, candidates, entry.getValue());
+                if (result.failed != null) {
+                    return UnitAttempt.failed(result.failed, entry.getKey() + ": " + result.error);
+                }
+                results.put(entry.getKey(), result);
+            }
+            Map<String, List<Generated>> generatedClasses;
+            try {
+                generatedClasses = unit.generate();
+            } catch (RuntimeException | LinkageError | AssertionError | StackOverflowError failure) {
+                return UnitAttempt.failed(desugarer, unit.nestHostEntry() + ": " + describe(failure));
+            }
+            for (List<Generated> classes : generatedClasses.values()) {
+                for (Generated generatedClass : classes) {
+                    // A generated class has no original: any error in it is growth.
+                    List<String> errors = verifier.apply(generatedClass.bytes());
+                    if (!errors.isEmpty()) {
+                        return UnitAttempt.failed(desugarer, generatedClass.name() + ": verification: "
+                                + errors.get(0));
+                    }
+                }
+            }
+            return new UnitAttempt(results, generatedClasses, null, null);
+        }
+
+        /**
+         * Keeps a nest's classes for the entry loop and counts them.
+         *
+         * @param accepted the attempt that was accepted, or {@code null} to keep every class as it was
+         * @param first    the step the nest dropped, or {@code null}
+         * @param second   the second step it dropped, or {@code null}
+         */
+        private void accept(LambdaDesugarer.Unit unit, UnitAttempt accepted, Step first, Step second) {
+            for (Map.Entry<String, LambdaDesugarer.ClassPlan> entry : unit.classes().entrySet()) {
+                String entryName = entry.getKey();
+                byte[] original = entry.getValue().original();
+                Attempt result = accepted == null ? Attempt.UNCHANGED : accepted.results.get(entryName);
+                byte[] output = result.bytes == null ? original : result.bytes;
+                for (int i = 0; i < steps.size(); i++) {
+                    Step step = steps.get(i);
+                    if (!counted[i]) {
+                        continue;
+                    }
+                    if ((step == first || step == second)
+                            && (step == desugarer || applies[i] && step.matches(entryName, original))) {
+                        fallbacks[i]++;
+                    } else if (result.active.contains(step)) {
+                        rewritten[i]++;
+                        saved[i] += original.length - output.length;
+                    } else {
+                        unchanged[i]++;
+                    }
+                }
+                List<Generated> following = accepted == null ? List.of()
+                        : accepted.generated.getOrDefault(entryName, List.of());
+                for (Generated generatedClass : following) {
+                    saved[desugarIndex] -= generatedClass.bytes().length;
+                }
+                generated += following.size();
+                planned.put(entryName, new Planned(output, following, output != original));
+            }
+            if (accepted != null) {
+                sites += unit.sites();
+                bridges += unit.bridges();
+            }
+        }
+
+        /**
+         * The steps, other than the planning one and {@code without}, whose pre-filter matches a class.
          */
         private List<Step> candidates(String entryName, byte[] original, Step without) {
             List<Step> candidates = new ArrayList<>(steps.size());
             for (int i = 0; i < steps.size(); i++) {
                 Step step = steps.get(i);
-                if (applies[i] && step != without && step.matches(entryName, original)) {
+                if (applies[i] && i != desugarIndex && step != without && step.matches(entryName, original)) {
                     candidates.add(step);
                 }
             }
@@ -521,11 +902,16 @@ final class ClassTransformPipeline {
         /**
          * Counts what happened to one class and returns the bytes to write.
          */
-        private byte[] settle(byte[] original, Attempt accepted, Step firstFailure, Step secondFailure) {
+        private byte[] settle(String entryName, byte[] original, Attempt accepted, Step firstFailure,
+                              Step secondFailure) {
             byte[] output = accepted.bytes == null ? original : accepted.bytes;
             for (int i = 0; i < steps.size(); i++) {
                 Step step = steps.get(i);
-                if (step == firstFailure || step == secondFailure) {
+                if (!counted[i]) {
+                    continue;
+                }
+                if (step == firstFailure || step == secondFailure
+                        || i == desugarIndex && declined.contains(entryName)) {
                     fallbacks[i]++;
                 } else if (accepted.active.contains(step)) {
                     rewritten[i]++;
@@ -539,8 +925,11 @@ final class ClassTransformPipeline {
 
         /**
          * Parses, transforms and gates one class with some steps.
+         *
+         * @param nest what the planning step does to the class as part of its nest, or {@code null} when the class
+         *             is processed on its own
          */
-        private Attempt attempt(byte[] original, List<Step> candidates) {
+        private Attempt attempt(byte[] original, List<Step> candidates, LambdaDesugarer.ClassPlan nest) {
             Attribution attribution = new Attribution();
             Step blame = candidates.get(0);
             try {
@@ -550,7 +939,7 @@ final class ClassTransformPipeline {
                 List<Step> active = new ArrayList<>(candidates.size());
                 for (Step step : candidates) {
                     blame = step;
-                    if (step.changes(model)) {
+                    if (step == desugarer ? nest != null : step.changes(model)) {
                         active.add(step);
                     }
                 }
@@ -564,11 +953,12 @@ final class ClassTransformPipeline {
                     context = shared;
                     model = context.parse(original);
                 }
-                Step first = active.get(0);
-                ClassTransform transform = new Gate(first, attribution).andThen(first.transform(model));
-                for (Step step : active.subList(1, active.size())) {
+                ClassTransform transform = null;
+                for (Step step : active) {
                     blame = step;
-                    transform = transform.andThen(new Gate(step, attribution).andThen(step.transform(model)));
+                    ClassTransform own = step == desugarer ? nest.transform() : step.transform(model);
+                    ClassTransform gated = new Gate(step, attribution).andThen(own);
+                    transform = transform == null ? gated : transform.andThen(gated);
                 }
                 blame = active.get(0);
                 transform = transform.andThen(new Gate(null, attribution))
@@ -600,6 +990,30 @@ final class ClassTransformPipeline {
                 }
             }
             return new Attempt(output, active, null, null);
+        }
+    }
+
+    /**
+     * The outcome of one attempt at a planned nest: every class's attempt and the generated classes of each host, or
+     * the step to drop and why.
+     */
+    private static final class UnitAttempt {
+
+        private final Map<String, Attempt> results;
+        private final Map<String, List<Generated>> generated;
+        private final Step failed;
+        private final String error;
+
+        private UnitAttempt(Map<String, Attempt> results, Map<String, List<Generated>> generated, Step failed,
+                            String error) {
+            this.results = results;
+            this.generated = generated;
+            this.failed = failed;
+            this.error = error;
+        }
+
+        private static UnitAttempt failed(Step step, String error) {
+            return new UnitAttempt(Map.of(), Map.of(), step, oneLine(error));
         }
     }
 

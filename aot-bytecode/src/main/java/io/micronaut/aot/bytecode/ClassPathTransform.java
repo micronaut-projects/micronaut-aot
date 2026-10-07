@@ -23,9 +23,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -37,14 +42,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Rewrites the class files of an application's runtime class path at build time, for the build plugins to package
  * the result instead of the original jars.
  *
- * <p>The only step today strips the local-variable tables of the third-party jars a caller names
- * ({@link Request.Builder#stripLocalVariables(Collection)}). Each class is parsed, rewritten and verified once,
- * against a model of the whole class path, never against the build tool's own class path; a class whose rewrite
- * verifies worse than the original, or on which the step fails, is written as it was. A jar with a rewritten class is
- * copied whole, under its own file name, into a directory of its own below the request's output directory; every
- * other class path entry keeps its own path, its bytes and its hash. The transform never loads a class of the class
- * path, and it logs nothing: the {@link Result} carries a summary and warnings for the caller to log, and the counts
- * of each jar as numbers, for the caller to report in its own format.</p>
+ * <p>It has two steps, which a request enables separately: desugaring the lambda and method-reference call sites of
+ * every entry ({@link Request.Builder#desugarLambdas(boolean)}), and stripping the local-variable tables of the
+ * third-party jars a caller names ({@link Request.Builder#stripLocalVariables(Collection)}). They run in one pass, in
+ * that order: each class is parsed, rewritten and verified once, against a model of the whole class path, never
+ * against the build tool's own class path; a class whose rewrite verifies worse than the original, or on which a step
+ * fails, is written without that step, or as it was. An entry with a rewritten class, a jar or a directory, is copied
+ * whole, under its own file name, into a directory of its own below the request's output directory; every other class
+ * path entry keeps its own path, its bytes and its hash. The transform never loads a class of the class path, and it
+ * logs nothing: the {@link Result} carries a summary and warnings for the caller to log, and the counts of each entry
+ * as numbers, for the caller to report in its own format.</p>
  *
  * <p>The rewritten bytes depend on the JDK that runs the transform: they are reproducible with the same JDK build,
  * whatever the parallelism.</p>
@@ -74,33 +81,55 @@ public final class ClassPathTransform {
         ExecutorService pool = request.parallelism == 1 ? null
                 : Executors.newFixedThreadPool(request.parallelism, ClassPathTransform::thread);
         try {
+            ClassPathModel.Interner strings = new ClassPathModel.Interner();
             List<Callable<ClassPathModel.LayerScan>> scans = new ArrayList<>(classPath.size());
             for (Path entry : classPath) {
-                scans.add(() -> scan(entry));
+                scans.add(() -> scan(entry, request.desugar, strings));
             }
             ClassPathModel model = ClassPathModel.merge(all(scans, pool));
 
             List<String> warnings = new ArrayList<>();
+            boolean strip = request.strip;
             Optional<ClassPathModel.Watched> reader = model.watched();
-            if (reader.isPresent()) {
+            if (strip && reader.isPresent()) {
+                // Stripping stands down; desugaring does not depend on local-variable tables.
                 warnings.add("No local-variable table was stripped, because the class path entry "
                         + reader.get().layer() + " contains " + reader.get().entry()
                         + ", which reads local-variable tables at run time");
+                strip = false;
+            }
+            List<ClassTransformPipeline.Step> steps = new ArrayList<>(2);
+            if (request.desugar) {
+                steps.add(new LambdaDesugarer(model, request.foreignPackages));
+            }
+            if (strip) {
+                steps.add(new LocalVariableStripper());
+            }
+            if (steps.isEmpty()) {
                 return new Result(classPath, "Stripped no local-variable table, because a library on the class"
                         + " path reads them at run time", warnings, List.of());
             }
-            ClassTransformPipeline pipeline = new ClassTransformPipeline(List.of(new LocalVariableStripper()), model);
+            ClassTransformPipeline pipeline = new ClassTransformPipeline(steps, model);
             List<Integer> positions = new ArrayList<>();
             List<Path> targets = new ArrayList<>();
             List<Callable<JarRewriter.Outcome>> rewrites = new ArrayList<>();
             for (int position = 0; position < classPath.size(); position++) {
-                if (request.stripped[position]) {
-                    Path source = classPath.get(position);
-                    Path target = request.outputDirectory.resolve(Integer.toString(position))
-                            .resolve(source.getFileName().toString());
-                    positions.add(position);
-                    targets.add(target);
-                    rewrites.add(() -> JarRewriter.rewrite(source, target, pipeline, source.toString(), true));
+                boolean stripped = strip && request.stripped[position];
+                if (!stripped && !(request.desugar && model.hasLambdas(position))) {
+                    continue;
+                }
+                Path source = classPath.get(position);
+                Path target = request.outputDirectory.resolve(Integer.toString(position))
+                        .resolve(source.getFileName().toString());
+                int index = position;
+                positions.add(position);
+                targets.add(target);
+                if (Files.isDirectory(source)) {
+                    rewrites.add(() -> DirectoryRewriter.rewrite(source, target, pipeline, source.toString(),
+                            index));
+                } else {
+                    rewrites.add(() -> JarRewriter.rewrite(source, target, pipeline, source.toString(), index,
+                            stripped));
                 }
             }
             List<JarRewriter.Outcome> outcomes = all(rewrites, pool);
@@ -110,13 +139,22 @@ public final class ClassPathTransform {
             List<Result.Entry> entries = new ArrayList<>(outcomes.size());
             for (int i = 0; i < outcomes.size(); i++) {
                 JarRewriter.Outcome outcome = outcomes.get(i);
+                int position = positions.get(i);
                 reports.add(outcome.report());
-                entries.add(new Result.Entry(classPath.get(positions.get(i)), outcome));
+                Result.Entry entry = new Result.Entry(classPath.get(position), outcome);
+                if (strip && request.stripped[position] || entry.sitesRewritten() + entry.sitesLeftTotal() > 0) {
+                    entries.add(entry);
+                }
                 if (outcome.written()) {
-                    result.set(positions.get(i), targets.get(i));
+                    result.set(position, targets.get(i));
                 }
             }
-            return new Result(result, String.join("\n", pipeline.summaries(reports)), warnings, entries);
+            List<String> summary = new ArrayList<>(pipeline.summaries(reports));
+            if (request.strip && !strip) {
+                summary.add("Stripped no local-variable table, because a library on the class path reads them at"
+                        + " run time");
+            }
+            return new Result(result, String.join("\n", summary), warnings, entries);
         } finally {
             if (pool != null) {
                 pool.shutdownNow();
@@ -124,9 +162,11 @@ public final class ClassPathTransform {
         }
     }
 
-    private static ClassPathModel.LayerScan scan(Path entry) throws IOException {
+    private static ClassPathModel.LayerScan scan(Path entry, boolean members, ClassPathModel.Interner strings)
+            throws IOException {
         try {
-            return ClassPathModel.scan(entry, entry.toString(), LocalVariableStripper::isKnownReader);
+            return ClassPathModel.scan(entry, entry.toString(), members, LocalVariableStripper::isKnownReader,
+                    strings);
         } catch (IOException e) {
             throw new IOException("Cannot read the class path entry " + entry + ": "
                     + ClassTransformPipeline.describe(e), e);
@@ -207,13 +247,19 @@ public final class ClassPathTransform {
         private final List<Path> classPath;
         private final Path outputDirectory;
         private final boolean[] stripped;
+        private final boolean strip;
+        private final boolean desugar;
+        private final Set<String> foreignPackages;
         private final int parallelism;
 
-        private Request(List<Path> classPath, Path outputDirectory, boolean[] stripped, int parallelism) {
-            this.classPath = classPath;
-            this.outputDirectory = outputDirectory;
+        private Request(Builder builder, boolean[] stripped) {
+            this.classPath = builder.classPath;
+            this.outputDirectory = builder.outputDirectory;
             this.stripped = stripped;
-            this.parallelism = parallelism;
+            this.strip = !builder.stripLocalVariables.isEmpty();
+            this.desugar = builder.desugarLambdas;
+            this.foreignPackages = builder.foreignPackages;
+            this.parallelism = builder.parallelism;
         }
 
         /**
@@ -234,6 +280,8 @@ public final class ClassPathTransform {
             private List<Path> classPath;
             private Path outputDirectory;
             private List<Path> stripLocalVariables = List.of();
+            private boolean desugarLambdas;
+            private Set<String> foreignPackages = Set.of();
             private int parallelism = Runtime.getRuntime().availableProcessors();
 
             private Builder() {
@@ -242,7 +290,7 @@ public final class ClassPathTransform {
             /**
              * The runtime class path, in the order the application's class loader searches it, the application's own
              * output first: jars or directories. Required. Every class on it is part of the model that rewritten
-             * classes are verified against; only the entries a step names are rewritten.
+             * classes are verified against; only the entries a step applies to are rewritten.
              *
              * @param entries the class path entries
              * @return this builder
@@ -263,6 +311,48 @@ public final class ClassPathTransform {
              */
             public Builder outputDirectory(Path directory) {
                 this.outputDirectory = Objects.requireNonNull(directory, "directory");
+                return this;
+            }
+
+            /**
+             * Desugar the lambda and method-reference call sites of every entry of the class path, jars and
+             * directories, the application's own output included. Default: {@code false}.
+             *
+             * <p>A call site that {@code LambdaMetafactory.metafactory} links at run time becomes a call to a class
+             * that the step generates next to the class that holds the site, when the step can prove that the
+             * generated class resolves what the site resolved; every other site stays {@code invokedynamic}. A
+             * name that two entries hold, or that has a {@code META-INF/versions/} copy, is never rewritten, because
+             * a fat JAR or an image does not tell which copy loads. The generated classes depend on the JDK that runs
+             * the transform: run it on the feature release the application runs on.</p>
+             *
+             * @param desugar whether to desugar
+             * @return this builder
+             */
+            public Builder desugarLambdas(boolean desugar) {
+                this.desugarLambdas = desugar;
+                return this;
+            }
+
+            /**
+             * Packages, with their subpackages, whose classes the runtime may resolve from somewhere other than the
+             * class path, such as a launcher's own classes. Desugaring never rewrites a site whose host, nest host,
+             * implementation owner, functional interface or captured receiver is in one of them. Default: none.
+             *
+             * @param packages the packages, as dotted names such as {@code io.micronaut.runner}
+             * @return this builder
+             * @throws IllegalArgumentException if a name is not a package name
+             */
+            public Builder foreignPackages(Set<String> packages) {
+                Set<String> internal = new LinkedHashSet<>();
+                for (String name : packages) {
+                    Objects.requireNonNull(name, "package");
+                    if (name.isEmpty() || name.startsWith(".") || name.endsWith(".") || name.contains("..")
+                            || name.indexOf('/') >= 0) {
+                        throw new IllegalArgumentException("Not a package name: " + name);
+                    }
+                    internal.add(name.replace('.', '/'));
+                }
+                this.foreignPackages = Collections.unmodifiableSet(internal);
                 return this;
             }
 
@@ -315,8 +405,8 @@ public final class ClassPathTransform {
                 if (outputDirectory == null) {
                     throw new IllegalStateException("The output directory is required");
                 }
-                if (stripLocalVariables.isEmpty()) {
-                    throw new IllegalStateException("No step is enabled: name the jars to strip");
+                if (stripLocalVariables.isEmpty() && !desugarLambdas) {
+                    throw new IllegalStateException("No step is enabled: desugar lambdas or name the jars to strip");
                 }
                 Path output = real(outputDirectory);
                 List<Path> normalized = new ArrayList<>(classPath.size());
@@ -338,7 +428,7 @@ public final class ClassPathTransform {
                                 + " is not an entry of the class path");
                     }
                 }
-                return new Request(classPath, outputDirectory, stripped, parallelism);
+                return new Request(this, stripped);
             }
 
             /**
@@ -401,8 +491,10 @@ public final class ClassPathTransform {
         }
 
         /**
-         * One line per enabled step for the caller to log, such as {@code Stripped local-variable tables from 7102
-         * of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)}.
+         * One line per enabled step for the caller to log, in step order, such as {@code Desugared 2963 lambda call
+         * sites into 2125 generated classes in 38 class path entries (817 classes rewritten, 361 bridges, 29 sites left
+         * as invokedynamic, 0 nest fallbacks)} and {@code Stripped local-variable tables from 7102 of 8428 dependency
+         * classes in 49 jars (4868965 bytes saved, 0 fallbacks)}.
          *
          * @return the summary
          */
@@ -421,10 +513,12 @@ public final class ClassPathTransform {
         }
 
         /**
-         * What the strip step did to each jar it was given, in class-path order: one element per class path entry
-         * named by {@link Request.Builder#stripLocalVariables(Collection)}, whether it was rewritten or not. The
-         * counts are numbers, for the caller to write its report in its own format. Empty when no step ran, because
-         * a library on the class path reads local-variable tables.
+         * What the steps did to each class path entry they ran over, in class-path order: one element per jar named
+         * by {@link Request.Builder#stripLocalVariables(Collection)}, whether it was rewritten or not, and, when
+         * lambdas are desugared, one per entry that holds a lambda call site, whether it was rewritten or not. The
+         * counts are numbers, for the caller to write its report in its own format. A jar named for stripping is not
+         * listed for that when the strip step stood down, because a library on the class path reads local-variable
+         * tables.
          *
          * @return the entries
          */
@@ -433,8 +527,9 @@ public final class ClassPathTransform {
         }
 
         /**
-         * What the strip step did to one jar. Every class of the jar is counted once, as stripped, unchanged or
-         * fallen back.
+         * What the steps did to one class path entry, a jar or a directory. Each step that ran over the entry counts
+         * every class of it once, as rewritten, unchanged or fallen back; a step that did not run over it, such as
+         * the strip step on an entry not named for it, counts nothing.
          */
         @Internal
         public static final class Entry {
@@ -444,25 +539,48 @@ public final class ClassPathTransform {
             private final int classesUnchanged;
             private final int fallbacks;
             private final long bytesSaved;
+            private final int classesDesugared;
+            private final int sitesRewritten;
+            private final int classesGenerated;
+            private final int bridges;
+            private final int nestFallbacks;
+            private final Map<String, Integer> sitesLeft;
             private final String kept;
             private final List<String> notes;
 
             private Entry(Path path, JarRewriter.Outcome outcome) {
-                // The pipeline runs one step, the strip step, so its count is the only one.
-                ClassTransformPipeline.StepCount count = outcome.report().counts().get(0);
+                ClassTransformPipeline.JarReport report = outcome.report();
+                ClassTransformPipeline.StepCount strip = count(report, LocalVariableStripper.NAME);
+                ClassTransformPipeline.StepCount desugar = count(report, LambdaDesugarer.NAME);
                 this.path = path;
-                this.classesStripped = count.rewritten();
-                this.classesUnchanged = count.unchanged();
-                this.fallbacks = count.fallbacks();
-                this.bytesSaved = count.bytesSaved();
+                this.classesStripped = strip.rewritten();
+                this.classesUnchanged = strip.unchanged();
+                this.fallbacks = strip.fallbacks();
+                this.bytesSaved = strip.bytesSaved();
+                this.classesDesugared = desugar.rewritten();
+                ClassTransformPipeline.Desugared desugared = report.desugared();
+                Map<String, Integer> left = new LinkedHashMap<>();
+                if (desugared == null) {
+                    this.sitesRewritten = 0;
+                    this.classesGenerated = 0;
+                    this.bridges = 0;
+                    this.nestFallbacks = 0;
+                } else {
+                    this.sitesRewritten = desugared.sites();
+                    this.classesGenerated = desugared.generated();
+                    this.bridges = desugared.bridges();
+                    this.nestFallbacks = desugared.nestFallbacks();
+                    desugared.left().forEach((reason, count) -> left.put(reason.label(), count));
+                }
+                this.sitesLeft = Collections.unmodifiableMap(left);
                 this.kept = outcome.kept();
-                this.notes = outcome.report().notes();
+                this.notes = report.notes();
             }
 
             /**
-             * The jar, as the request's class path gave it.
+             * The entry, as the request's class path gave it.
              *
-             * @return the jar
+             * @return the jar or directory
              */
             public Path path() {
                 return path;
@@ -471,35 +589,36 @@ public final class ClassPathTransform {
             /**
              * The classes written without their local-variable tables.
              *
-             * @return the number of classes stripped
+             * @return the number of classes stripped; {@code 0} when the entry was not named for stripping
              */
             public int classesStripped() {
                 return classesStripped;
             }
 
             /**
-             * The classes the step left as they were: nothing to strip, a {@code module-info}, an attribute the JDK
-             * does not know, a rewrite that is not smaller, a class too large to read, or a jar left as it is
+             * The classes the strip step left as they were: nothing to strip, a {@code module-info}, an attribute the
+             * JDK does not know, a rewrite that is not smaller, a class too large to read, or a jar left as it is
              * ({@link #kept()}).
              *
-             * @return the number of classes unchanged
+             * @return the number of classes unchanged; {@code 0} when the entry was not named for stripping
              */
             public int classesUnchanged() {
                 return classesUnchanged;
             }
 
             /**
-             * The classes written as they were because the step failed on them or their rewrite verified worse than
-             * the original. Each has a line in {@link #notes()}.
+             * The classes the strip step wrote without its change because it failed on them or their rewrite
+             * verified worse than the original. Each has a line in {@link #notes()}.
              *
-             * @return the number of fallbacks
+             * @return the number of fallbacks; {@code 0} when the entry was not named for stripping
              */
             public int fallbacks() {
                 return fallbacks;
             }
 
             /**
-             * How many bytes smaller the stripped classes became, uncompressed.
+             * How many bytes smaller the stripped classes became, uncompressed. For a class that both steps rewrote,
+             * the difference includes desugaring's change.
              *
              * @return the bytes saved
              */
@@ -508,18 +627,80 @@ public final class ClassPathTransform {
             }
 
             /**
-             * Why no class of the jar went through the step, such as {@code the jar is signed}; empty when they
-             * did.
+             * The existing classes that desugaring rewrote: hosts whose call sites it rewrote, and nest hosts whose
+             * {@code NestMembers} gained the generated classes.
              *
-             * @return the reason, if the jar was left as it is
+             * @return the number of classes desugared
+             */
+            public int classesDesugared() {
+                return classesDesugared;
+            }
+
+            /**
+             * The lambda and method-reference call sites that desugaring rewrote.
+             *
+             * @return the number of sites rewritten
+             */
+            public int sitesRewritten() {
+                return sitesRewritten;
+            }
+
+            /**
+             * The classes that desugaring generated, each next to its host. Sites of one host that share their
+             * functional interface, interface method and captured types share a class, so there may be fewer
+             * classes than sites.
+             *
+             * @return the number of classes generated
+             */
+            public int classesGenerated() {
+                return classesGenerated;
+            }
+
+            /**
+             * The static synthetic bridge methods that desugaring added to hosts below class-file version 55, which
+             * have no nestmates, so that a generated class can reach a private lambda body.
+             *
+             * @return the number of bridges
+             */
+            public int bridges() {
+                return bridges;
+            }
+
+            /**
+             * The nests that desugaring planned and then wrote as they were, because a class of the nest failed or
+             * verified worse. Each has a line in {@link #notes()}, and its sites count under {@code nestFallback} in
+             * {@link #sitesLeft()}.
+             *
+             * @return the number of nest fallbacks
+             */
+            public int nestFallbacks() {
+                return nestFallbacks;
+            }
+
+            /**
+             * The lambda call sites that desugaring left as {@code invokedynamic}, by reason, such as
+             * {@code altMetafactory} or {@code shadowedOrUncertain}, in a fixed order of the reasons, without the
+             * reasons that have none.
+             *
+             * @return the sites left, by reason
+             */
+            public Map<String, Integer> sitesLeft() {
+                return sitesLeft;
+            }
+
+            /**
+             * Why no class of the entry was rewritten, such as {@code the jar is signed}; empty when the steps ran
+             * over its classes.
+             *
+             * @return the reason, if the entry was left as it is
              */
             public Optional<String> kept() {
                 return Optional.ofNullable(kept);
             }
 
             /**
-             * One line per fallback, for the caller to log or write: tab-separated, the jar, the class, the step and
-             * the first error.
+             * One line per fallback, for the caller to log or write: tab-separated, the entry, the class or
+             * {@code the nest of} its nest host, the step and the first error.
              *
              * @return the notes, never {@code null}
              */
@@ -531,7 +712,31 @@ public final class ClassPathTransform {
             public String toString() {
                 return "Entry[path=" + path + ", classesStripped=" + classesStripped + ", classesUnchanged="
                         + classesUnchanged + ", fallbacks=" + fallbacks + ", bytesSaved=" + bytesSaved
-                        + (kept == null ? "" : ", kept=" + kept) + ", notes=" + notes + "]";
+                        + ", classesDesugared=" + classesDesugared + ", sitesRewritten=" + sitesRewritten
+                        + ", classesGenerated=" + classesGenerated + ", bridges=" + bridges + ", nestFallbacks="
+                        + nestFallbacks + ", sitesLeft=" + sitesLeft + (kept == null ? "" : ", kept=" + kept)
+                        + ", notes=" + notes + "]";
+            }
+
+            /**
+             * The sites desugaring left, over every reason.
+             */
+            private int sitesLeftTotal() {
+                int total = 0;
+                for (int count : sitesLeft.values()) {
+                    total += count;
+                }
+                return total;
+            }
+
+            private static ClassTransformPipeline.StepCount count(ClassTransformPipeline.JarReport report,
+                                                                  String step) {
+                for (ClassTransformPipeline.StepCount count : report.counts()) {
+                    if (count.step().equals(step)) {
+                        return count;
+                    }
+                }
+                return new ClassTransformPipeline.StepCount(step, 0, 0, 0, 0);
             }
         }
     }

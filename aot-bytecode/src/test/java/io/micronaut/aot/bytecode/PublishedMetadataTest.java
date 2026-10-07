@@ -69,6 +69,10 @@ class PublishedMetadataTest {
                     + "Lio/micronaut/aot/bytecode/ClassPathTransform$Request;",
             "io.micronaut.aot.bytecode.ClassPathTransform$Request$Builder#classPath(Ljava/util/List;)"
                     + "Lio/micronaut/aot/bytecode/ClassPathTransform$Request$Builder;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Request$Builder#desugarLambdas(Z)"
+                    + "Lio/micronaut/aot/bytecode/ClassPathTransform$Request$Builder;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Request$Builder#foreignPackages(Ljava/util/Set;)"
+                    + "Lio/micronaut/aot/bytecode/ClassPathTransform$Request$Builder;",
             "io.micronaut.aot.bytecode.ClassPathTransform$Request$Builder#outputDirectory(Ljava/nio/file/Path;)"
                     + "Lio/micronaut/aot/bytecode/ClassPathTransform$Request$Builder;",
             "io.micronaut.aot.bytecode.ClassPathTransform$Request$Builder#parallelism(I)"
@@ -81,13 +85,19 @@ class PublishedMetadataTest {
             "io.micronaut.aot.bytecode.ClassPathTransform$Result#summary()Ljava/lang/String;",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result#warnings()Ljava/util/List;",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#bridges()I",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#bytesSaved()J",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#classesDesugared()I",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#classesGenerated()I",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#classesStripped()I",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#classesUnchanged()I",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#fallbacks()I",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#kept()Ljava/util/Optional;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#nestFallbacks()I",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#notes()Ljava/util/List;",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#path()Ljava/nio/file/Path;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#sitesLeft()Ljava/util/Map;",
+            "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#sitesRewritten()I",
             "io.micronaut.aot.bytecode.ClassPathTransform$Result$Entry#toString()Ljava/lang/String;");
 
     @Test

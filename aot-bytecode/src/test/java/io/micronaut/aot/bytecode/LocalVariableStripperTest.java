@@ -201,7 +201,8 @@ class LocalVariableStripperTest {
         ClassPathModel.LayerScan scan = ClassPathModel.scan("fixture", false, name -> false);
         classes.forEach(scan::accept);
         ClassTransformPipeline.JarRun run = new ClassTransformPipeline(List.of(new LocalVariableStripper()),
-                ClassPathModel.merge(List.of(scan))).start(new ClassTransformPipeline.Layer("fixture.jar", false, true));
+                ClassPathModel.merge(List.of(scan)))
+                .start(new ClassTransformPipeline.Layer("fixture.jar", 0, false, true));
 
         byte[] stripped = run.process(FIXTURE_ENTRY, compiled);
         assertTrue(stripped.length < compiled.length);
@@ -218,7 +219,7 @@ class LocalVariableStripperTest {
         assertEquals(List.of(), run.report().notes(), "declining is not a fallback");
         assertTrue(LocalVariableStripper.isKnownReader("org/aspectj/weaver/World.class"));
         assertFalse(LocalVariableStripper.isKnownReader("org/aspectj/lang/Aspects.class"));
-        assertFalse(new LocalVariableStripper().appliesTo(new ClassTransformPipeline.Layer("fixture.jar", false,
+        assertFalse(new LocalVariableStripper().appliesTo(new ClassTransformPipeline.Layer("fixture.jar", 0, false,
                 false)), "only a third-party jar is stripped");
     }
 
