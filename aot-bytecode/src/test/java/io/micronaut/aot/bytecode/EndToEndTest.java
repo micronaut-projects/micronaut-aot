@@ -22,6 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.classfile.ClassFile;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -212,7 +213,7 @@ class EndToEndTest {
         }
 
         static boolean hasBridge(byte[] host) {
-            return java.lang.classfile.ClassFile.of().parse(host).methods().stream()
+            return ClassFile.of().parse(host).methods().stream()
                     .anyMatch(method -> method.methodName().stringValue().startsWith(LambdaClasses.BRIDGE_PREFIX));
         }
     }

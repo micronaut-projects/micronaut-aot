@@ -27,6 +27,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.nio.file.DirectoryNotEmptyException;
@@ -216,7 +217,7 @@ class JarRewriterTest {
                 assertEquals(hostEntry.getTime(), entry.getTime(), entry.getName() + " takes its host's time");
                 assertEquals(hostEntry.getMethod(), entry.getMethod(), entry.getName() + " takes its host's method");
                 assertEquals(entry.getName().substring(0, entry.getName().length() - 6),
-                        java.lang.classfile.ClassFile.of().parse(content).thisClass().asInternalName(),
+                        ClassFile.of().parse(content).thisClass().asInternalName(),
                         "the entry holds the class it names");
             }
             ClassTransformPipeline.JarReport report = outcome.report();

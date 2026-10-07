@@ -27,6 +27,7 @@ import java.lang.classfile.FieldModel;
 import java.lang.classfile.MethodModel;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
+import java.lang.reflect.AccessFlag;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -410,11 +411,11 @@ class ClassPathDesugaringTest {
             assertEquals(Optional.of("Host.java"), model.findAttribute(Attributes.sourceFile())
                     .map(attribute -> attribute.sourceFile().stringValue()), name + " reads (Host.java)");
             for (MethodModel method : model.methods()) {
-                assertTrue(method.flags().has(java.lang.reflect.AccessFlag.SYNTHETIC),
+                assertTrue(method.flags().has(AccessFlag.SYNTHETIC),
                         name + "." + method.methodName() + " is synthetic");
             }
             for (FieldModel field : model.fields()) {
-                assertTrue(field.flags().has(java.lang.reflect.AccessFlag.SYNTHETIC),
+                assertTrue(field.flags().has(AccessFlag.SYNTHETIC),
                         name + "." + field.fieldName() + " is synthetic");
             }
             assertFalse(model.fields().isEmpty(), "every generated class holds a field");

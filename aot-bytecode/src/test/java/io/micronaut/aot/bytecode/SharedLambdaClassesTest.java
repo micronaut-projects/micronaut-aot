@@ -25,14 +25,17 @@ import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.CodeElement;
+import java.lang.classfile.Instruction;
 import java.lang.classfile.MethodModel;
 import java.lang.classfile.attribute.CodeAttribute;
 import java.lang.classfile.instruction.ConstantInstruction;
 import java.lang.classfile.instruction.InvokeInstruction;
+import java.lang.reflect.AccessFlag;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -185,10 +188,10 @@ class SharedLambdaClassesTest {
         Integer pushed = null;
         for (CodeElement element : code(output.get("grp/Many.class"), "all")) {
             if (element instanceof InvokeInstruction invoke && invoke.name().equalsString("create")
-                    && pushed != null) {
+                    && invoke.typeSymbol().descriptorString().endsWith("I)Ljava/lang/Runnable;") && pushed != null) {
                 tags = Math.max(tags, pushed);
             }
-            if (element instanceof java.lang.classfile.Instruction) {
+            if (element instanceof Instruction) {
                 pushed = element instanceof ConstantInstruction.ArgumentConstantInstruction push
                         ? push.constantValue() : null;
             }
@@ -224,7 +227,7 @@ class SharedLambdaClassesTest {
                 "a class of one site has no tag");
         List<String> call = new ArrayList<>();
         for (CodeElement element : code(output.get("grp/Alone.class"), "supplier")) {
-            if (element instanceof java.lang.classfile.Instruction instruction) {
+            if (element instanceof Instruction instruction) {
                 call.add(instruction.opcode().name());
             }
         }
@@ -416,7 +419,7 @@ class SharedLambdaClassesTest {
 
     private static int samLength(byte[] bytes, String name) {
         for (MethodModel method : ClassFile.of().parse(bytes).methods()) {
-            if (method.methodName().equalsString(name) && !method.flags().has(java.lang.reflect.AccessFlag.BRIDGE)) {
+            if (method.methodName().equalsString(name) && !method.flags().has(AccessFlag.BRIDGE)) {
                 return ((CodeAttribute) method.code().orElseThrow()).codeLength();
             }
         }
@@ -429,7 +432,7 @@ class SharedLambdaClassesTest {
 
     private static Supplier<?> supplier(Class<?> type, String method, Object... arguments) throws Exception {
         Class<?>[] parameters = new Class<?>[arguments.length];
-        java.util.Arrays.fill(parameters, String.class);
+        Arrays.fill(parameters, String.class);
         return (Supplier<?>) type.getMethod(method, parameters).invoke(null, arguments);
     }
 
