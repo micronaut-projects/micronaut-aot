@@ -130,13 +130,14 @@ class LambdaDesugarerTest {
         }
 
         assertGenerated(release, original, library, classes);
-        assertEquals(List.of("app/Main.class", "app/Main$$Lambda$R0.class", "app/Main$$Lambda$R1.class"),
+        assertEquals(List.of("app/Main.class", "app/Main$$Lambda$R0.class"),
                 List.copyOf(outcome.outputs().get(APPLICATION).keySet()),
-                "an application host is rewritten and its generated classes follow it");
+                "an application host is rewritten, and the class its two capture-free Function sites share follows"
+                        + " it");
         assertArrayEquals(layers.get(OTHER).entries().get("other/Helper.class"),
                 outcome.outputs().get(OTHER).get("other/Helper.class"), "a class without lambdas is untouched");
         ClassTransformPipeline.Desugared desugared = outcome.reports().get(LIBRARY).desugared();
-        assertEquals(desugared.sites(), desugared.generated());
+        assertTrue(desugared.generated() < desugared.sites(), "sites of one key share a class: " + desugared);
         assertEquals(desugared.generated(), library.keySet().stream()
                 .filter(name -> name.contains(LambdaClasses.GENERATED_INFIX)).count());
         assertEquals(0, desugared.nestFallbacks());
@@ -194,7 +195,7 @@ class LambdaDesugarerTest {
             assertFalse(loaded.isHidden());
             assertTrue(loaded.isSynthetic());
         }
-        assertTrue(generated >= 15, "the scenario has dozens of sites: " + generated);
+        assertTrue(generated >= 10, "the scenario's sites need many classes: " + generated);
 
         List<String> bridges = new ArrayList<>();
         for (MethodModel method : scenario.methods()) {

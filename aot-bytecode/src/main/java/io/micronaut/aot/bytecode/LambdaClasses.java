@@ -15,38 +15,61 @@
  */
 package io.micronaut.aot.bytecode;
 
+import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassBuilder;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.CodeBuilder;
+import java.lang.classfile.Label;
 import java.lang.classfile.TypeKind;
+import java.lang.classfile.attribute.CodeAttribute;
 import java.lang.classfile.attribute.NestHostAttribute;
 import java.lang.classfile.attribute.SourceFileAttribute;
+import java.lang.classfile.attribute.StackMapFrameInfo;
+import java.lang.classfile.attribute.StackMapTableAttribute;
 import java.lang.classfile.instruction.InvokeDynamicInstruction;
+import java.lang.classfile.instruction.SwitchCase;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The classes that {@link LambdaDesugarer} generates, and what a rewritten call site becomes.
  *
  * <h2>What a site becomes</h2>
- * <p>One class per site, {@code <Host>$$Lambda$R<n>}: package-private, final and synthetic, with the host's
+ * <p>A generated class, {@code <Host>$$Lambda$R<n>}: package-private, final and synthetic, with the host's
  * class-file version and {@code SourceFile}, in the host's package and class path entry. It implements the site's
  * functional interface, keeps the captured values in final fields, and forwards the interface method to the
  * implementation with the argument and return conversions {@code LambdaMetafactory} would apply. Every field and
  * method it has is synthetic, so that a debugger that skips synthetic methods steps straight into the lambda body.
- * The site itself becomes {@code invokestatic <Host>$$Lambda$R<n>.create}, with the descriptor of the
- * {@code invokedynamic}, followed by two {@code nop}s: the same length and the same stack effect, so every bytecode
- * offset of the method, the frames the pipeline attaches again and the offsets of its type annotations stay valid. A
- * site that captures nothing always yields the same instance.</p>
+ * A site that captures nothing always yields the same instance, distinct from every other site's.</p>
+ *
+ * <p>The sites of a host that share the functional interface, the interface method and the captured types share one
+ * class, named after the first of them, so that an entry gains far fewer classes than it has sites: each is an entry
+ * of the archive and a class defined and initialized at run time. Such a site becomes
+ * {@code bipush <tag>; invokestatic <Host>$$Lambda$R<n>.create}; the instance keeps the tag in a final field, and the
+ * interface method dispatches on it with a {@code tableswitch}, one case per site, each with the casts of its own
+ * site. A class that captures nothing creates one instance per tag when it is initialized. A class stops taking
+ * sites when its interface method would exceed {@value #MAX_DISPATCH_BYTES} bytes, HotSpot's default
+ * {@code FreqInlineSize}, so that it can still be inlined where it is hot, or {@value #MAX_TAGS} sites, the tags that
+ * {@code bipush} pushes. Each case starts with an explicit frame, the method's entry frame, so that writing the class
+ * needs no class hierarchy.</p>
+ *
+ * <p>A site that shares its key with no other becomes {@code invokestatic <Host>$$Lambda$R<n>.create}, with the
+ * descriptor of the {@code invokedynamic}, followed by two {@code nop}s, and its class has no tag. Either way the
+ * site keeps the length of the {@code invokedynamic} and, after the call, its stack effect, so every bytecode offset
+ * of the method, the frames the pipeline attaches again and the offsets of its type annotations stay valid.</p>
  *
  * <p>From class-file version 55 the generated class joins the host's nest, so it may call a private implementation
  * directly, and the nest host's {@code NestMembers} is extended. Below 55 there are no nestmates: a private
  * implementation of the host is reached through a package-private static synthetic bridge,
  * {@code $desugared$lambda$<n>}, added to the host.</p>
  *
- * <p>Ported from Micronaut Runner's {@code LambdaDesugarer}.</p>
+ * <p>Ported from Micronaut Runner's {@code LambdaDesugarer}, with the shared classes of micronaut-build's trial of
+ * desugaring Micronaut's own modules.</p>
  */
 final class LambdaClasses {
 
@@ -62,12 +85,39 @@ final class LambdaClasses {
     /** The name of a constructor. */
     static final String CONSTRUCTOR = ConstantDescs.INIT_NAME;
 
+    /**
+     * The largest interface method of a class that several sites share, in bytecode bytes: HotSpot's default
+     * {@code FreqInlineSize}, the largest method C2 inlines at a hot call site.
+     */
+    static final int MAX_DISPATCH_BYTES = 325;
+
+    /** The most sites a class can serve: {@code bipush} pushes the tag. */
+    static final int MAX_TAGS = 128;
+
     private static final String INSTANCE_FIELD = "INSTANCE";
+
+    private static final String INSTANCES_FIELD = "INSTANCES";
+
+    private static final String TAG_FIELD = "tag";
+
+    /**
+     * The bytes of a shared interface method besides its cases: {@code aload_0}, {@code getfield}, and a
+     * {@code tableswitch} at offset 4 with 3 bytes of padding and its default, low and high values.
+     */
+    private static final int DISPATCH_OVERHEAD = 1 + 3 + 1 + 3 + 12;
+
+    /** The bytes a case adds to the {@code tableswitch}. */
+    private static final int DISPATCH_CASE = 4;
+
+    private static final ClassFile PARSER = ClassFile.of();
 
     /** The flags of every member of a generated class besides its access. */
     private static final int SYNTHETIC = ClassFile.ACC_SYNTHETIC;
 
-    /** A class for one site has no branch, so it needs no frames, and no class hierarchy to compute any. */
+    /**
+     * A class for one site has no branch, so it needs no frames; a shared class gets explicit ones. Neither needs a
+     * class hierarchy.
+     */
     private static final ClassFile GENERATOR = ClassFile.of(ClassFile.StackMapsOption.DROP_STACK_MAPS);
 
     private LambdaClasses() {
@@ -120,12 +170,47 @@ final class LambdaClasses {
     }
 
     /**
-     * Lets the rewritten sites of one host share generated classes. Today every site keeps a class of its own.
+     * Lets the rewritten sites of one host that have the same key, the functional interface, the captured types and
+     * the interface method, share classes: in site order, each class takes sites until one more would push its
+     * interface method past {@link #MAX_DISPATCH_BYTES}, or past {@link #MAX_TAGS} sites. A site left alone keeps a
+     * class of its own.
      *
      * @param sites the host's rewritten sites, in site order
      */
     static void share(List<Site> sites) {
-        // One class per site.
+        Map<String, List<Site>> byKey = new LinkedHashMap<>();
+        for (Site site : sites) {
+            byKey.computeIfAbsent(site.shareKey(), key -> new ArrayList<>()).add(site);
+        }
+        for (List<Site> sameKey : byKey.values()) {
+            if (sameKey.size() < 2) {
+                continue;
+            }
+            List<Site> members = new ArrayList<>();
+            int length = DISPATCH_OVERHEAD;
+            for (Site site : sameKey) {
+                int added = DISPATCH_CASE + site.forwardLength();
+                if (!members.isEmpty() && (members.size() == MAX_TAGS || length + added > MAX_DISPATCH_BYTES)) {
+                    group(members);
+                    members = new ArrayList<>();
+                    length = DISPATCH_OVERHEAD;
+                }
+                members.add(site);
+                length += added;
+            }
+            group(members);
+        }
+    }
+
+    private static void group(List<Site> members) {
+        if (members.size() < 2) {
+            return;
+        }
+        Group group = new Group(List.copyOf(members));
+        for (int i = 0; i < members.size(); i++) {
+            members.get(i).group = group;
+            members.get(i).tag = i;
+        }
     }
 
     private static boolean isVoid(ClassDesc type) {
@@ -192,6 +277,19 @@ final class LambdaClasses {
         }
     }
 
+    /**
+     * The verification type of a local of a given type, as an explicit frame states it.
+     */
+    private static StackMapFrameInfo.VerificationTypeInfo verificationType(ClassDesc type) {
+        return switch (TypeKind.from(type)) {
+            case BOOLEAN, BYTE, CHAR, SHORT, INT -> StackMapFrameInfo.SimpleVerificationTypeInfo.INTEGER;
+            case LONG -> StackMapFrameInfo.SimpleVerificationTypeInfo.LONG;
+            case FLOAT -> StackMapFrameInfo.SimpleVerificationTypeInfo.FLOAT;
+            case DOUBLE -> StackMapFrameInfo.SimpleVerificationTypeInfo.DOUBLE;
+            default -> StackMapFrameInfo.ObjectVerificationTypeInfo.of(type);
+        };
+    }
+
     /** How a generated class calls the implementation. */
     enum Invocation {
         STATIC, VIRTUAL, INTERFACE, CONSTRUCTOR
@@ -253,6 +351,10 @@ final class LambdaClasses {
         private final Target target;
         /** The bridge the host gains and the generated class calls, or {@code null}. */
         private final String bridgeName;
+        /** The class this site shares with others of its host, or {@code null} when it has its own. */
+        private Group group;
+        /** The site's tag in its {@link #group}. */
+        private int tag;
 
         Site(Home home, ClassDesc generated, Shape shape, Target target, String bridgeName) {
             this.home = home;
@@ -280,7 +382,7 @@ final class LambdaClasses {
          * @return the class
          */
         ClassDesc generatedClass() {
-            return generated;
+            return group != null ? group.generated : generated;
         }
 
         /**
@@ -289,7 +391,7 @@ final class LambdaClasses {
          * @return whether {@link #generate()} writes the site's class
          */
         boolean firstOfClass() {
-            return true;
+            return group == null || tag == 0;
         }
 
         /**
@@ -302,6 +404,11 @@ final class LambdaClasses {
             if (!indy.typeSymbol().equals(factoryType) || !indy.name().equalsString(samName)) {
                 throw new IllegalStateException("The call site of " + generated.displayName()
                         + " is not where it was planned");
+            }
+            if (group != null) {
+                // 2 + 3 bytes, as the invokedynamic; the call consumes the tag, so the stack after it is the same.
+                code.bipush(tag).invokestatic(group.generated, FACTORY_METHOD, group.createType);
+                return;
             }
             // 3 + 1 + 1 bytes, as the invokedynamic, with the same stack effect.
             code.invokestatic(generated, FACTORY_METHOD, factoryType).nop().nop();
@@ -339,11 +446,14 @@ final class LambdaClasses {
         }
 
         /**
-         * Writes the site's own generated class.
+         * Writes the site's generated class: its own, or the one it shares, which its first site writes.
          *
          * @return the class file
          */
         byte[] generate() {
+            if (group != null) {
+                return group.generate();
+            }
             int captured = factoryType.parameterCount();
             MethodTypeDesc constructorType = MethodTypeDesc.of(ConstantDescs.CD_void, factoryType.parameterList());
             return GENERATOR.build(generated, builder -> {
@@ -378,6 +488,25 @@ final class LambdaClasses {
                         code -> forward(code, generated));
                 trailer(builder, home);
             });
+        }
+
+        /**
+         * What sites of one host must have in common to share a class: the functional interface, the captured types
+         * and the interface method.
+         */
+        private String shareKey() {
+            return factoryType.descriptorString() + ' ' + samName + samType.descriptorString();
+        }
+
+        /**
+         * The length of the interface method's body for this site alone, which is the case it adds to a shared
+         * class.
+         */
+        private int forwardLength() {
+            byte[] probe = GENERATOR.build(generated, builder -> builder.withMethodBody(samName, samType,
+                    ClassFile.ACC_PUBLIC, code -> forward(code, generated)));
+            return PARSER.parse(probe).methods().get(0).findAttribute(Attributes.code())
+                    .map(CodeAttribute::codeLength).orElseThrow();
         }
 
         /**
@@ -432,6 +561,102 @@ final class LambdaClasses {
             }
             Conversions.convert(code, result, expected, expected);
             code.return_(TypeKind.from(expected));
+        }
+    }
+
+    /**
+     * One generated class for several sites of a host that share the functional interface, the interface method and
+     * the captured types. A site passes its tag, {@code bipush tag; invokestatic create}, the instance keeps it, and
+     * the interface method dispatches on it. A class whose sites capture nothing creates one instance per tag when it
+     * is initialized, without a loop, so that each site still always yields the same instance.
+     */
+    private static final class Group {
+
+        private final ClassDesc generated;
+        private final List<Site> members;
+        /** The captured types and the tag, to the functional interface. */
+        private final MethodTypeDesc createType;
+
+        private Group(List<Site> members) {
+            this.generated = members.get(0).generated;
+            this.members = members;
+            List<ClassDesc> parameters = new ArrayList<>(members.get(0).factoryType.parameterList());
+            parameters.add(ConstantDescs.CD_int);
+            this.createType = MethodTypeDesc.of(members.get(0).factoryType.returnType(), parameters);
+        }
+
+        private byte[] generate() {
+            Site first = members.get(0);
+            MethodTypeDesc factoryType = first.factoryType;
+            int captured = factoryType.parameterCount();
+            int count = members.size();
+            MethodTypeDesc constructorType = MethodTypeDesc.of(ConstantDescs.CD_void, createType.parameterList());
+            return GENERATOR.build(generated, builder -> {
+                header(builder, first.home, factoryType.returnType());
+                if (captured == 0) {
+                    builder.withField(INSTANCES_FIELD, generated.arrayType(),
+                            ClassFile.ACC_PRIVATE | ClassFile.ACC_STATIC | ClassFile.ACC_FINAL | SYNTHETIC);
+                    builder.withMethodBody(ConstantDescs.CLASS_INIT_NAME, ConstantDescs.MTD_void,
+                            ClassFile.ACC_STATIC | SYNTHETIC, code -> {
+                                code.loadConstant(count).anewarray(generated);
+                                for (int i = 0; i < count; i++) {
+                                    code.dup().loadConstant(i).new_(generated).dup().loadConstant(i)
+                                            .invokespecial(generated, CONSTRUCTOR, constructorType).aastore();
+                                }
+                                code.putstatic(generated, INSTANCES_FIELD, generated.arrayType()).return_();
+                            });
+                }
+                capturedFields(builder, factoryType);
+                builder.withField(TAG_FIELD, ConstantDescs.CD_int,
+                        ClassFile.ACC_PRIVATE | ClassFile.ACC_FINAL | SYNTHETIC);
+                builder.withMethodBody(CONSTRUCTOR, constructorType, ClassFile.ACC_PRIVATE | SYNTHETIC, code -> {
+                    code.aload(0).invokespecial(ConstantDescs.CD_Object, CONSTRUCTOR, ConstantDescs.MTD_void);
+                    int slot = storeCaptured(code, generated, factoryType);
+                    code.aload(0).iload(slot).putfield(generated, TAG_FIELD, ConstantDescs.CD_int).return_();
+                });
+                builder.withMethodBody(FACTORY_METHOD, createType, ClassFile.ACC_STATIC | SYNTHETIC, code -> {
+                    if (captured == 0) {
+                        code.getstatic(generated, INSTANCES_FIELD, generated.arrayType()).iload(0).aaload().areturn();
+                        return;
+                    }
+                    code.new_(generated).dup();
+                    loadParameters(code, createType, 0);
+                    code.invokespecial(generated, CONSTRUCTOR, constructorType).areturn();
+                });
+                builder.withMethodBody(first.samName, first.samType, ClassFile.ACC_PUBLIC | SYNTHETIC,
+                        this::dispatch);
+                trailer(builder, first.home);
+            });
+        }
+
+        /**
+         * The interface method: a {@code tableswitch} on the tag, whose last case doubles as the default, and one
+         * case per site, each starting from the method's entry frame, which is stated explicitly.
+         */
+        private void dispatch(CodeBuilder code) {
+            Site first = members.get(0);
+            int count = members.size();
+            List<Label> labels = new ArrayList<>(count);
+            List<SwitchCase> cases = new ArrayList<>(count);
+            for (int i = 0; i < count; i++) {
+                Label label = code.newLabel();
+                labels.add(label);
+                cases.add(SwitchCase.of(i, label));
+            }
+            code.aload(0).getfield(generated, TAG_FIELD, ConstantDescs.CD_int)
+                    .tableswitch(0, count - 1, labels.get(count - 1), cases);
+            List<StackMapFrameInfo.VerificationTypeInfo> locals = new ArrayList<>();
+            locals.add(StackMapFrameInfo.ObjectVerificationTypeInfo.of(generated));
+            for (ClassDesc parameter : first.samType.parameterList()) {
+                locals.add(verificationType(parameter));
+            }
+            List<StackMapFrameInfo> frames = new ArrayList<>(count);
+            for (int i = 0; i < count; i++) {
+                code.labelBinding(labels.get(i));
+                frames.add(StackMapFrameInfo.of(labels.get(i), locals, List.of()));
+                members.get(i).forward(code, generated);
+            }
+            code.with(StackMapTableAttribute.of(frames));
         }
     }
 

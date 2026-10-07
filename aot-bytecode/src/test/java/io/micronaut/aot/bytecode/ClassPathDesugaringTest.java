@@ -370,14 +370,14 @@ class ClassPathDesugaringTest {
         }
         assertEquals(Map.of(
                 8, List.of(
-                        "0 sites=2 classes=1 generated=2 bridges=1 nestFallbacks=0 left={} notes=0",
-                        "1 sites=29 classes=3 generated=29 bridges=11 nestFallbacks=0 left={java8Interface=2} notes=0",
-                        "Desugared 31 lambda call sites into 31 generated classes in 2 class path entries (4 classes"
+                        "0 sites=2 classes=1 generated=1 bridges=1 nestFallbacks=0 left={} notes=0",
+                        "1 sites=29 classes=3 generated=15 bridges=11 nestFallbacks=0 left={java8Interface=2} notes=0",
+                        "Desugared 31 lambda call sites into 16 generated classes in 2 class path entries (4 classes"
                                 + " rewritten, 12 bridges, 2 sites left as invokedynamic, 0 nest fallbacks)"),
                 25, List.of(
-                        "0 sites=2 classes=1 generated=2 bridges=0 nestFallbacks=0 left={} notes=0",
-                        "1 sites=31 classes=4 generated=31 bridges=0 nestFallbacks=0 left={} notes=0",
-                        "Desugared 33 lambda call sites into 33 generated classes in 2 class path entries (5 classes"
+                        "0 sites=2 classes=1 generated=1 bridges=0 nestFallbacks=0 left={} notes=0",
+                        "1 sites=31 classes=4 generated=17 bridges=0 nestFallbacks=0 left={} notes=0",
+                        "Desugared 33 lambda call sites into 18 generated classes in 2 class path entries (5 classes"
                                 + " rewritten, 0 bridges, 0 sites left as invokedynamic, 0 nest fallbacks)")),
                 golden);
     }
