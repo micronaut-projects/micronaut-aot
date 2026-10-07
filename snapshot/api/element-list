@@ -1,4 +1,5 @@
 io.micronaut.aot
+io.micronaut.aot.bytecode
 io.micronaut.aot.cli
 io.micronaut.aot.core
 io.micronaut.aot.core.codegen

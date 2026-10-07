@@ -124,6 +124,18 @@ of optimizations before starting the application.</div>
 <dd>
 <div class="block">Returns the boolean value for the required key.</div>
 </dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html#build()" class="member-name-link">build()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></dt>
+<dd>
+<div class="block">Builds the request.</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.html#builder()" class="member-name-link">builder()</a> - Static method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request</a></dt>
+<dd>
+<div class="block">A builder for a request.</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#bytesSaved()" class="member-name-link">bytesSaved()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
+<dd>
+<div class="block">How many bytes smaller the stripped classes became, uncompressed.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:C">C</h2>
 <dl class="index">
@@ -134,8 +146,48 @@ properties caching in Micronaut.</div>
 </dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html#%3Cinit%3E()" class="member-name-link">CachedEnvironmentSourceGenerator()</a> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#classesStripped()" class="member-name-link">classesStripped()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
+<dd>
+<div class="block">The classes written without their local-variable tables.</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#classesUnchanged()" class="member-name-link">classesUnchanged()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
+<dd>
+<div class="block">The classes the step left as they were: nothing to strip, a <code>module-info</code>, an attribute the JDK
+does not know, a rewrite that is not smaller, a class too large to read, or a jar left as it is
+(<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#kept()"><code>ClassPathTransform.Result.Entry.kept()</code></a>).</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.html#classPath()" class="member-name-link">classPath()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result</a></dt>
+<dd>
+<div class="block">The class path to package: each entry of the request, or its rewritten copy, in the same order.</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html#classPath(java.util.List)" class="member-name-link">classPath(List)</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></dt>
+<dd>
+<div class="block">The runtime class path, in the order the application's class loader searches it, the application's own
+output first: jars or directories.</div>
+</dd>
 <dt><a href="io/micronaut/aot/ConfigKeys.html#CLASSPATH" class="member-name-link">CLASSPATH</a> - Static variable in interface io.micronaut.aot.<a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.html" class="type-name-link" title="class in io.micronaut.aot.bytecode">ClassPathTransform</a> - Class in <a href="io/micronaut/aot/bytecode/package-summary.html">io.micronaut.aot.bytecode</a></dt>
+<dd>
+<div class="block">Rewrites the class files of an application's runtime class path at build time, for the build plugins to package
+the result instead of the original jars.</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.html" class="type-name-link" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request</a> - Class in <a href="io/micronaut/aot/bytecode/package-summary.html">io.micronaut.aot.bytecode</a></dt>
+<dd>
+<div class="block">What to rewrite.</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html" class="type-name-link" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a> - Class in <a href="io/micronaut/aot/bytecode/package-summary.html">io.micronaut.aot.bytecode</a></dt>
+<dd>
+<div class="block">Builds a <a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.html" title="class in io.micronaut.aot.bytecode"><code>ClassPathTransform.Request</code></a>.</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.html" class="type-name-link" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result</a> - Class in <a href="io/micronaut/aot/bytecode/package-summary.html">io.micronaut.aot.bytecode</a></dt>
+<dd>
+<div class="block">What a run did.</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" class="type-name-link" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a> - Class in <a href="io/micronaut/aot/bytecode/package-summary.html">io.micronaut.aot.bytecode</a></dt>
+<dd>
+<div class="block">What the strip step did to one jar.</div>
+</dd>
 <dt><a href="io/micronaut/aot/ConfigKeys.html" class="type-name-link" title="interface in io.micronaut.aot">ConfigKeys</a> - Interface in <a href="io/micronaut/aot/package-summary.html">io.micronaut.aot</a></dt>
 <dd>
 <div class="block">Configuration keys which may be found in the properties
@@ -255,6 +307,11 @@ be executed before this generator is called.</div>
 <dd>
 <div class="block">Returns the runtimes this module is valid for.</div>
 </dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.html#entries()" class="member-name-link">entries()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result</a></dt>
+<dd>
+<div class="block">What the strip step did to each jar it was given, in class-path order: one element per class path entry
+named by <a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html#stripLocalVariables(java.util.Collection)"><code>ClassPathTransform.Request.Builder.stripLocalVariables(Collection)</code></a>, whether it was rewritten or not.</div>
+</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" class="type-name-link" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
 <dd>
 <div class="block">A code generator which is responsible for precomputing the Micronaut property
@@ -286,6 +343,11 @@ a configuration file which includes all entries.</div>
 </dl>
 <h2 class="title" id="I:F">F</h2>
 <dl class="index">
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#fallbacks()" class="member-name-link">fallbacks()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
+<dd>
+<div class="block">The classes written as they were because the step failed on them or their rewrite verified worse than
+the original.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/config/MetadataUtils.html#findMetadata(java.lang.Class)" class="member-name-link">findMetadata(Class)</a> - Static method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></dt>
 <dd>
 <div class="block">Returns the AOT module annotation for a class, if present.</div>
@@ -512,6 +574,8 @@ the optimized entry point at build time.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/package-summary.html">io.micronaut.aot</a> - package io.micronaut.aot</dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/bytecode/package-summary.html">io.micronaut.aot.bytecode</a> - package io.micronaut.aot.bytecode</dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/cli/package-summary.html">io.micronaut.aot.cli</a> - package io.micronaut.aot.cli</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/package-summary.html">io.micronaut.aot.core</a> - package io.micronaut.aot.core</dt>
@@ -563,6 +627,11 @@ of the runtime.</div>
 </dl>
 <h2 class="title" id="I:K">K</h2>
 <dl class="index">
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#kept()" class="member-name-link">kept()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
+<dd>
+<div class="block">Why no class of the jar went through the step, such as <code>the jar is signed</code>; empty when they
+did.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/Option.html#key()" class="member-name-link">key()</a> - Element in annotation interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/Option.html" title="annotation interface in io.micronaut.aot.core">Option</a></dt>
 <dd>
 <div class="block">Returns the key used to configure this option.</div>
@@ -671,6 +740,11 @@ generation at build time.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/config/SourceGeneratorSelection.html#NOT_ENABLED_ON_RUNTIME" class="member-name-link">NOT_ENABLED_ON_RUNTIME</a> - Static variable in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/SourceGeneratorSelection.html" title="class in io.micronaut.aot.core.config">SourceGeneratorSelection</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#notes()" class="member-name-link">notes()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
+<dd>
+<div class="block">One line per fallback, for the caller to log or write: tab-separated, the jar, the class, the step and
+the first error.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:O">O</h2>
 <dl class="index">
@@ -700,15 +774,28 @@ the configuration of this source generator.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/MicronautAotOptimizer.html#OUTPUT_RESOURCES_FILE_NAME" class="member-name-link">OUTPUT_RESOURCES_FILE_NAME</a> - Static variable in class io.micronaut.aot.<a href="io/micronaut/aot/MicronautAotOptimizer.html" title="class in io.micronaut.aot">MicronautAotOptimizer</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html#outputDirectory(java.nio.file.Path)" class="member-name-link">outputDirectory(Path)</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></dt>
+<dd>
+<div class="block">Where rewritten copies are written: each under a subdirectory named by its entry's index in the class
+path, with the entry's own file name.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:P">P</h2>
 <dl class="index">
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html#parallelism(int)" class="member-name-link">parallelism(int)</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></dt>
+<dd>
+<div class="block">The number of worker threads.</div>
+</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/ParentTagTagClassTuple.html" class="type-name-link" title="class in io.micronaut.aot.std.sourcegen">ParentTagTagClassTuple</a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
 <dd>
 <div class="block">Represents default class name rules.</div>
 </dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/ParentTagTagClassTuple.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.Class)" class="member-name-link">ParentTagTagClassTuple(String, String, Class)</a> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ParentTagTagClassTuple.html" title="class in io.micronaut.aot.std.sourcegen">ParentTagTagClassTuple</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#path()" class="member-name-link">path()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
+<dd>
+<div class="block">The jar, as the request's class path gave it.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/Environments.html#POSSIBLE_ENVIRONMENTS_DESCRIPTION" class="member-name-link">POSSIBLE_ENVIRONMENTS_DESCRIPTION</a> - Static variable in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Environments.html" title="class in io.micronaut.aot.core">Environments</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/Environments.html#POSSIBLE_ENVIRONMENTS_NAMES" class="member-name-link">POSSIBLE_ENVIRONMENTS_NAMES</a> - Static variable in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Environments.html" title="class in io.micronaut.aot.core">Environments</a></dt>
@@ -845,6 +932,10 @@ the optimized binary is loaded.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/internal/StreamHelper.ThrowingRunner.html#run()" class="member-name-link">run()</a> - Method in interface io.micronaut.aot.internal.<a href="io/micronaut/aot/internal/StreamHelper.ThrowingRunner.html" title="interface in io.micronaut.aot.internal">StreamHelper.ThrowingRunner</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.html#run(io.micronaut.aot.bytecode.ClassPathTransform.Request)" class="member-name-link">run(ClassPathTransform.Request)</a> - Static method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform</a></dt>
+<dd>
+<div class="block">Rewrites what it can prove safe and leaves everything else as it is.</div>
+</dd>
 <dt><a href="io/micronaut/aot/MicronautAotOptimizer.html#runner(java.lang.String,java.io.File,java.io.File,java.io.File,io.micronaut.aot.core.Configuration)" class="member-name-link">runner(String, File, File, File, Configuration)</a> - Static method in class io.micronaut.aot.<a href="io/micronaut/aot/MicronautAotOptimizer.html" title="class in io.micronaut.aot">MicronautAotOptimizer</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/MicronautAotOptimizer.Runner.html#%3Cinit%3E(java.lang.String,java.io.File,java.io.File,java.io.File,io.micronaut.aot.core.Configuration)" class="member-name-link">Runner(String, File, File, File, Configuration)</a> - Constructor for class io.micronaut.aot.<a href="io/micronaut/aot/MicronautAotOptimizer.Runner.html" title="class in io.micronaut.aot">MicronautAotOptimizer.Runner</a></dt>
@@ -909,10 +1000,20 @@ may throw an exception.</div>
 <dd>
 <div class="block">Returns a list of strings from a configuration entry.</div>
 </dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html#stripLocalVariables(java.util.Collection)" class="member-name-link">stripLocalVariables(Collection)</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></dt>
+<dd>
+<div class="block">Strip the local-variable tables of the classes in these jars: third-party jars only, never the
+application's output, a module of the application's own build or a directory.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/AOTModule.html#subgenerators()" class="member-name-link">subgenerators()</a> - Element in annotation interface io.micronaut.aot.core.<a href="io/micronaut/aot/core/AOTModule.html" title="annotation interface in io.micronaut.aot.core">AOTModule</a></dt>
 <dd>
 <div class="block">Returns a list of generators which are directly managed (or instantiated_
 by this source generator.</div>
+</dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.html#summary()" class="member-name-link">summary()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result</a></dt>
+<dd>
+<div class="block">One line per enabled step for the caller to log, such as <code>Stripped local-variable tables from 7102
+of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)</code>.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:T">T</h2>
@@ -932,6 +1033,8 @@ by this source generator.</div>
 <div class="block">Returns a string representation of the option, for
 use in properties files.</div>
 </dd>
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#toString()" class="member-name-link">toString()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/ParentTagTagClassTuple.html#toString()" class="member-name-link">toString()</a> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ParentTagTagClassTuple.html" title="class in io.micronaut.aot.std.sourcegen">ParentTagTagClassTuple</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/internal/StreamHelper.html#trying(io.micronaut.aot.internal.StreamHelper.ThrowingRunner)" class="member-name-link">trying(StreamHelper.ThrowingRunner)</a> - Static method in class io.micronaut.aot.internal.<a href="io/micronaut/aot/internal/StreamHelper.html" title="class in io.micronaut.aot.internal">StreamHelper</a></dt>
@@ -961,6 +1064,11 @@ the order they are declared.</div>
 </dl>
 <h2 class="title" id="I:W">W</h2>
 <dl class="index">
+<dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.html#warnings()" class="member-name-link">warnings()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result</a></dt>
+<dd>
+<div class="block">Lines for the caller to log as warnings, each on its own, such as the library on the class path that made
+the strip step stand down.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html#write(java.nio.file.Path,io.micronaut.aot.core.Runtime,java.lang.String,java.util.Set,java.util.List,io.micronaut.aot.core.context.DefaultSourceGenerationContext,java.lang.String)" class="member-name-link">write(Path, Runtime, String, Set, List, DefaultSourceGenerationContext, String)</a> - Static method in class io.micronaut.aot.core.report.<a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html" title="class in io.micronaut.aot.core.report">AotDiagnosticReportWriter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html#writeHtml(java.nio.file.Path,io.micronaut.aot.core.Runtime,java.lang.String,java.util.Set,java.util.List,io.micronaut.aot.core.context.DefaultSourceGenerationContext,java.lang.String)" class="member-name-link">writeHtml(Path, Runtime, String, Set, List, DefaultSourceGenerationContext, String)</a> - Static method in class io.micronaut.aot.core.report.<a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html" title="class in io.micronaut.aot.core.report">AotDiagnosticReportWriter</a></dt>

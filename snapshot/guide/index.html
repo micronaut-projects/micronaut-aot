@@ -56,7 +56,9 @@
                                 
                                 <div class="toc-item" style="margin-left:0"><a href="#diagnosticsReport"><strong>5</strong><span>Diagnostics Report</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>6</strong><span>Repository</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#classPathTransform"><strong>6</strong><span>Rewriting the Runtime Class Path</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>7</strong><span>Repository</span></a></div>
                                 
                             </div>
                         </div>
@@ -97,7 +99,9 @@
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-diagnosticsReport"><a href="#diagnosticsReport"><strong>5</strong><span>Diagnostics Report</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>6</strong><span>Repository</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-classPathTransform"><a href="#classPathTransform"><strong>6</strong><span>Rewriting the Runtime Class Path</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>7</strong><span>Repository</span></a></div>
         
         </div>
     </div>
@@ -983,7 +987,256 @@ When HTML is enabled, integrations can also publish <code>micronaut-aot-report.h
 Existing log files remain available for detailed diagnostics.</p>
 </div>
 
-<h1 id="repository"><a class="anchor" href="#repository"></a>6 Repository</h1>
+<h1 id="classPathTransform"><a class="anchor" href="#classPathTransform"></a>6 Rewriting the Runtime Class Path</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.2.x/src/main/docs/guide/classPathTransform.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>The <code>micronaut-aot-bytecode</code> module rewrites the class files of an application&#8217;s runtime class path at build time.
+A build plugin gives it the class path and gets back a class path to package: each entry as it was, or a rewritten copy of it.
+The one step it has today strips the local-variable tables of the third-party jars that the plugin names (<a href="#classPathTransformStrip">Stripping local-variable tables</a>).</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This module is internal to the Micronaut build plugins, and the step is experimental: its API, its rules and its output may change in any release.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Unlike the optimizers of Micronaut AOT, this module does not start the application, uses no <code>AOTContext</code>, and needs no AOT run.
+It reads class files and writes copies, and never loads a class of the class path.
+Its artifact, <code>io.micronaut.aot:micronaut-aot-bytecode</code>, has no dependencies, and needs Java 25 to run, for the ClassFile API.
+An application does not depend on it: its build plugin calls it.</p>
+</div>
+<div class="sect1">
+<h2 id="_how_the_build_plugins_call_it">How the build plugins call it</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section describes what a build plugin does, for those who maintain one.
+<code>ClassPathTransform</code> is <code>@Internal</code>: it is not an API for applications.</p>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">ClassPathTransform.Result result = ClassPathTransform.run(
+    ClassPathTransform.Request.builder()
+        .classPath(runtimeClasspath)
+        .outputDirectory(outputDirectory)
+        .stripLocalVariables(thirdPartyJars)
+        .build());
+log.accept(result.summary());
+result.warnings().forEach(warn);
+List&lt;String&gt; report = new ArrayList&lt;&gt;();
+for (ClassPathTransform.Result.Entry jar : result.entries()) {
+    report.add("%s\t%d\t%d\t%d\t%d\t%s".formatted(jar.path(), jar.classesStripped(),
+        jar.classesUnchanged(), jar.fallbacks(), jar.bytesSaved(), jar.kept().orElse("")));
+    report.addAll(jar.notes());
+}
+Files.write(reportFile, report);
+List&lt;Path&gt; packaged = result.classPath();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The request takes:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>classPath</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The runtime class path, in the order the application&#8217;s class loader searches it, the application&#8217;s own output first: jars or directories. Required. Every class on it is part of the model that a rewritten class is verified against, so pass the whole class path, not only the jars to rewrite.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>outputDirectory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Where the rewritten copies go. Required. A copy is written under a subdirectory named by the index of its entry in <code>classPath</code>, with the entry&#8217;s own file name, so two entries with the same file name never collide. The caller owns the directory and cleans it. It must not hold an entry of <code>classPath</code>, such as a copy that an earlier run wrote there, because a run replaces and deletes files in it: the request is rejected otherwise. Run again from the original class path into a clean directory.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>stripLocalVariables</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The jars whose classes are stripped: third-party jars only, each an entry of <code>classPath</code>. Never pass the application&#8217;s output, a module of the application&#8217;s own build, such as a Gradle project dependency or a module of the Maven reactor, or a directory: their classes are user code, and users debug their locals. The request is rejected when a jar is not an entry of <code>classPath</code>, when it is a directory, and when no jar is named, because the request then enables no step.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>parallelism</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of worker threads, by default the available processors. The output does not depend on it.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The <code>Result</code> has:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>classPath()</code>: the class path to package, in the order of the request. A jar with a rewritten class is replaced by its copy, which keeps the jar&#8217;s file name, so the <code>Class-Path</code> attribute of a manifest that names it stays valid. Every other entry is returned as it was given, and keeps its bytes and its hash.</p>
+</li>
+<li>
+<p><code>summary()</code>: one line to log, such as <code>Stripped local-variable tables from 7102 of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)</code>.</p>
+</li>
+<li>
+<p><code>warnings()</code>: lines to log as warnings, each on its own. Usually empty, never <code>null</code>.</p>
+</li>
+<li>
+<p><code>entries()</code>: what the step did to each jar named by <code>stripLocalVariables</code>, in class-path order, for the plugin to write under the build&#8217;s reports in its own format; empty when the step stood down because of a library that reads local-variable tables. The counts are numbers, so nothing needs parsing. Each <code>Entry</code> has:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>path()</code>: the jar, as <code>classPath</code> gave it;</p>
+</li>
+<li>
+<p><code>classesStripped()</code>, <code>classesUnchanged()</code> and <code>fallbacks()</code>: the jar&#8217;s classes that lost their tables, that were left as they were, and that were written as they were because the step failed on them or their rewrite verified worse. Each class of the jar counts once;</p>
+</li>
+<li>
+<p><code>bytesSaved()</code>: how many bytes smaller the stripped classes became, uncompressed;</p>
+</li>
+<li>
+<p><code>kept()</code>: why no class of the jar went through the step, such as <code>the jar is signed</code>, or empty;</p>
+</li>
+<li>
+<p><code>notes()</code>: one line per fallback, tab-separated: the jar, the class, the step and the first verification error or failure.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><code>run</code> throws only when it cannot read a jar it rewrites, or cannot write a copy.
+A class that it cannot parse, rewrite or verify is written as it was, and a note of its jar&#8217;s entry names it.
+The module logs nothing.</p>
+</div>
+<div class="paragraph">
+<p>A copy holds every entry of the original jar, in the same order, with the same name, comment, time and compression method, and the manifest as it was.
+Only the classes that a step rewrote change; every other entry keeps its content.
+<code>DEFLATED</code> entries are compressed again, so the copy&#8217;s compressed bytes depend on the JDK that writes it.
+A signed jar, and a jar that holds an entry name twice, are left as they are.</p>
+</div>
+<div class="paragraph">
+<p>The rewritten bytes depend on the JDK build that runs the transform, for example through the order of the constant pool.
+The output is reproducible, whatever the parallelism, only with the same JDK build.
+A plugin therefore runs the transform on the project&#8217;s Java toolchain and makes the toolchain&#8217;s version an input of its task.</p>
+</div>
+<div class="paragraph">
+<p>The transform belongs to packaging, not to development.
+A plugin applies it to fat JARs and Docker images, and runs it before anything that records the jars' sizes or modification times, such as the training of a JDK AOT cache.
+It does not apply it to run tasks, tests, IDE class paths or native images, which do not package the class path or do not load class files at run time.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="classPathTransformStrip">Stripping local-variable tables</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Compilers write the names and types of local variables into class files, for debuggers.
+At run time, only debuggers, the variable names in helpful <code>NullPointerException</code> messages and a few libraries that parse class files read them.
+Without a JDK AOT cache, the JVM still parses them, and the constant-pool entries that only they use, for every class it loads.
+The step removes them from the classes of the jars named by <code>stripLocalVariables</code>.
+The jars get somewhat smaller, and a start without a JDK AOT cache slightly faster.
+With a JDK AOT cache, which holds classes already parsed, the step makes no difference worth having, and it is off unless a plugin turns it on.</p>
+</div>
+<div class="paragraph">
+<p>The step drops:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>LocalVariableTable</code>, <code>LocalVariableTypeTable</code> and <code>CharacterRangeTable</code>;</p>
+</li>
+<li>
+<p>the type annotations of method code, which hold bytecode offsets that a rebuilt constant pool can move;</p>
+</li>
+<li>
+<p><code>RuntimeInvisibleTypeAnnotations</code> on classes, fields and methods, which nothing reads at run time.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>It then rebuilds the constant pool, which removes the names and signatures of the locals: dropping the attributes alone would save almost nothing.</p>
+</div>
+<div class="paragraph">
+<p>It keeps <code>LineNumberTable</code>, <code>SourceFile</code>, <code>SourceDebugExtension</code>, <code>MethodParameters</code>, <code>Signature</code> and every other annotation.
+Stack traces keep their <code>File.java:N</code> frames, and reflection sees the same parameter names, generic signatures and annotations.</p>
+</div>
+<div class="paragraph">
+<p>It leaves a class as it was:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>when the class has an attribute that the JDK does not know, because such an attribute may hold constant-pool indexes that a rebuilt pool would break;</p>
+</li>
+<li>
+<p>when the class is a <code>module-info</code>;</p>
+</li>
+<li>
+<p>when the jar is signed, because its manifest holds a digest of every entry;</p>
+</li>
+<li>
+<p>when the rewritten class is not smaller;</p>
+</li>
+<li>
+<p>when the step fails on the class, or when the rewritten class verifies worse than the original.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Each rewritten class is verified with <code>ClassFile.verify</code> against a model of the whole class path, never against the class path of the build tool.
+A class that already failed to verify, for example because it references an optional dependency that is absent, is accepted when the rewrite fails in the same way.</p>
+</div>
+<div class="sect2">
+<h3 id="_costs">Costs</h3>
+<div class="paragraph">
+<p>All of them fall on the code of the stripped jars only:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A helpful <code>NullPointerException</code> message names a local variable by position, <code>because "&lt;local1&gt;" is null</code>. The line number is still there.</p>
+</li>
+<li>
+<p>A debugger shows no local-variable names.</p>
+</li>
+<li>
+<p><code>getDeclaredMethods()</code> can return a class&#8217;s methods in another order. That order is unspecified, but code that relies on it can notice, such as a JSON mapper that orders the properties of a dependency&#8217;s type by method.</p>
+</li>
+<li>
+<p>A rewritten class has new bytes, and software composition analysis tools may report the rewritten jars as modified.</p>
+</li>
+<li>
+<p>The output is reproducible only with the same JDK build. A Docker image layer that holds the rewritten jars changes when the JDK build that runs the transform changes.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_libraries_that_read_local_variable_tables">Libraries that read local-variable tables</h3>
+<div class="paragraph">
+<p>Paranamer&#8217;s <code>BytecodeReadingParanamer</code>, AspectJ&#8217;s weaver and Spring&#8217;s <code>LocalVariableTableParameterNameDiscoverer</code> (before Spring 6.1) read local-variable tables at run time.
+When any entry of <code>classPath</code> contains one of them, by entry name, the step strips nothing, and <code>warnings()</code> holds one line that names the entry and the class.
+A plugin documents how to silence the warning: turn its option off.</p>
+</div>
+</div>
+</div>
+</div>
+
+<h1 id="repository"><a class="anchor" href="#repository"></a>7 Repository</h1>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.2.x/src/main/docs/guide/repository.adoc"'>
