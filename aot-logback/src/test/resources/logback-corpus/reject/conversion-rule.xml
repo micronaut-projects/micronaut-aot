@@ -1,0 +1,11 @@
+<configuration>
+    <conversionRule conversionWord="upper" class="ch.qos.logback.classic.pattern.MessageConverter"/>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%upper%n</pattern>
+        </encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

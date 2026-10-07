@@ -1,0 +1,21 @@
+<configuration>
+    <!-- Joran's FileCollisionAnalyser reports a collision and never creates TWO. -->
+    <appender name="ONE" class="ch.qos.logback.core.FileAppender">
+        <file>build/logback-corpus/shared.log</file>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="TWO" class="ch.qos.logback.core.FileAppender">
+        <file>build/logback-corpus/shared.log</file>
+        <encoder>
+            <pattern>%level %msg%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="com.example" level="DEBUG">
+        <appender-ref ref="TWO"/>
+    </logger>
+    <root level="WARN">
+        <appender-ref ref="ONE"/>
+    </root>
+</configuration>
