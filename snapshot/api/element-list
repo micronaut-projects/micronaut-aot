@@ -8,4 +8,5 @@ io.micronaut.aot.core.context
 io.micronaut.aot.core.report
 io.micronaut.aot.info
 io.micronaut.aot.internal
+io.micronaut.aot.logback
 io.micronaut.aot.std.sourcegen

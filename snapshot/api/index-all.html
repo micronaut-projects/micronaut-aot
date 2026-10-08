@@ -111,6 +111,16 @@ of optimizations before starting the application.</div>
 </dd>
 <dt><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html#%3Cinit%3E(java.util.List)" class="member-name-link">ApplicationContextConfigurerGenerator(List)</a> - Constructor for class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.html#applicationInputs()" class="member-name-link">applicationInputs()</a> - Static method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler</a></dt>
+<dd>
+<div class="block">The entries of the application output that can change the result, as Ant-style patterns relative to a root
+(<code>*</code> matches within a path segment, <code>**</code><code>/</code> any number of directories).</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html#applicationOutput(java.util.List)" class="member-name-link">applicationOutput(List)</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request.Builder</a></dt>
+<dd>
+<div class="block">The application's own output, in class path order: its resource roots and class directories, or a
+jar.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:B">B</h2>
 <dl class="index">
@@ -128,10 +138,20 @@ of optimizations before starting the application.</div>
 <dd>
 <div class="block">Builds the request.</div>
 </dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html#build()" class="member-name-link">build()</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request.Builder</a></dt>
+<dd>
+<div class="block">Builds the request.</div>
+</dd>
 <dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.html#builder()" class="member-name-link">builder()</a> - Static method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request</a></dt>
 <dd>
 <div class="block">A builder for a request.</div>
 </dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.html#builder()" class="member-name-link">builder()</a> - Static method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request</a></dt>
+<dd>
+<div class="block">Starts a request.</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.html#build-policy-heading" class="search-tag-link">Build policy</a> - Section in class io.micronaut.aot.logback.LogbackPrecompiler</dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#bytesSaved()" class="member-name-link">bytesSaved()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
 <dd>
 <div class="block">How many bytes smaller the stripped classes became, uncompressed.</div>
@@ -187,6 +207,11 @@ the result instead of the original jars.</div>
 <dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" class="type-name-link" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a> - Class in <a href="io/micronaut/aot/bytecode/package-summary.html">io.micronaut.aot.bytecode</a></dt>
 <dd>
 <div class="block">What the strip step did to one jar.</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html#closedClassPath(boolean)" class="member-name-link">closedClassPath(boolean)</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request.Builder</a></dt>
+<dd>
+<div class="block">Whether the class path given here is exactly the one the application runs on, as it is for a
+packager that fixes the class path at packaging time.</div>
 </dd>
 <dt><a href="io/micronaut/aot/ConfigKeys.html" class="type-name-link" title="interface in io.micronaut.aot">ConfigKeys</a> - Interface in <a href="io/micronaut/aot/package-summary.html">io.micronaut.aot</a></dt>
 <dd>
@@ -312,6 +337,11 @@ be executed before this generator is called.</div>
 <div class="block">What the strip step did to each jar it was given, in class-path order: one element per class path entry
 named by <a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.Builder.html#stripLocalVariables(java.util.Collection)"><code>ClassPathTransform.Request.Builder.stripLocalVariables(Collection)</code></a>, whether it was rewritten or not.</div>
 </dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#entries()" class="member-name-link">entries()</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Result</a></dt>
+<dd>
+<div class="block">The generated entries: the class files and the
+<code>META-INF/services/ch.qos.logback.classic.spi.Configurator</code> file, by entry name, in order.</div>
+</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" class="type-name-link" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
 <dd>
 <div class="block">A code generator which is responsible for precomputing the Micronaut property
@@ -343,6 +373,12 @@ a configuration file which includes all entries.</div>
 </dl>
 <h2 class="title" id="I:F">F</h2>
 <dl class="index">
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html#FAILED" class="member-name-link">FAILED</a> - Enum constant in enum class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a></dt>
+<dd>
+<div class="block">Nothing was generated because something went wrong: a generated name is already taken, the output of
+an earlier call is still in the application output, the class path could not be read, or the front end
+or the emitter failed.</div>
+</dd>
 <dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#fallbacks()" class="member-name-link">fallbacks()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
 <dd>
 <div class="block">The classes written as they were because the step failed on them or their rewrite verified worse than
@@ -400,6 +436,10 @@ source generation.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#generate(io.micronaut.aot.core.AOTContext)" class="member-name-link">generate(AOTContext)</a> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html#GENERATED" class="member-name-link">GENERATED</a> - Enum constant in enum class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a></dt>
+<dd>
+<div class="block">A configurator was generated.</div>
+</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html#GENERATED_CLASS" class="member-name-link">GENERATED_CLASS</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/ConfigKeys.html#GENERATED_PACKAGE" class="member-name-link">GENERATED_PACKAGE</a> - Static variable in interface io.micronaut.aot.<a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a></dt>
@@ -592,6 +632,8 @@ the optimized entry point at build time.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/internal/package-summary.html">io.micronaut.aot.internal</a> - package io.micronaut.aot.internal</dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/package-summary.html">io.micronaut.aot.logback</a> - package io.micronaut.aot.logback</dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a> - package io.micronaut.aot.std.sourcegen</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/config/SourceGeneratorSelection.html#isEnabled()" class="member-name-link">isEnabled()</a> - Method in class io.micronaut.aot.core.config.<a href="io/micronaut/aot/core/config/SourceGeneratorSelection.html" title="class in io.micronaut.aot.core.config">SourceGeneratorSelection</a></dt>
@@ -657,6 +699,29 @@ Java configuration.</div>
 </dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html#%3Cinit%3E()" class="member-name-link">LogbackConfigurationSourceGenerator()</a> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/LogbackConfigurationSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">LogbackConfigurationSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.html" class="type-name-link" title="class in io.micronaut.aot.logback">LogbackPrecompiler</a> - Class in <a href="io/micronaut/aot/logback/package-summary.html">io.micronaut.aot.logback</a></dt>
+<dd>
+<div class="block">Compiles an application's <code>logback.xml</code> into a Logback <code>Configurator</code> at build time, so that the
+application does not parse XML and run Joran on the main thread at every start.</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.html" class="type-name-link" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request</a> - Class in <a href="io/micronaut/aot/logback/package-summary.html">io.micronaut.aot.logback</a></dt>
+<dd>
+<div class="block">What to compile and for which class path: plain paths, no build tool type.</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html" class="type-name-link" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request.Builder</a> - Class in <a href="io/micronaut/aot/logback/package-summary.html">io.micronaut.aot.logback</a></dt>
+<dd>
+<div class="block">Builds a <a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.html" title="class in io.micronaut.aot.logback"><code>LogbackPrecompiler.Request</code></a>.</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html" class="type-name-link" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Result</a> - Class in <a href="io/micronaut/aot/logback/package-summary.html">io.micronaut.aot.logback</a></dt>
+<dd>
+<div class="block">The outcome of one precompilation: its <a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#status()"><code>LogbackPrecompiler.Result.status()</code></a>, one <a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#message()"><code>LogbackPrecompiler.Result.message()</code></a> for the caller to log, the
+generated <a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#entries()"><code>LogbackPrecompiler.Result.entries()</code></a>, and the <a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#warnings()"><code>LogbackPrecompiler.Result.warnings()</code></a> the caller logs at warning level, which most
+results do not have.</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" class="type-name-link" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a> - Enum Class in <a href="io/micronaut/aot/logback/package-summary.html">io.micronaut.aot.logback</a></dt>
+<dd>
+<div class="block">What a precompilation did.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:M">M</h2>
 <dl class="index">
@@ -694,6 +759,10 @@ set of values at build time.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html#%3Cinit%3E(java.lang.String,java.util.Map)" class="member-name-link">MapPropertySourceGenerator(String, Map)</a> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">MapPropertySourceGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#message()" class="member-name-link">message()</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Result</a></dt>
+<dd>
+<div class="block">One line for the caller to log: what was compiled, or why nothing was.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/config/MetadataUtils.html" class="type-name-link" title="class in io.micronaut.aot.core.config">MetadataUtils</a> - Class in <a href="io/micronaut/aot/core/config/package-summary.html">io.micronaut.aot.core.config</a></dt>
 <dd>
 <div class="block">Runtime reflection utils for analyzing AOT modules.</div>
@@ -802,6 +871,10 @@ path, with the entry's own file name.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/Environments.html#POSSIBLE_ENVIRONMENTS_SAMPLE" class="member-name-link">POSSIBLE_ENVIRONMENTS_SAMPLE</a> - Static variable in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Environments.html" title="class in io.micronaut.aot.core">Environments</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.html#precompile(io.micronaut.aot.logback.LogbackPrecompiler.Request)" class="member-name-link">precompile(LogbackPrecompiler.Request)</a> - Static method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler</a></dt>
+<dd>
+<div class="block">Precompiles the first <code>logback.xml</code> on a class path, or reports why it does not.</div>
+</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html#PROCESS_ID" class="member-name-link">PROCESS_ID</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html#PROCESS_ID_DESCRIPTION" class="member-name-link">PROCESS_ID_DESCRIPTION</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></dt>
@@ -946,6 +1019,10 @@ the optimized binary is loaded.</div>
 </dd>
 <dt><a href="io/micronaut/aot/ConfigKeys.html#RUNTIME" class="member-name-link">RUNTIME</a> - Static variable in interface io.micronaut.aot.<a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html#runtimeClasspath(java.util.List)" class="member-name-link">runtimeClasspath(List)</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request.Builder</a></dt>
+<dd>
+<div class="block">The runtime class path after the application, in order: jars or directories.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:S">S</h2>
 <dl class="index">
@@ -975,6 +1052,15 @@ order according to their dependencies.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#staticMethodBuilder(java.lang.String,java.util.function.Consumer)" class="member-name-link">staticMethodBuilder(String, Consumer)</a> - Static method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#status()" class="member-name-link">status()</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Result</a></dt>
+<dd>
+<div class="block">What happened.</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html#STOOD_DOWN" class="member-name-link">STOOD_DOWN</a> - Enum constant in enum class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a></dt>
+<dd>
+<div class="block">Nothing was generated because the result could not be proven to match Joran's, which is expected for
+many applications; Logback configures itself with Joran at startup.</div>
+</dd>
 <dt><a href="io/micronaut/aot/internal/StreamHelper.html" class="type-name-link" title="class in io.micronaut.aot.internal">StreamHelper</a> - Class in <a href="io/micronaut/aot/internal/package-summary.html">io.micronaut.aot.internal</a></dt>
 <dd>
 <div class="block">Utility methods to deal with exceptions being
@@ -1024,6 +1110,10 @@ of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)</code>.
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/Environments.html#TARGET_ENVIRONMENTS_SAMPLE" class="member-name-link">TARGET_ENVIRONMENTS_SAMPLE</a> - Static variable in class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Environments.html" title="class in io.micronaut.aot.core">Environments</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html#targetRelease(int)" class="member-name-link">targetRelease(int)</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request.Builder</a></dt>
+<dd>
+<div class="block">The lowest Java release the application runs on.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html#toHtml(io.micronaut.aot.core.Runtime,java.lang.String,java.util.Set,java.util.List,io.micronaut.aot.core.context.DefaultSourceGenerationContext,java.lang.String)" class="member-name-link">toHtml(Runtime, String, Set, List, DefaultSourceGenerationContext, String)</a> - Static method in class io.micronaut.aot.core.report.<a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html" title="class in io.micronaut.aot.core.report">AotDiagnosticReportWriter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html#toJson(io.micronaut.aot.core.Runtime,java.lang.String,java.util.Set,java.util.List,io.micronaut.aot.core.context.DefaultSourceGenerationContext,java.lang.String)" class="member-name-link">toJson(Runtime, String, Set, List, DefaultSourceGenerationContext, String)</a> - Static method in class io.micronaut.aot.core.report.<a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html" title="class in io.micronaut.aot.core.report">AotDiagnosticReportWriter</a></dt>
@@ -1050,7 +1140,16 @@ use in properties files.</div>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/Runtime.html#values()" class="member-name-link">values()</a> - Static method in enum class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Runtime.html" title="enum class in io.micronaut.aot.core">Runtime</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html#values()" class="member-name-link">values()</a> - Static method in enum class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
@@ -1069,6 +1168,16 @@ the order they are declared.</div>
 <div class="block">Lines for the caller to log as warnings, each on its own, such as the library on the class path that made
 the strip step stand down.</div>
 </dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#warnings()" class="member-name-link">warnings()</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Result</a></dt>
+<dd>
+<div class="block">Lines for the caller to log at warning level, each on its own, after <a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#message()"><code>LogbackPrecompiler.Result.message()</code></a>.</div>
+</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.html#what-it-generates-heading" class="search-tag-link">What it generates</a> - Section in class io.micronaut.aot.logback.LogbackPrecompiler</dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.html#when-it-generates-nothing-heading" class="search-tag-link">When it generates nothing</a> - Section in class io.micronaut.aot.logback.LogbackPrecompiler</dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.html#when-it-warns-heading" class="search-tag-link">When it warns</a> - Section in class io.micronaut.aot.logback.LogbackPrecompiler</dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html#write(java.nio.file.Path,io.micronaut.aot.core.Runtime,java.lang.String,java.util.Set,java.util.List,io.micronaut.aot.core.context.DefaultSourceGenerationContext,java.lang.String)" class="member-name-link">write(Path, Runtime, String, Set, List, DefaultSourceGenerationContext, String)</a> - Static method in class io.micronaut.aot.core.report.<a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html" title="class in io.micronaut.aot.core.report">AotDiagnosticReportWriter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html#writeHtml(java.nio.file.Path,io.micronaut.aot.core.Runtime,java.lang.String,java.util.Set,java.util.List,io.micronaut.aot.core.context.DefaultSourceGenerationContext,java.lang.String)" class="member-name-link">writeHtml(Path, Runtime, String, Set, List, DefaultSourceGenerationContext, String)</a> - Static method in class io.micronaut.aot.core.report.<a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html" title="class in io.micronaut.aot.core.report">AotDiagnosticReportWriter</a></dt>

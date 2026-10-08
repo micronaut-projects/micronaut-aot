@@ -189,88 +189,111 @@ at build time.</div>
 <div class="block">A source generator responsible for converting a logback.xml configuration into
 Java configuration.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/cli/Main.html" title="class in io.micronaut.aot.cli">Main</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/logback/LogbackPrecompiler.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Compiles an application's <code>logback.xml</code> into a Logback <code>Configurator</code> at build time, so that the
+application does not parse XML and run Joran on the main thread at every start.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">What to compile and for which class path: plain paths, no build tool type.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.Builder.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Builds a <a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.html" title="class in io.micronaut.aot.logback"><code>LogbackPrecompiler.Request</code></a>.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Result</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">The outcome of one precompilation: its <a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#status()"><code>LogbackPrecompiler.Result.status()</code></a>, one <a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#message()"><code>LogbackPrecompiler.Result.message()</code></a> for the caller to log, the
+generated <a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#entries()"><code>LogbackPrecompiler.Result.entries()</code></a>, and the <a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#warnings()"><code>LogbackPrecompiler.Result.warnings()</code></a> the caller logs at warning level, which most
+results do not have.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
+<div class="block">What a precompilation did.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/cli/Main.html" title="class in io.micronaut.aot.cli">Main</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Entry point for the Micronaut AOT command line interface.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/codegen/MapGenerator.html" title="class in io.micronaut.aot.core.codegen">MapGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/codegen/MapGenerator.html" title="class in io.micronaut.aot.core.codegen">MapGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A helper class to generate maps.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">MapPropertySourceGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/MapPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">MapPropertySourceGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A source generator which generates a map property source with a fixed
 set of values at build time.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/MetadataUtils.html" title="class in io.micronaut.aot.core.config">MetadataUtils</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Runtime reflection utils for analyzing AOT modules.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/info/MicronautAotApiModuleInfo.html" title="class in io.micronaut.aot.info">MicronautAotApiModuleInfo</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/info/MicronautAotCliModuleInfo.html" title="class in io.micronaut.aot.info">MicronautAotCliModuleInfo</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/info/MicronautAotApiModuleInfo.html" title="class in io.micronaut.aot.info">MicronautAotApiModuleInfo</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/info/MicronautAotCoreModuleInfo.html" title="class in io.micronaut.aot.info">MicronautAotCoreModuleInfo</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/info/MicronautAotCliModuleInfo.html" title="class in io.micronaut.aot.info">MicronautAotCliModuleInfo</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/MicronautAotOptimizer.html" title="class in io.micronaut.aot">MicronautAotOptimizer</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/info/MicronautAotCoreModuleInfo.html" title="class in io.micronaut.aot.info">MicronautAotCoreModuleInfo</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/MicronautAotOptimizer.html" title="class in io.micronaut.aot">MicronautAotOptimizer</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The Micronaut AOT optimizer is the main entry point for code
 generation at build time.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/MicronautAotOptimizer.Runner.html" title="class in io.micronaut.aot">MicronautAotOptimizer.Runner</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/MicronautAotOptimizer.Runner.html" title="class in io.micronaut.aot">MicronautAotOptimizer.Runner</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The main AOT optimizer runner.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/info/MicronautAotStdOptimizersModuleInfo.html" title="class in io.micronaut.aot.info">MicronautAotStdOptimizersModuleInfo</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/info/MicronautAotStdOptimizersModuleInfo.html" title="class in io.micronaut.aot.info">MicronautAotStdOptimizersModuleInfo</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A code generator which is responsible for setting up Netty properties.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab6"><a href="io/micronaut/aot/core/Option.html" title="annotation interface in io.micronaut.aot.core">Option</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab6">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab6"><a href="io/micronaut/aot/core/Option.html" title="annotation interface in io.micronaut.aot.core">Option</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab6">
 <div class="block">Describes a configuration option of a source generator.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/ParentTagTagClassTuple.html" title="class in io.micronaut.aot.std.sourcegen">ParentTagTagClassTuple</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/ParentTagTagClassTuple.html" title="class in io.micronaut.aot.std.sourcegen">ParentTagTagClassTuple</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Represents default class name rules.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/std/sourcegen/PublishersSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">PublishersSourceGenerator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An optimizer which is responsible for determining what reactive
 types are found at build time.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/micronaut/aot/core/Runtime.html" title="enum class in io.micronaut.aot.core">Runtime</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="io/micronaut/aot/core/Runtime.html" title="enum class in io.micronaut.aot.core">Runtime</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
 <div class="block">The targeted type of runtime.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html" title="class in io.micronaut.aot.core.config">SourceGeneratorLoader</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/SourceGeneratorLoader.html" title="class in io.micronaut.aot.core.config">SourceGeneratorLoader</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">This class is responsible for loading the source generators
 for a particular target runtime, and sort them in execution
 order according to their dependencies.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/SourceGeneratorSelection.html" title="class in io.micronaut.aot.core.config">SourceGeneratorSelection</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/core/config/SourceGeneratorSelection.html" title="class in io.micronaut.aot.core.config">SourceGeneratorSelection</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Describes how a discovered source generator was selected for an AOT run.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/internal/StreamHelper.html" title="class in io.micronaut.aot.internal">StreamHelper</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/internal/StreamHelper.html" title="class in io.micronaut.aot.internal">StreamHelper</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Utility methods to deal with exceptions being
 thrown in streams.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/aot/internal/StreamHelper.ThrowingRunner.html" title="interface in io.micronaut.aot.internal">StreamHelper.ThrowingRunner</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/aot/internal/StreamHelper.ThrowingRunner.html" title="interface in io.micronaut.aot.internal">StreamHelper.ThrowingRunner</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A helper interface for runnables which may
 throw an exception.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/aot/internal/StreamHelper.ThrowingSupplier.html" title="interface in io.micronaut.aot.internal">StreamHelper.ThrowingSupplier&lt;T&gt;</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/aot/internal/StreamHelper.ThrowingSupplier.html" title="interface in io.micronaut.aot.internal">StreamHelper.ThrowingSupplier&lt;T&gt;</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A helper interface to capture suppliers which
 may throw an exception.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/cli/VersionProvider.html" title="class in io.micronaut.aot.cli">VersionProvider</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/aot/cli/VersionProvider.html" title="class in io.micronaut.aot.cli">VersionProvider</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Reads the version.txt generated file to feed it to picocli.</div>
 </div>
 </div>
