@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * The classes that sites of one host share: one per functional interface, captured types and interface method, each
@@ -163,11 +165,11 @@ class SharedLambdaClassesTest {
     }
 
     /**
-     * {@code bipush} pushes the tag, so a class serves at most 128 sites; a {@code tableswitch} takes 4 bytes per tag,
-     * so within {@code FreqInlineSize} a class serves fewer still.
+     * {@code bipush} pushes the tag. A case takes at least 8 bytes, 4 of the {@code tableswitch} and a 4-byte forward,
+     * so the {@code FreqInlineSize} cap closes a class at 38 sites, and 130 sites of one key take four classes.
      */
     @Test
-    void aSharedClassTakesAtMost128Sites() throws Exception {
+    void aKeyWithMoreSitesThanOneClassServesSpreadsOverClassesWhoseTagsFitBipush() throws Exception {
         StringBuilder source = new StringBuilder("""
                 package grp;
                 public class Many {
@@ -196,13 +198,78 @@ class SharedLambdaClassesTest {
                         ? push.constantValue() : null;
             }
         }
-        assertTrue(tags < LambdaClasses.MAX_TAGS, "the largest tag " + tags);
-        assertTrue(tags <= (LambdaClasses.MAX_DISPATCH_BYTES - 20) / 4, "the largest tag " + tags);
-        assertTrue(generated(output).size() >= 2, generated(output)::toString);
+        assertEquals(37, tags, "the byte cap closes a class at 38 sites");
+        assertEquals(4, generated(output).size(), generated(output)::toString);
         Class<?> many = LambdaFixtures.loader(LambdaFixtures.classPath(List.of(output))).loadClass("grp.Many");
         for (Runnable runnable : (Runnable[]) many.getMethod("all").invoke(null)) {
             runnable.run();
         }
+    }
+
+    /**
+     * A shared class's {@code create} takes the captured values and the tag, and returns the functional interface: an
+     * interface method with that name and descriptor would be declared twice, so its sites keep a class each, and the
+     * other sites of the nest are rewritten as usual.
+     */
+    @Test
+    void aKeyWhoseInterfaceMethodIsTheSharedCreateKeepsAClassPerSite() throws Exception {
+        Map<String, byte[]> output = desugar("makers", 25, "grp.Makers", """
+                package grp;
+                import java.util.ArrayList;
+                import java.util.List;
+                public class Makers {
+                    public interface Maker {
+                        Maker create(int x);
+                    }
+                    public interface Maker2 {
+                        Maker2 create(String s, int x);
+                    }
+                    static final List<String> CALLS = new ArrayList<>();
+                    public static Maker first() {
+                        return x -> {
+                            CALLS.add("first" + x);
+                            return null;
+                        };
+                    }
+                    public static Maker second() {
+                        return x -> {
+                            CALLS.add("second" + x);
+                            return null;
+                        };
+                    }
+                    public static Maker2 capturing(String prefix) {
+                        return (s, x) -> {
+                            CALLS.add(prefix + s + x);
+                            return null;
+                        };
+                    }
+                    public static Maker2 capturingToo(String prefix) {
+                        return (s, x) -> {
+                            CALLS.add(s + prefix + x);
+                            return null;
+                        };
+                    }
+                    public static class Nested {
+                        static Runnable run() {
+                            return () -> CALLS.add("nested");
+                        }
+                    }
+                    public static List<String> run() {
+                        first().create(1);
+                        second().create(2);
+                        capturing("p").create("s", 3);
+                        capturingToo("q").create("t", 4);
+                        Nested.run().run();
+                        return CALLS;
+                    }
+                }
+                """);
+
+        assertEquals(Set.of("grp/Makers$$Lambda$R0.class", "grp/Makers$$Lambda$R1.class",
+                "grp/Makers$$Lambda$R2.class", "grp/Makers$$Lambda$R3.class", "grp/Makers$Nested$$Lambda$R0.class"),
+                generated(output));
+        assertEquals(List.of("first1", "second2", "ps3", "tq4", "nested"),
+                LambdaFixtures.run(LambdaFixtures.classPath(List.of(output)), "grp.Makers"));
     }
 
     @Test
@@ -360,11 +427,16 @@ class SharedLambdaClassesTest {
 
     private static List<String> fork(Path classes) throws Exception {
         Path java = Path.of(System.getProperty("java.home"), "bin", "java");
+        Path log = Files.createTempFile(temp, "fork", ".log");
         Process process = new ProcessBuilder(java.toString(), "-Xverify:all", "-cp", classes.toString(),
-                LambdaFixtures.APPLICATION).redirectErrorStream(true).start();
+                LambdaFixtures.APPLICATION).redirectErrorStream(true).redirectOutput(log.toFile()).start();
         process.getOutputStream().close();
-        String text = new String(process.getInputStream().readAllBytes());
-        assertEquals(0, process.waitFor(), text);
+        if (!process.waitFor(2, TimeUnit.MINUTES)) {
+            process.destroyForcibly();
+            fail("timed out: " + Files.readString(log));
+        }
+        String text = Files.readString(log);
+        assertEquals(0, process.exitValue(), text);
         return text.lines().filter(line -> !line.contains("VM warning")).toList();
     }
 

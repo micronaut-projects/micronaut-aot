@@ -335,8 +335,9 @@ public final class ClassPathTransform {
 
             /**
              * Packages, with their subpackages, whose classes the runtime may resolve from somewhere other than the
-             * class path, such as a launcher's own classes. Desugaring never rewrites a site whose host, nest host,
-             * implementation owner, functional interface or captured receiver is in one of them. Default: none.
+             * class path, for a launcher whose own loader defines these packages first, such as Micronaut Runner's.
+             * Desugaring never rewrites a site whose host, nest host, implementation owner, functional interface or
+             * captured receiver is in one of them. Default: none.
              *
              * @param packages the packages, as dotted names such as {@code io.micronaut.runner}
              * @return this builder
@@ -346,14 +347,31 @@ public final class ClassPathTransform {
                 Set<String> internal = new LinkedHashSet<>();
                 for (String name : packages) {
                     Objects.requireNonNull(name, "package");
-                    if (name.isEmpty() || name.startsWith(".") || name.endsWith(".") || name.contains("..")
-                            || name.indexOf('/') >= 0) {
+                    if (!isPackageName(name)) {
                         throw new IllegalArgumentException("Not a package name: " + name);
                     }
                     internal.add(name.replace('.', '/'));
                 }
                 this.foreignPackages = Collections.unmodifiableSet(internal);
                 return this;
+            }
+
+            /**
+             * Whether a name is a dotted package name: identifiers separated by single dots.
+             */
+            private static boolean isPackageName(String name) {
+                for (String segment : name.split("\\.", -1)) {
+                    if (segment.isEmpty() || !Character.isJavaIdentifierStart(segment.codePointAt(0))) {
+                        return false;
+                    }
+                    for (int i = Character.charCount(segment.codePointAt(0)); i < segment.length();
+                         i += Character.charCount(segment.codePointAt(i))) {
+                        if (!Character.isJavaIdentifierPart(segment.codePointAt(i))) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
             }
 
             /**
@@ -491,8 +509,8 @@ public final class ClassPathTransform {
         }
 
         /**
-         * One line per enabled step for the caller to log, in step order, such as {@code Desugared 2963 lambda call
-         * sites into 2125 generated classes in 38 class path entries (817 classes rewritten, 361 bridges, 29 sites left
+         * One line per enabled step for the caller to log, in step order, such as {@code Desugared 2960 lambda call
+         * sites into 1978 generated classes in 37 class path entries (815 classes rewritten, 360 bridges, 33 sites left
          * as invokedynamic, 0 nest fallbacks)} and {@code Stripped local-variable tables from 7102 of 8428 dependency
          * classes in 49 jars (4868965 bytes saved, 0 fallbacks)}.
          *
@@ -628,7 +646,8 @@ public final class ClassPathTransform {
 
             /**
              * The existing classes that desugaring rewrote: hosts whose call sites it rewrote, and nest hosts whose
-             * {@code NestMembers} gained the generated classes.
+             * {@code NestMembers} gained the generated classes. Micronaut Runner reports it in its
+             * {@code transforms.txt}.
              *
              * @return the number of classes desugared
              */
@@ -658,7 +677,8 @@ public final class ClassPathTransform {
 
             /**
              * The static synthetic bridge methods that desugaring added to hosts below class-file version 55, which
-             * have no nestmates, so that a generated class can reach a private lambda body.
+             * have no nestmates, so that a generated class can reach a private lambda body. Micronaut Runner reports
+             * it in its {@code transforms.txt}.
              *
              * @return the number of bridges
              */
@@ -669,7 +689,7 @@ public final class ClassPathTransform {
             /**
              * The nests that desugaring planned and then wrote as they were, because a class of the nest failed or
              * verified worse. Each has a line in {@link #notes()}, and its sites count under {@code nestFallback} in
-             * {@link #sitesLeft()}.
+             * {@link #sitesLeft()}. Micronaut Runner reports it in its {@code transforms.txt}.
              *
              * @return the number of nest fallbacks
              */
@@ -678,9 +698,12 @@ public final class ClassPathTransform {
             }
 
             /**
-             * The lambda call sites that desugaring left as {@code invokedynamic}, by reason, such as
-             * {@code altMetafactory} or {@code shadowedOrUncertain}, in a fixed order of the reasons, without the
-             * reasons that have none.
+             * The lambda call sites that desugaring left as {@code invokedynamic}, by reason, in a fixed order of the
+             * reasons, without the reasons that have none. The reasons are {@code altMetafactory},
+             * {@code shadowedOrUncertain}, {@code multiRelease}, {@code signedJar}, {@code nest}, {@code superCall},
+             * {@code ownerAccess}, {@code callerSensitive}, {@code unresolvedType}, {@code nameTaken},
+             * {@code java8Interface}, {@code serialVersionUid}, {@code interfaceInit}, {@code shape} and
+             * {@code nestFallback}; they are for display, and a release may add one.
              *
              * @return the sites left, by reason
              */

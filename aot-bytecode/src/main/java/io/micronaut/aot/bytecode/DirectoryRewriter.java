@@ -16,6 +16,7 @@
 package io.micronaut.aot.bytecode;
 
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -137,6 +138,7 @@ final class DirectoryRewriter {
             throw failure;
         }
         if (!changed) {
+            // A second guard: a directory is copied only when a nest was accepted, which always changes a class.
             delete(target);
         }
         return changed;
@@ -183,12 +185,21 @@ final class DirectoryRewriter {
     }
 
     /**
-     * Deletes a copy that an earlier run may have left, and everything in it, without following links.
+     * Deletes a copy, and everything in it, without following links, and then its directory when nothing else is in
+     * it, as {@link JarRewriter} does.
      */
     private static void delete(Path target) throws IOException {
-        if (!Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
-            return;
+        if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            deleteTree(target);
         }
+        try {
+            Files.deleteIfExists(target.getParent());
+        } catch (DirectoryNotEmptyException e) {
+            // The caller's directory holds other files: only the copy is this method's.
+        }
+    }
+
+    private static void deleteTree(Path target) throws IOException {
         Files.walkFileTree(target, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {

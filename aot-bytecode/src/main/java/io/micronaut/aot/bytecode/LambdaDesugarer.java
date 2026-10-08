@@ -109,6 +109,18 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
 
     private static final String SERIAL_VERSION_UID = "serialVersionUID";
 
+    /** The descriptors of the fields {@code ObjectStreamClass} reads a declared {@code serialVersionUID} from. */
+    private static final Set<String> SERIAL_VERSION_UID_TYPES = Set.of("J", "I", "S", "C", "B");
+
+    private static final String ENUM = "java/lang/Enum";
+
+    private static final String CLASS_INIT = "<clinit>";
+
+    private static final String NO_ARGUMENTS = "()V";
+
+    /** The longest file name most file systems accept, in bytes, which a generated class's file name must fit. */
+    private static final int MAX_FILE_NAME_BYTES = 255;
+
     /** The first class-file version with {@code invokedynamic}. */
     private static final int INDY_MAJOR = 51;
 
@@ -420,6 +432,85 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
     }
 
     /**
+     * Whether initializing a class that implements an interface may run a static initializer that could reach a
+     * lambda call site again: the JVM initializes every superinterface that declares a non-abstract instance method
+     * before the class (JVMS 5.5), and such an interface may also have a static initializer that is not quiet
+     * ({@link InterfaceInitializers}). An interface that cannot be found, whose name is uncertain, or that is the
+     * JDK's, whose initializers are not read, counts as such.
+     *
+     * @param internalName the interface, or a superinterface
+     * @param seen         the interfaces of this walk visited so far
+     * @param initializing an interface whose initialization is in progress on the thread, which counts as quiet, or
+     *                     {@code null}
+     * @param checking     the interfaces whose quietness is being decided, to stop at a cycle
+     */
+    private boolean initializesLoudly(String internalName, Set<String> seen, String initializing,
+                                      Set<String> checking) {
+        if (!seen.add(internalName)) {
+            return false;
+        }
+        List<String> interfaces;
+        String packageName = packageOf(internalName);
+        if (JdkClasses.owns(packageName) && !model.holdsPackage(packageName)) {
+            JdkClasses.JdkClass jdk = JdkClasses.find(internalName);
+            if (jdk == null || jdk.method(CLASS_INIT, NO_ARGUMENTS) != null && jdk.declaresConcreteInstanceMethod()) {
+                return true;
+            }
+            interfaces = jdk.interfaces();
+        } else {
+            Optional<ClassPathModel.Copy> copy = model.winner(internalName);
+            if (copy.isEmpty() || !certain(internalName)) {
+                return true;
+            }
+            if (copy.get().member(CLASS_INIT, NO_ARGUMENTS) != null && copy.get().declaresConcreteInstanceMethod()
+                    && !internalName.equals(initializing) && !quiet(copy.get(), checking)) {
+                return true;
+            }
+            interfaces = copy.get().interfaces();
+        }
+        for (String superinterface : interfaces) {
+            if (initializesLoudly(superinterface, seen, initializing, checking)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether an interface's static initializer is quiet: the scan found it quiet on its own, every class it
+     * instantiates is inert, and linking its lambdas, or initializing those classes, initializes no other interface
+     * loudly. A cycle counts as loud.
+     */
+    private boolean quiet(ClassPathModel.Copy copy, Set<String> checking) {
+        InterfaceInitializers.Initializer initializer = copy.initializer();
+        if (initializer == null || !checking.add(copy.name())) {
+            return false;
+        }
+        try {
+            for (String instantiated : initializer.instantiated()) {
+                Optional<ClassPathModel.Copy> type = model.winner(instantiated);
+                if (type.isEmpty() || !certain(instantiated) || !type.get().inert()) {
+                    return false;
+                }
+                Set<String> seen = new HashSet<>();
+                for (String implemented : type.get().interfaces()) {
+                    if (initializesLoudly(implemented, seen, copy.name(), checking)) {
+                        return false;
+                    }
+                }
+            }
+            for (String functionalInterface : initializer.lambdaInterfaces()) {
+                if (initializesLoudly(functionalInterface, new HashSet<>(), copy.name(), checking)) {
+                    return false;
+                }
+            }
+            return true;
+        } finally {
+            checking.remove(copy.name());
+        }
+    }
+
+    /**
      * Whether any {@code invokedynamic} constant of a class is bootstrapped by {@code LambdaMetafactory}: the marker
      * alone may be a string the class merely mentions.
      */
@@ -506,19 +597,32 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
         /** A class the generated class would name does not resolve on the class path or in the JDK. */
         UNRESOLVED_TYPE("unresolvedType"),
 
-        /** A class or a member already has the name the generated class or the bridge would take. */
+        /**
+         * A class or a member already has the name the generated class or the bridge would take, or the generated
+         * class's file name would be longer than 255 bytes.
+         */
         NAME_TAKEN("nameTaken"),
 
         /** The host is an interface below class-file version 55 whose implementation is private. */
         JAVA8_INTERFACE("java8Interface"),
 
         /**
-         * The host is a serializable class below class-file version 55 without a {@code serialVersionUID}, whose
-         * default would change with a bridge.
+         * The host is a serializable class below class-file version 55, other than an enum, that declares no
+         * {@code static final} {@code serialVersionUID}, whose default would change with a bridge.
          */
         SERIAL_VERSION_UID("serialVersionUid"),
 
-        /** The site has a shape {@code LambdaMetafactory} would reject, or one this step does not generate. */
+        /**
+         * The functional interface, or one of its superinterfaces, declares a non-abstract instance method and a
+         * static initializer that is not quiet ({@link InterfaceInitializers}): initializing the generated class
+         * would run it first, and it may reach the site again.
+         */
+        INTERFACE_INIT("interfaceInit"),
+
+        /**
+         * The site has a shape {@code LambdaMetafactory} would reject, or one this step does not generate, such as a
+         * serializable functional interface outside {@code altMetafactory}.
+         */
         SHAPE("shape"),
 
         /** The site's nest was planned and then fell back. */
@@ -1062,6 +1166,12 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
             private final LambdaClasses.Home home;
             private final Nest nest;
             private final boolean isInterface;
+            /**
+             * Whether the class's serialization identity does not depend on its methods: it declares a
+             * {@code serialVersionUID} that {@code ObjectStreamClass} reads, or it is an enum, whose identity is
+             * always {@code 0}.
+             */
+            private final boolean fixedSerialVersionUid;
             private final Set<String> memberNames = new HashSet<>();
             private int next;
             /** Why the class cannot take a bridge, computed when the first site needs one. */
@@ -1074,13 +1184,22 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
                 this.packageName = packageOf(name);
                 this.home = home;
                 this.nest = nest;
-                this.isInterface = (parsed.flags().flagsMask() & ClassFile.ACC_INTERFACE) != 0;
+                int flags = parsed.flags().flagsMask();
+                this.isInterface = (flags & ClassFile.ACC_INTERFACE) != 0;
+                boolean declaresSerialVersionUid = false;
+                int constant = ClassFile.ACC_STATIC | ClassFile.ACC_FINAL;
                 for (MethodModel method : parsed.methods()) {
                     memberNames.add(method.methodName().stringValue());
                 }
                 for (FieldModel field : parsed.fields()) {
                     memberNames.add(field.fieldName().stringValue());
+                    declaresSerialVersionUid |= field.fieldName().equalsString(SERIAL_VERSION_UID)
+                            && (field.flags().flagsMask() & constant) == constant
+                            && SERIAL_VERSION_UID_TYPES.contains(field.fieldType().stringValue());
                 }
+                boolean isEnum = (flags & ClassFile.ACC_ENUM) != 0 && parsed.superclass()
+                        .map(superclass -> superclass.name().equalsString(ENUM)).orElse(false);
+                this.fixedSerialVersionUid = declaresSerialVersionUid || isEnum;
             }
 
             /**
@@ -1210,12 +1329,17 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
                 if (unresolved != null) {
                     return unresolved;
                 }
+                if (initializesLoudly(internalName(functionalInterface), new HashSet<>(), null, new HashSet<>())) {
+                    return Reason.INTERFACE_INIT;
+                }
 
                 int number = next++;
                 String generatedName = name + LambdaClasses.GENERATED_INFIX + number;
                 String bridgeName = bridged ? LambdaClasses.BRIDGE_PREFIX + number : null;
+                String fileName = generatedName.substring(generatedName.lastIndexOf('/') + 1) + CLASS_SUFFIX;
                 if (model.known(generatedName) || classes.size(generatedName + CLASS_SUFFIX) >= 0
-                        || bridged && memberNames.contains(bridgeName)) {
+                        || bridged && memberNames.contains(bridgeName)
+                        || fileName.getBytes(StandardCharsets.UTF_8).length > MAX_FILE_NAME_BYTES) {
                     return Reason.NAME_TAKEN;
                 }
                 return new LambdaClasses.Site(home, ClassDesc.ofInternalName(generatedName),
@@ -1239,14 +1363,14 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
             /**
              * Why the host cannot take a bridge, or {@code null} when it can: an interface's bridge would have to be
              * public, and a bridge changes the default {@code serialVersionUID} of a serializable class that declares
-             * none.
+             * none and is not an enum.
              */
             private Reason unbridgeable() {
                 if (!bridgeChecked) {
                     bridgeChecked = true;
                     if (isInterface) {
                         unbridgeable = Reason.JAVA8_INTERFACE;
-                    } else if (!memberNames.contains(SERIAL_VERSION_UID) && serializable()) {
+                    } else if (!fixedSerialVersionUid && serializable()) {
                         unbridgeable = Reason.SERIAL_VERSION_UID;
                     }
                 }
@@ -1269,18 +1393,23 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
 
             /**
              * Why a class the generated class names does not settle, or {@code null} when every one does: the
-             * functional interface must be a certain interface, a captured receiver that is not the owner itself,
-             * which the verifier has to relate to the owner, must be certain, and every type it casts to must
-             * resolve. The owner was resolved with its member.
+             * functional interface must be a certain interface, and not serializable, because a lambda that
+             * {@code metafactory} spins refuses to be serialized and a generated class would not; a captured
+             * receiver that is not the owner itself, which the verifier has to relate to the owner, must be certain,
+             * and every type it casts to must resolve. The owner was resolved with its member.
              */
             private Reason resolve(MethodTypeDesc factoryType, MethodTypeDesc samType, MethodTypeDesc instantiatedType,
                                    MethodTypeDesc implType, boolean instance) {
-                int functional = kindOf(internalName(factoryType.returnType()));
+                String functionalInterface = internalName(factoryType.returnType());
+                int functional = kindOf(functionalInterface);
                 if (functional == UNCERTAIN) {
                     return Reason.SHADOWED_OR_UNCERTAIN;
                 }
                 if (functional != INTERFACE) {
                     return Reason.UNRESOLVED_TYPE;
+                }
+                if (LambdaDesugarer.this.serializable(functionalInterface, new HashSet<>())) {
+                    return Reason.SHAPE;
                 }
                 int captured = factoryType.parameterCount();
                 if (instance && captured > 0) {

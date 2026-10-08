@@ -54,9 +54,10 @@ import java.util.Map;
  * interface method dispatches on it with a {@code tableswitch}, one case per site, each with the casts of its own
  * site. A class that captures nothing creates one instance per tag when it is initialized. A class stops taking
  * sites when its interface method would exceed {@value #MAX_DISPATCH_BYTES} bytes, HotSpot's default
- * {@code FreqInlineSize}, so that it can still be inlined where it is hot, or {@value #MAX_TAGS} sites, the tags that
- * {@code bipush} pushes. Each case starts with an explicit frame, the method's entry frame, so that writing the class
- * needs no class hierarchy.</p>
+ * {@code FreqInlineSize}, so that C2 can still inline it where the call is hot. That cap closes a class at 38 sites or
+ * fewer, so every tag fits {@code bipush}; {@value #MAX_TAGS} sites only guards that invariant. Each case starts with
+ * an explicit frame, the method's entry frame, so that writing the class needs no class hierarchy. A key whose
+ * interface method would have the name and descriptor of the shared {@code create} keeps a class per site.</p>
  *
  * <p>A site that shares its key with no other becomes {@code invokestatic <Host>$$Lambda$R<n>.create}, with the
  * descriptor of the {@code invokedynamic}, followed by two {@code nop}s, and its class has no tag. Either way the
@@ -91,7 +92,10 @@ final class LambdaClasses {
      */
     static final int MAX_DISPATCH_BYTES = 325;
 
-    /** The most sites a class can serve: {@code bipush} pushes the tag. */
+    /**
+     * The most sites a class can serve: {@code bipush} pushes the tag. {@link #MAX_DISPATCH_BYTES} closes a class long
+     * before, so this only guards that invariant.
+     */
     static final int MAX_TAGS = 128;
 
     private static final String INSTANCE_FIELD = "INSTANCE";
@@ -172,8 +176,9 @@ final class LambdaClasses {
     /**
      * Lets the rewritten sites of one host that have the same key, the functional interface, the captured types and
      * the interface method, share classes: in site order, each class takes sites until one more would push its
-     * interface method past {@link #MAX_DISPATCH_BYTES}, or past {@link #MAX_TAGS} sites. A site left alone keeps a
-     * class of its own.
+     * interface method past {@link #MAX_DISPATCH_BYTES}. The byte cap closes a class at 38 sites or fewer, so every
+     * tag fits {@code bipush}; {@link #MAX_TAGS} only guards that invariant. A site left alone keeps a class of its
+     * own, and so does every site of a key whose interface method would clash with the shared {@code create}.
      *
      * @param sites the host's rewritten sites, in site order
      */
@@ -183,7 +188,7 @@ final class LambdaClasses {
             byKey.computeIfAbsent(site.shareKey(), key -> new ArrayList<>()).add(site);
         }
         for (List<Site> sameKey : byKey.values()) {
-            if (sameKey.size() < 2) {
+            if (sameKey.size() < 2 || sameKey.get(0).clashesWithSharedFactory()) {
                 continue;
             }
             List<Site> members = new ArrayList<>();
@@ -496,6 +501,16 @@ final class LambdaClasses {
          */
         private String shareKey() {
             return factoryType.descriptorString() + ' ' + samName + samType.descriptorString();
+        }
+
+        /**
+         * Whether the interface method has the name and the descriptor that {@code create} would have in a class the
+         * site shares: the captured types and the tag, to the functional interface. Such a class would declare the
+         * method twice.
+         */
+        private boolean clashesWithSharedFactory() {
+            return samName.equals(FACTORY_METHOD) && samType.equals(
+                    factoryType.insertParameterTypes(factoryType.parameterCount(), ConstantDescs.CD_int));
         }
 
         /**

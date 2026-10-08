@@ -20,7 +20,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassFile;
@@ -49,6 +52,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.jar.Attributes.Name;
@@ -283,6 +288,7 @@ class LambdaDesugarerTest {
         LambdaFixtures.Outcome first = LambdaFixtures.transform(layers, true);
         LambdaFixtures.Outcome second = LambdaFixtures.transform(layers, true);
 
+        assertTrue(first.reports().get(LIBRARY).desugared().sites() > 0, first.reports()::toString);
         assertEquals(first.reports(), second.reports());
         for (int layer = 0; layer < layers.size(); layer++) {
             Map<String, byte[]> one = first.outputs().get(layer);
@@ -810,6 +816,483 @@ class LambdaDesugarerTest {
         assertEquals(List.copyOf(input.keySet()), List.copyOf(output.keySet()), "no entry is added");
         input.forEach((name, bytes) -> assertArrayEquals(bytes, output.get(name), name + " keeps its bytes"));
     }
+
+    /**
+     * The JVM initializes every superinterface that declares a non-abstract instance method before a class that
+     * implements it. When such an interface's static initializer reaches the site, {@code LambdaMetafactory} links the
+     * site again; a generated class, being initialized, would hand out a {@code null} instance or fail.
+     */
+    @Test
+    void aFunctionalInterfaceWhoseInitializerMayReachTheSiteKeepsItsSites() throws Exception {
+        Map<String, byte[]> compiled = compile("interface-init", 25, INTERFACE_INIT_SOURCES);
+
+        LambdaFixtures.Outcome outcome = LambdaFixtures.transform(
+                List.of(LambdaFixtures.Layer.dependency("libs/init.jar", compiled)), false);
+
+        Map<String, byte[]> output = outcome.outputs().get(0);
+        ClassTransformPipeline.Desugared desugared = outcome.reports().get(0).desugared();
+        assertEquals(Map.of(LambdaDesugarer.Reason.INTERFACE_INIT, 5), desugared.left(), "make, capturing, sub,"
+                + " alwaysTrue and alwaysFalse: their interface, or a superinterface, has a default method and a"
+                + " static initializer");
+        assertEquals(2, desugared.sites(), "an interface with only one of the two is no risk");
+        for (String host : List.of("init/Regs.class", "init/Preds.class")) {
+            assertArrayEquals(compiled.get(host), output.get(host), host + " keeps its bytes");
+        }
+        Map<String, byte[]> original = LambdaFixtures.classPath(List.of(compiled));
+        Map<String, byte[]> rewritten = LambdaFixtures.classPath(List.of(output));
+        for (String probe : List.of("regFirst", "predFirst", "others")) {
+            Object expected = LambdaFixtures.loader(original).loadClass("init.Probe").getMethod(probe).invoke(null);
+            Object actual = LambdaFixtures.loader(rewritten).loadClass("init.Probe").getMethod(probe).invoke(null);
+            assertEquals(expected, actual, probe);
+        }
+        assertEquals("made true", LambdaFixtures.loader(original).loadClass("init.Probe").getMethod("regFirst")
+                .invoke(null), "the interface's constant is the lambda, the same instance");
+        assertEquals("false true", LambdaFixtures.loader(original).loadClass("init.Probe").getMethod("predFirst")
+                .invoke(null));
+    }
+
+    /**
+     * An interface whose static initializer only creates its own lambdas and inert anonymous instances cannot reach a
+     * site elsewhere, so the sites of its lambdas are rewritten. One may when it calls a method, even the JDK's,
+     * creates an instance whose constructor runs code, creates a lambda or an inert instance of an interface that
+     * may, or reads a field it inherits, which initializes the interface that declares it.
+     */
+    @Test
+    void aQuietInterfaceInitializerLetsItsSitesBeRewritten() throws Exception {
+        Map<String, byte[]> compiled = compile("interface-quiet", 25, Map.of(
+                "quiet/Quiet.java", """
+                        package quiet;
+                        public interface Quiet {
+                            Quiet NONE = () -> "none";
+                            Quiet ANON = new Quiet() {
+                                @Override
+                                public Object get() {
+                                    return "anon";
+                                }
+                            };
+                            Object get();
+                            default String name() {
+                                return "quiet";
+                            }
+                        }
+                        """,
+                "quiet/Compiled.java", """
+                        package quiet;
+                        public interface Compiled {
+                            java.util.regex.Pattern PATTERN = java.util.regex.Pattern.compile("x");
+                            Object get();
+                            default String name() {
+                                return "compiled";
+                            }
+                        }
+                        """,
+                "quiet/Busy.java", """
+                        package quiet;
+                        public interface Busy {
+                            Busy NONE = new Busy() {
+                                {
+                                    System.getProperty("busy");
+                                }
+                                @Override
+                                public Object get() {
+                                    return "busy";
+                                }
+                            };
+                            Object get();
+                            default String name() {
+                                return "busy";
+                            }
+                        }
+                        """,
+                "quiet/Relay.java", """
+                        package quiet;
+                        public interface Relay {
+                            Busy B = () -> "relay";
+                            Object get();
+                            default String name() {
+                                return "relay";
+                            }
+                        }
+                        """,
+                "quiet/Wrapper.java", """
+                        package quiet;
+                        public interface Wrapper {
+                            Compiled C = new Compiled() {
+                                @Override
+                                public Object get() {
+                                    return "wc";
+                                }
+                            };
+                            Object get();
+                            default String name() {
+                                return "wrapper";
+                            }
+                        }
+                        """,
+                "quiet/Holder.java", """
+                        package quiet;
+                        public interface Holder {
+                            Object VALUE = System.getProperty("holder", "held");
+                        }
+                        """,
+                "quiet/Reader.java", """
+                        package quiet;
+                        public interface Reader extends Holder {
+                            Object COPY = Reader.VALUE;
+                            Object get();
+                            default String name() {
+                                return "reader";
+                            }
+                        }
+                        """,
+                "quiet/Users.java", """
+                        package quiet;
+                        public class Users {
+                            public static Quiet quiet() {
+                                return () -> "q";
+                            }
+                            public static Quiet capturing(String value) {
+                                return () -> value;
+                            }
+                            public static Compiled compiled() {
+                                return () -> "c";
+                            }
+                            public static Busy busy() {
+                                return () -> "b";
+                            }
+                            public static Relay relay() {
+                                return () -> "rl";
+                            }
+                            public static Wrapper wrapper() {
+                                return () -> "w";
+                            }
+                            public static Reader reader() {
+                                return () -> "rd";
+                            }
+                            public static String run() {
+                                Quiet first = quiet();
+                                return first.get() + " " + Quiet.NONE.get() + " " + Quiet.ANON.get() + " "
+                                        + capturing("v").get() + " " + compiled().get() + " " + busy().get() + " "
+                                        + Busy.NONE.get() + " " + relay().get() + " " + Relay.B.get() + " "
+                                        + wrapper().get() + " " + Wrapper.C.get() + " " + reader().get() + " "
+                                        + Reader.COPY;
+                            }
+                        }
+                        """));
+
+        LambdaFixtures.Outcome outcome = LambdaFixtures.transform(
+                List.of(LambdaFixtures.Layer.dependency("libs/quiet.jar", compiled)), false);
+
+        Map<String, byte[]> output = outcome.outputs().get(0);
+        ClassTransformPipeline.Desugared desugared = outcome.reports().get(0).desugared();
+        assertEquals(Map.of(LambdaDesugarer.Reason.INTERFACE_INIT, 6), desugared.left(),
+                "compiled, busy, relay, wrapper, reader, and the lambda of Relay's own initializer, a Busy");
+        assertEquals(3, desugared.sites(), "quiet, capturing, and the lambda of Quiet's own initializer");
+        assertNotNull(output.get("quiet/Quiet$$Lambda$R0.class"));
+        Object expected = LambdaFixtures.loader(LambdaFixtures.classPath(List.of(compiled))).loadClass("quiet.Users")
+                .getMethod("run").invoke(null);
+        assertEquals("q none anon v c b busy rl relay w wc rd held", expected);
+        assertEquals(expected, LambdaFixtures.loader(LambdaFixtures.classPath(List.of(output)))
+                .loadClass("quiet.Users").getMethod("run").invoke(null), "the first site initializes Quiet");
+    }
+
+    /**
+     * One thread initializes the interface, whose initializer waits and then reaches the site; another reaches the
+     * site meanwhile. A generated class would make each wait for the other, capturing or not; {@code LambdaMetafactory}
+     * links the site on each thread.
+     */
+    @Test
+    void twoThreadsThatInitializeTheInterfaceAndReachTheSiteFinish() throws Exception {
+        Map<String, byte[]> compiled = compile("interface-lock", 25, Map.of(
+                "lock/Slow.java", """
+                        package lock;
+                        public interface Slow {
+                            Slow DEFAULT = Gate.slow();
+                            Object get();
+                            default String name() {
+                                return "slow";
+                            }
+                        }
+                        """,
+                "lock/SlowCapturing.java", """
+                        package lock;
+                        public interface SlowCapturing {
+                            SlowCapturing DEFAULT = Gate.slowCapturing();
+                            Object get();
+                            default String name() {
+                                return "slow";
+                            }
+                        }
+                        """,
+                "lock/Gate.java", """
+                        package lock;
+                        import java.util.concurrent.CountDownLatch;
+                        public class Gate {
+                            public static final CountDownLatch STARTED = new CountDownLatch(1);
+                            static Slow slow() {
+                                pause();
+                                return make();
+                            }
+                            static SlowCapturing slowCapturing() {
+                                pause();
+                                return capturing("initializer");
+                            }
+                            private static void pause() {
+                                STARTED.countDown();
+                                try {
+                                    Thread.sleep(500);
+                                } catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                }
+                            }
+                            public static Slow make() {
+                                return () -> "made";
+                            }
+                            public static SlowCapturing capturing(String value) {
+                                return () -> value;
+                            }
+                        }
+                        """));
+
+        LambdaFixtures.Outcome outcome = LambdaFixtures.transform(
+                List.of(LambdaFixtures.Layer.dependency("libs/lock.jar", compiled)), false);
+
+        assertEquals(Map.of(LambdaDesugarer.Reason.INTERFACE_INIT, 2), outcome.reports().get(0).desugared().left());
+        for (Map<String, byte[]> classes : List.of(compiled, outcome.outputs().get(0))) {
+            assertFinishes(classes, "lock.Slow", "make");
+            assertFinishes(classes, "lock.SlowCapturing", "capturing");
+        }
+    }
+
+    /**
+     * Initializes an interface on one thread while another calls a site of {@code lock.Gate}, in a loader of its own,
+     * and asserts that both finish.
+     */
+    private static void assertFinishes(Map<String, byte[]> classes, String initialized, String site)
+            throws Exception {
+        ClassLoader loader = LambdaFixtures.loader(LambdaFixtures.classPath(List.of(classes)));
+        Class<?> gate = loader.loadClass("lock.Gate");
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Thread initializer = new Thread(() -> {
+            try {
+                Class.forName(initialized, true, loader);
+            } catch (Throwable e) {
+                failure.compareAndSet(null, e);
+            }
+        });
+        Thread caller = new Thread(() -> {
+            try {
+                ((CountDownLatch) gate.getField("STARTED").get(null)).await();
+                if (site.equals("make")) {
+                    gate.getMethod(site).invoke(null);
+                } else {
+                    gate.getMethod(site, String.class).invoke(null, "caller");
+                }
+            } catch (Throwable e) {
+                failure.compareAndSet(null, e);
+            }
+        });
+        for (Thread thread : List.of(initializer, caller)) {
+            thread.setDaemon(true);
+            thread.start();
+        }
+        for (Thread thread : List.of(initializer, caller)) {
+            thread.join(10_000);
+            assertFalse(thread.isAlive(), initialized + ": the threads wait for each other");
+        }
+        assertNull(failure.get(), () -> String.valueOf(failure.get()));
+    }
+
+    /**
+     * {@code javac} links a lambda of a serializable interface through {@code altMetafactory}; a {@code metafactory}
+     * site of one, which another compiler or an interface changed after compilation can give, spins a class that
+     * refuses to be serialized, and a generated class would not.
+     */
+    @Test
+    void aSerializableFunctionalInterfaceOutsideAltMetafactoryKeepsItsSite() throws Exception {
+        String host = """
+                package ser;
+                public class Host {
+                    public static SerSup make() {
+                        return () -> "value";
+                    }
+                }
+                """;
+        Map<String, byte[]> plain = compile("serializable-fi-plain", 25, Map.of(
+                "ser/SerSup.java", "package ser; public interface SerSup extends java.util.function.Supplier<Object> {}",
+                "ser/Host.java", host));
+        Map<String, byte[]> serializable = compile("serializable-fi", 25, Map.of(
+                "ser/SerSup.java", "package ser; public interface SerSup extends java.util.function.Supplier<Object>,"
+                        + " java.io.Serializable {}"));
+        Map<String, byte[]> entries = new LinkedHashMap<>();
+        entries.put("ser/Host.class", plain.get("ser/Host.class"));
+        entries.put("ser/SerSup.class", serializable.get("ser/SerSup.class"));
+        assertEquals(1, LambdaFixtures.sites(entries.get("ser/Host.class"), METAFACTORY));
+        Object lambda = LambdaFixtures.loader(LambdaFixtures.classPath(List.of(entries))).loadClass("ser.Host")
+                .getMethod("make").invoke(null);
+        assertThrows(NotSerializableException.class,
+                () -> new ObjectOutputStream(new ByteArrayOutputStream()).writeObject(lambda));
+
+        LambdaFixtures.Outcome outcome = LambdaFixtures.transform(
+                List.of(LambdaFixtures.Layer.dependency("libs/ser.jar", entries)), false);
+
+        assertUntouched(entries, outcome.outputs().get(0));
+        assertEquals(Map.of(LambdaDesugarer.Reason.SHAPE, 1), outcome.reports().get(0).desugared().left());
+    }
+
+    /**
+     * {@code ObjectStreamClass} reads a declared {@code serialVersionUID} only from a {@code static final} field of an
+     * integral type, and gives every enum {@code 0}: only then does a bridge leave the identity as it was.
+     */
+    @Test
+    void onlyAStaticFinalSerialVersionUidOrAnEnumLetsASerializableJava8HostTakeABridge() throws Exception {
+        Map<String, byte[]> compiled = compile("serial-kinds", 8, Map.of(
+                "suid/InstanceField.java", """
+                        package suid;
+                        import java.io.Serializable;
+                        import java.util.function.Supplier;
+                        public class InstanceField implements Serializable {
+                            private long serialVersionUID = 1L;
+                            public Supplier<String> make() {
+                                return () -> "instance";
+                            }
+                        }
+                        """,
+                "suid/IntUid.java", """
+                        package suid;
+                        import java.io.Serializable;
+                        import java.util.function.Supplier;
+                        public class IntUid implements Serializable {
+                            private static final int serialVersionUID = 3;
+                            public Supplier<String> make() {
+                                return () -> "int";
+                            }
+                        }
+                        """,
+                "suid/Kind.java", """
+                        package suid;
+                        import java.util.function.Supplier;
+                        public enum Kind {
+                            ONE;
+                            public Supplier<String> make() {
+                                return () -> "kind";
+                            }
+                        }
+                        """));
+
+        LambdaFixtures.Outcome outcome = LambdaFixtures.transform(
+                List.of(LambdaFixtures.Layer.dependency("libs/suid.jar", compiled)), false);
+
+        Map<String, byte[]> output = outcome.outputs().get(0);
+        ClassTransformPipeline.Desugared desugared = outcome.reports().get(0).desugared();
+        assertEquals(Map.of(LambdaDesugarer.Reason.SERIAL_VERSION_UID, 1), desugared.left(),
+                "an instance field named serialVersionUID does not count");
+        assertArrayEquals(compiled.get("suid/InstanceField.class"), output.get("suid/InstanceField.class"));
+        assertEquals(2, desugared.bridges(), "the int serialVersionUID and the enum: " + desugared);
+        ClassLoader before = LambdaFixtures.loader(LambdaFixtures.classPath(List.of(compiled)));
+        ClassLoader after = LambdaFixtures.loader(LambdaFixtures.classPath(List.of(output)));
+        for (String type : List.of("suid.IntUid", "suid.Kind", "suid.InstanceField")) {
+            assertEquals(ObjectStreamClass.lookup(before.loadClass(type)).getSerialVersionUID(),
+                    ObjectStreamClass.lookup(after.loadClass(type)).getSerialVersionUID(), type);
+        }
+        assertEquals(3L, ObjectStreamClass.lookup(after.loadClass("suid.IntUid")).getSerialVersionUID());
+        Object one = after.loadClass("suid.Kind").getField("ONE").get(null);
+        assertEquals("kind", ((Supplier<?>) one.getClass().getMethod("make").invoke(one)).get());
+    }
+
+    private static final Map<String, String> INTERFACE_INIT_SOURCES = Map.of(
+            "init/Reg.java", """
+                    package init;
+                    public interface Reg {
+                        Reg DEFAULT = Regs.make();
+                        Object get();
+                        default String name() {
+                            return "reg";
+                        }
+                    }
+                    """,
+            "init/SubReg.java", "package init; public interface SubReg extends Reg { }\n",
+            "init/Regs.java", """
+                    package init;
+                    public class Regs {
+                        public static Reg make() {
+                            return () -> "made";
+                        }
+                        public static Reg capturing(String value) {
+                            return () -> value;
+                        }
+                        public static SubReg sub() {
+                            return () -> "sub";
+                        }
+                    }
+                    """,
+            "init/Pred.java", """
+                    package init;
+                    public interface Pred {
+                        Pred TRUE = Preds.alwaysTrue();
+                        boolean test(Object value);
+                        default String name() {
+                            return "pred";
+                        }
+                    }
+                    """,
+            "init/Preds.java", """
+                    package init;
+                    public class Preds {
+                        public static Pred alwaysTrue() {
+                            return value -> true;
+                        }
+                        public static Pred alwaysFalse() {
+                            return value -> false;
+                        }
+                    }
+                    """,
+            "init/Plain.java", """
+                    package init;
+                    public interface Plain {
+                        Object get();
+                        default String name() {
+                            return "plain";
+                        }
+                    }
+                    """,
+            "init/Constant.java", """
+                    package init;
+                    public interface Constant {
+                        Object NONE = new Object();
+                        Object get();
+                    }
+                    """,
+            "init/Others.java", """
+                    package init;
+                    public class Others {
+                        public static Plain plain() {
+                            return () -> "plain";
+                        }
+                        public static Constant constant() {
+                            return () -> "constant";
+                        }
+                    }
+                    """,
+            "init/Probe.java", """
+                    package init;
+                    public class Probe {
+                        public static String regFirst() {
+                            Reg made = Regs.make();
+                            return (Reg.DEFAULT == null ? "null" : Reg.DEFAULT.get()) + " " + (made == Reg.DEFAULT);
+                        }
+                        public static String predFirst() {
+                            try {
+                                return Preds.alwaysFalse().test("x") + " " + Pred.TRUE.test("x");
+                            } catch (Throwable e) {
+                                return e.toString();
+                            }
+                        }
+                        public static String others() {
+                            return Others.plain().get() + " " + Others.constant().get();
+                        }
+                    }
+                    """);
 
     /**
      * Calls {@code ref().get()} on a new instance of a class, loaded with the given entries.

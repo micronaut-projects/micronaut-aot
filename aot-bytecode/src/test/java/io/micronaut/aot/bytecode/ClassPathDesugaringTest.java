@@ -15,6 +15,7 @@
  */
 package io.micronaut.aot.bytecode;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -32,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -60,6 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ClassPathDesugaringTest {
 
     private static final String UNCERTAIN = LambdaDesugarer.Reason.SHADOWED_OR_UNCERTAIN.label();
+
+    private static final String NAME_TAKEN = LambdaDesugarer.Reason.NAME_TAKEN.label();
 
     private static final String HOST = """
             package %s;
@@ -230,6 +234,8 @@ class ClassPathDesugaringTest {
                 + " package the class path also holds");
         assertEquals(0, entry.sitesRewritten());
         assertEquals(List.of(jar), result.classPath());
+        assertTrue(result.summary().startsWith("Desugared 0 lambda call sites into 0 generated classes in 0 class"
+                + " path entries"), "an entry whose sites all stay is not counted: " + result.summary());
     }
 
     @Test
@@ -276,15 +282,26 @@ class ClassPathDesugaringTest {
     @Test
     void anEntryWithoutASiteIsReturnedAsItsOwnPathAndNothingIsWritten() throws Exception {
         Map<String, byte[]> classes = compile("no-site", Map.of(
-                "plain/Plain.java", "package plain; public class Plain { public String name() { return \"p\"; } }\n"));
-        Path jar = ClassFixtures.jar(temp.resolve("no-site/plain.jar"), classes);
+                "plain/Plain.java", "package plain; public class Plain { public String name() { return \"p\"; } }\n",
+                "direct/Direct.java", """
+                        package direct;
+                        import java.lang.invoke.LambdaMetafactory;
+                        public class Direct {
+                            public static Object link() throws Exception {
+                                return LambdaMetafactory.metafactory(null, null, null, null, null, null);
+                            }
+                        }
+                        """));
+        Path jar = jar("no-site/plain.jar", classes, "plain/Plain.class");
+        // It names LambdaMetafactory, so its jar is scheduled, but it has no invokedynamic for the step to count.
+        Path direct = jar("no-site/direct.jar", classes, "direct/Direct.class");
         Path directory = temp.resolve("no-site/classes");
         write(directory, "plain/Plain.class", classes.get("plain/Plain.class"));
         Path output = temp.resolve("no-site/out");
 
-        ClassPathTransform.Result result = desugar(List.of(directory, jar), output);
+        ClassPathTransform.Result result = desugar(List.of(directory, jar, direct), output);
 
-        assertEquals(List.of(directory, jar), result.classPath());
+        assertEquals(List.of(directory, jar, direct), result.classPath());
         assertEquals(List.of(), result.entries(), "no entry holds a site");
         assertFalse(Files.exists(output), "nothing is written");
         assertTrue(result.summary().startsWith("Desugared 0 lambda call sites into 0 generated classes in 0 class"
@@ -526,7 +543,117 @@ class ClassPathDesugaringTest {
                 .foreignPackages(Set.of("io.micronaut.")));
         assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
                 .foreignPackages(Set.of("")));
-        ClassPathTransform.Request.builder().foreignPackages(Set.of("io.micronaut.runner", "a"));
+        for (String name : List.of("io..micronaut", ".io", "io micronaut", "1x", "io.1x")) {
+            assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
+                    .foreignPackages(Set.of(name)), name);
+        }
+        ClassPathTransform.Request.builder().foreignPackages(Set.of("io.micronaut.runner", "a", "_x.$y1"));
+    }
+
+    @Test
+    void aDesugaredJarThatIsNotNamedForStrippingKeepsItsLocalVariableTables() throws Exception {
+        List<Path> classPath = scenario("unnamed", 17);
+        Path library = classPath.get(1);
+
+        ClassPathTransform.Result result = ClassPathTransform.run(ClassPathTransform.Request.builder()
+                .classPath(classPath).outputDirectory(temp.resolve("unnamed/out")).desugarLambdas(true)
+                .stripLocalVariables(List.of(classPath.get(2))).build());
+
+        ClassPathTransform.Result.Entry entry = entry(result, library);
+        assertTrue(entry.sitesRewritten() > 0, entry::toString);
+        assertEquals(0, entry.classesStripped() + entry.classesUnchanged() + entry.fallbacks(), entry::toString);
+        byte[] scenario = entries(result.classPath().get(1)).get("fix/Scenario.class");
+        assertTrue(LambdaDesugarerTest.code(scenario, "annotated").findAttribute(Attributes.localVariableTable())
+                .isPresent(), "a jar not named for stripping keeps its local-variable tables");
+    }
+
+    @Test
+    void aDirectoryThatHoldsASymbolicLinkIsLeftAsItIs() throws Exception {
+        Map<String, byte[]> classes = compile("linked", Map.of("lnk/Host.java", HOST.formatted("lnk", "lnk")));
+        Path directory = temp.resolve("linked/classes");
+        write(directory, "lnk/Host.class", classes.get("lnk/Host.class"));
+        try {
+            Files.createSymbolicLink(directory.resolve("lnk/link"), directory.resolve("lnk/Host.class"));
+        } catch (UnsupportedOperationException | IOException e) {
+            Assumptions.abort("no symbolic links: " + e);
+        }
+        Path output = temp.resolve("linked/out");
+
+        ClassPathTransform.Result result = desugar(List.of(directory), output);
+
+        assertEquals(List.of(directory), result.classPath());
+        assertFalse(Files.exists(output), "nothing is written");
+        ClassPathTransform.Result.Entry entry = entry(result, directory);
+        assertEquals(Optional.of("the directory holds the symbolic link lnk/link"), entry.kept());
+        assertEquals(Map.of(UNCERTAIN, 1), entry.sitesLeft(), entry::toString);
+    }
+
+    @Test
+    void aDirectoryCopyThatFailsIsDeletedAndItsFailureIsThrownNamingTheDirectory() throws Exception {
+        Map<String, byte[]> classes = compile("unreadable", Map.of("unr/Host.java", HOST.formatted("unr", "unr")));
+        Path directory = temp.resolve("unreadable/classes");
+        write(directory, "unr/Host.class", classes.get("unr/Host.class"));
+        Path file = directory.resolve("unr/z.txt");
+        write(directory, "unr/z.txt", "z".getBytes(StandardCharsets.UTF_8));
+        Set<PosixFilePermission> permissions;
+        try {
+            permissions = Files.getPosixFilePermissions(file);
+            Files.setPosixFilePermissions(file, Set.of());
+        } catch (UnsupportedOperationException e) {
+            Assumptions.abort("no POSIX permissions: " + e);
+            return;
+        }
+        try {
+            Assumptions.assumeFalse(Files.isReadable(file), "the file is still readable, as it is to root");
+            Path output = temp.resolve("unreadable/out");
+
+            IOException failure = assertThrows(IOException.class, () -> desugar(List.of(directory), output));
+
+            assertTrue(failure.getMessage().startsWith("Cannot rewrite the classes of " + directory),
+                    failure.getMessage());
+            assertFalse(Files.exists(output.resolve("0")), "the partial copy and its directory are deleted");
+        } finally {
+            Files.setPosixFilePermissions(file, permissions);
+        }
+    }
+
+    @Test
+    void aDirectoryWhoseOnlyNestFallsBackIsNotCopied() throws Exception {
+        Map<String, byte[]> classes = compile("dir-fallback", Map.of("dfb/Host.java", HOST.formatted("dfb", "dfb")));
+        Path directory = temp.resolve("dir-fallback/classes");
+        write(directory, "dfb/Host.class", classes.get("dfb/Host.class"));
+        ClassPathModel model = ClassPathModel.merge(List.of(ClassPathModel.scan(directory, directory.toString(), true,
+                name -> false, new ClassPathModel.Interner())));
+        ClassTransformPipeline.Step desugar = new LambdaDesugarer(model, Set.of());
+        // The generated class fails verification, so the nest falls back and no class of the directory changes.
+        ClassTransformPipeline pipeline = new ClassTransformPipeline(List.of(desugar), model, bytes -> ClassFile.of()
+                .parse(bytes).thisClass().asInternalName().contains(LambdaClasses.GENERATED_INFIX)
+                ? List.of("a synthetic verification error") : List.of());
+        Path target = temp.resolve("dir-fallback/out/0/classes");
+
+        JarRewriter.Outcome outcome = DirectoryRewriter.rewrite(directory, target, pipeline, directory.toString(), 0);
+
+        assertFalse(outcome.written(), "no copy is kept");
+        assertFalse(Files.exists(target.getParent()), "the useless copy and its directory are deleted");
+        assertEquals(1, outcome.report().desugared().nestFallbacks(), outcome.report()::toString);
+        assertEquals(1, outcome.report().notes().size(), outcome.report().notes()::toString);
+    }
+
+    @Test
+    void aGeneratedClassWhoseFileNameWouldBeTooLongLeavesItsSite() throws Exception {
+        String simpleName = "L".repeat(241);
+        Map<String, byte[]> classes = compile("long-name", Map.of("lng/" + simpleName + ".java",
+                HOST.formatted("lng", "long").replace("class Host", "class " + simpleName)));
+        Path directory = temp.resolve("long-name/classes");
+        write(directory, "lng/" + simpleName + ".class", classes.get("lng/" + simpleName + ".class"));
+        Path output = temp.resolve("long-name/out");
+
+        // The host's file name has 247 bytes; its generated class's would have 258, more than file systems take.
+        ClassPathTransform.Result result = desugar(List.of(directory), output);
+
+        assertEquals(List.of(directory), result.classPath());
+        assertFalse(Files.exists(output), "nothing is written");
+        assertEquals(Map.of(NAME_TAKEN, 1), entry(result, directory).sitesLeft());
     }
 
     private static final String USES_COMPILER = """

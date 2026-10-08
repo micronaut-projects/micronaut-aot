@@ -211,5 +211,21 @@ final class JdkClasses {
         Integer method(String name, String descriptor) {
             return methods.get(name + descriptor);
         }
+
+        /**
+         * Whether the class declares a method that is neither abstract nor static, other than a constructor: for an
+         * interface, what makes the JVM initialize it before a class that implements it.
+         *
+         * @return whether such a method is declared
+         */
+        boolean declaresConcreteInstanceMethod() {
+            for (Map.Entry<String, Integer> method : methods.entrySet()) {
+                if (method.getKey().charAt(0) != '<'
+                        && (method.getValue() & (ClassFile.ACC_ABSTRACT | ClassFile.ACC_STATIC)) == 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

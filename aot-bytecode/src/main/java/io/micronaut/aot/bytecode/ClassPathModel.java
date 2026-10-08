@@ -523,11 +523,14 @@ final class ClassPathModel implements ClassHierarchyResolver {
         private final List<String> interfaces;
         private final List<Member> members;
         private final String nestHost;
+        private final boolean inert;
+        private final InterfaceInitializers.Initializer initializer;
         /** The index of the entry that holds the copy, set when the scans are merged. */
         private int layer = -1;
 
         private Copy(String name, int version, int flags, String superName, List<String> interfaces,
-                     List<Member> members, String nestHost) {
+                     List<Member> members, String nestHost, boolean inert,
+                     InterfaceInitializers.Initializer initializer) {
             this.name = name;
             this.version = version;
             this.flags = flags;
@@ -535,6 +538,8 @@ final class ClassPathModel implements ClassHierarchyResolver {
             this.interfaces = interfaces;
             this.members = members;
             this.nestHost = nestHost;
+            this.inert = inert;
+            this.initializer = initializer;
         }
 
         /**
@@ -627,6 +632,45 @@ final class ClassPathModel implements ClassHierarchyResolver {
                 }
             }
             return null;
+        }
+
+        /**
+         * Whether the class is inert: creating an instance of it runs no code of the class path besides the
+         * initialization of its interfaces ({@link InterfaceInitializers#inert}).
+         *
+         * @return whether it is inert; {@code false} when the model has no member tables
+         */
+        boolean inert() {
+            return inert;
+        }
+
+        /**
+         * What the quiet static initializer of an interface depends on ({@link InterfaceInitializers#summarize}).
+         *
+         * @return the summary; {@code null} when the class has no static initializer, has one that is not quiet, is
+         * not an interface, or the model has no member tables
+         */
+        InterfaceInitializers.Initializer initializer() {
+            return initializer;
+        }
+
+        /**
+         * Whether the class declares a method that is neither abstract nor static, other than a constructor: for an
+         * interface, what makes the JVM initialize it before a class that implements it.
+         *
+         * @return whether such a method is declared; {@code false} when the model has no member tables
+         */
+        boolean declaresConcreteInstanceMethod() {
+            if (members == null) {
+                return false;
+            }
+            for (Member member : members) {
+                if (member.descriptor().charAt(0) == '(' && member.name().charAt(0) != '<'
+                        && (member.flags() & (ClassFile.ACC_ABSTRACT | ClassFile.ACC_STATIC)) == 0) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -756,7 +800,8 @@ final class ClassPathModel implements ClassHierarchyResolver {
             int flags = model.flags().flagsMask();
             String superName = model.superclass().map(ClassEntry::asInternalName).map(strings::intern).orElse(null);
             if (!members) {
-                return new Copy(strings.intern(internalName), version, flags, superName, List.of(), null, null);
+                return new Copy(strings.intern(internalName), version, flags, superName, List.of(), null, null, false,
+                        null);
             }
             List<String> interfaces = new ArrayList<>(model.interfaces().size());
             for (ClassEntry entry : model.interfaces()) {
@@ -773,9 +818,13 @@ final class ClassPathModel implements ClassHierarchyResolver {
                 table.add(new Member(strings.intern(method.methodName().stringValue()),
                         strings.intern(method.methodType().stringValue()), method.flags().flagsMask()));
             }
+            boolean isInterface = (flags & ClassFile.ACC_INTERFACE) != 0;
+            InterfaceInitializers.Initializer initializer = isInterface
+                    ? InterfaceInitializers.summarize(internalName, model) : null;
             return new Copy(strings.intern(internalName), version, flags, superName,
                     interfaces.isEmpty() ? List.of() : Collections.unmodifiableList(interfaces),
-                    List.copyOf(table), nestHost);
+                    List.copyOf(table), nestHost, !isInterface && InterfaceInitializers.inert(model),
+                    initializer);
         }
 
         /**
