@@ -44,14 +44,14 @@ The request takes:
 The `Result` has:
 
 * `classPath()`: the class path to package, in the order of the request. An entry with a rewritten class is replaced by its copy, which keeps the entry's file name, so the `Class-Path` attribute of a manifest that names it stays valid. Every other entry is returned as it was given, and keeps its bytes and its hash.
-* `summary()`: one line per step to log, such as `Stripped local-variable tables from 7102 of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)`.
+* `summary()`: one line per step to log, desugaring first, such as `Desugared 2960 lambda call sites into 1978 generated classes in 37 class path entries (815 classes rewritten, 360 bridges, 33 sites left as invokedynamic, 0 nest fallbacks)` and `Stripped local-variable tables from 7102 of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)`.
 * `warnings()`: lines to log as warnings, each on its own. Usually empty, never `null`.
 * `entries()`: what the steps did to each jar named by `stripLocalVariables`, and to each entry that holds a lambda call site when lambdas are desugared, in class-path order, for the plugin to write under the build's reports in its own format. The counts are numbers, so nothing needs parsing. Each `Entry` has:
 ** `path()`: the jar or directory, as `classPath` gave it;
 ** `classesStripped()`, `classesUnchanged()` and `fallbacks()`: the jar's classes that lost their tables, that were left as they were, and that were written as they were because the step failed on them or their rewrite verified worse. Each class of a jar named for stripping counts once;
 ** `bytesSaved()`: how many bytes smaller the stripped classes became, uncompressed;
 ** `sitesRewritten()`, `classesDesugared()`, `classesGenerated()`, `bridges()` and `nestFallbacks()`: the lambda call sites rewritten, the existing classes rewritten, the classes generated, the bridges added and the nests left as they were;
-** `sitesLeft()`: the lambda call sites left as they were, by reason, such as `altMetafactory` or `shadowedOrUncertain`;
+** `sitesLeft()`: the lambda call sites left as they were, by reason, such as `altMetafactory` or `shadowedOrUncertain`, for display;
 ** `kept()`: why no class of the entry went through the steps, such as `the jar is signed`, or empty;
 ** `notes()`: one line per fallback, tab-separated: the entry, the class or the nest, the step and the first verification error or failure.
 
@@ -82,7 +82,7 @@ Only a trained JDK AOT cache spares a start that work, so a fat JAR started with
 The step generates those classes at build time, next to the class that holds the site, and points the site at them.
 With a JDK AOT cache, the step makes about no difference.
 
-The sites of one class that share the functional interface, the interface method and the captured types share one generated class, `<Host>$$Lambda$R<n>`, which dispatches on a small tag.
+The sites of one class that share the functional interface, the interface method and the captured types share generated classes, `<Host>$$Lambda$R<n>`, each serving as many of them as keep its interface method within HotSpot's default inlining size (`FreqInlineSize`, 325 bytes), dispatching on a small tag.
 A class whose version is below Java 11 has no nestmates: its private lambda bodies are reached through static synthetic bridges, `$desugared$lambda$<n>`, added to it.
 
 A site is rewritten only when the generated class provably resolves what the site resolved, and each rewritten class, and each generated one, is verified as stripped classes are.
@@ -91,13 +91,15 @@ These stay as they are:
 * serializable and marker-interface lambdas (`altMetafactory`), and every other bootstrap, such as string concatenation;
 * the classes of a signed jar, the `META-INF/versions/` variants of a multi-release jar, and `module-info`;
 * a site whose class, nest host, implementation, functional interface or captured receiver has a name that two entries hold, or that has a `META-INF/versions/` copy anywhere, because a fat JAR or an image does not tell which copy loads; or a name in a `foreignPackages` package, or in a package of the JDK that the class path also holds;
-* a private implementation in a Java 8 interface, or in a serializable Java 8 class without a `serialVersionUID`, whose bridge would be public or would change the default `serialVersionUID`.
+* a private implementation in a Java 8 interface, or in a serializable Java 8 class other than an enum without a `static final serialVersionUID`, whose bridge would be public or would change the default `serialVersionUID`;
+* a site whose functional interface, or one of its superinterfaces, has a default method and a static initializer that does more than create its own lambdas and instances of classes whose constructors do nothing: the JVM runs that initializer before it initializes the generated class, and the initializer may reach the site again, on the same thread or another, before the class is ready;
+* a site whose functional interface is serializable without `altMetafactory`, whose lambda refuses to be serialized.
 
 What changes for the application, and what to document for users:
 
-* The lambda classes are no longer hidden: they have stable names, `Class.forName` finds them, `Class.getNestMembers()` lists them, and class path scanners and Java agents see them as ordinary, synthetic, package-private classes. Their names keep `$$Lambda`, which agents such as OpenTelemetry's and Datadog's recognize.
+* The lambda classes are no longer hidden: they have stable names, `Class.forName` finds them, `Class.getNestMembers()` lists them, and class path scanners and Java agents see them as ordinary, synthetic, package-private classes. Their names keep `$$Lambda`, which agents such as OpenTelemetry's and Datadog's recognize. Reflection sees ordinary members: a canonical name, fields `f0`... instead of `arg$1`..., a static `create` method, and, for a Java 8 class, no nest host.
 * Two lambdas of one class with the same functional interface, method and captured types may have the same `getClass()`. The Java Language Specification allows it.
-* Each call through a lambda adds one frame to stack traces and to `StackWalker`, so a method reached through a method reference that looks up its caller sees the generated class.
+* Each call through a lambda adds one frame to stack traces and to `StackWalker`, two in a Java 8 class whose lambda body is reached through a bridge, and neither has a line number, so a method reached through a method reference that looks up its caller sees the generated class.
 * Java 8 classes gain bridges, which `getDeclaredMethods()` returns, and jars gain `.class` entries.
 * A rewritten jar is a modified third-party binary: it no longer has the published artifact's hashes, which scanners such as Snyk Container use to identify it, and licence-compliance processes may need to know. A jar without a lambda call site keeps its bytes.
 * The JDK rules are judged against the JDK that runs the transform: run it on the feature release the application runs on, with a runtime that has the JDK modules the application uses.
