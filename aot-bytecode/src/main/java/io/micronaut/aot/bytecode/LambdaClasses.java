@@ -147,18 +147,9 @@ final class LambdaClasses {
         if (implType.parameterCount() != captured + arity || instantiatedType.parameterCount() != arity) {
             return false;
         }
-        if (samName.startsWith("<") || samName.equals(FACTORY_METHOD) && samType.equals(factoryType)) {
+        if (samName.startsWith("<") || samName.equals(FACTORY_METHOD) && samType.equals(factoryType)
+                || !capturesMatch(factoryType, implType, instance)) {
             return false;
-        }
-        // A captured receiver may be a subclass of the owner; every other captured value is exact.
-        int first = instance && captured > 0 ? 1 : 0;
-        if (first == 1 && factoryType.parameterType(0).isPrimitive()) {
-            return false;
-        }
-        for (int i = first; i < captured; i++) {
-            if (!factoryType.parameterType(i).equals(implType.parameterType(i))) {
-                return false;
-            }
         }
         for (int i = 0; i < arity; i++) {
             if (!Conversions.convertible(samType.parameterType(i), implType.parameterType(captured + i),
@@ -171,6 +162,24 @@ final class LambdaClasses {
             return true;
         }
         return Conversions.convertible(implType.returnType(), expected, expected);
+    }
+
+    /**
+     * Whether the implementation takes the captured values as they are: a captured receiver may be a subclass of the
+     * owner, but not a primitive; every other captured value is exact.
+     */
+    private static boolean capturesMatch(MethodTypeDesc factoryType, MethodTypeDesc implType, boolean instance) {
+        int captured = factoryType.parameterCount();
+        int first = instance && captured > 0 ? 1 : 0;
+        if (first == 1 && factoryType.parameterType(0).isPrimitive()) {
+            return false;
+        }
+        for (int i = first; i < captured; i++) {
+            if (!factoryType.parameterType(i).equals(implType.parameterType(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -700,18 +709,7 @@ final class LambdaClasses {
                 return;
             }
             if (argument.isPrimitive()) {
-                if (target.isPrimitive()) {
-                    widen(code, TypeKind.from(argument), TypeKind.from(target));
-                    return;
-                }
-                TypeKind unwrapped = unwrapped(target);
-                if (unwrapped != null) {
-                    widen(code, TypeKind.from(argument), unwrapped);
-                    box(code, unwrapped);
-                } else {
-                    box(code, TypeKind.from(argument));
-                    cast(code, target);
-                }
+                fromPrimitive(code, TypeKind.from(argument), target);
                 return;
             }
             ClassDesc source;
@@ -727,7 +725,33 @@ final class LambdaClasses {
                 }
                 return;
             }
-            TypeKind kind = TypeKind.from(target);
+            toPrimitive(code, source, TypeKind.from(target));
+        }
+
+        /**
+         * Converts a primitive on top of the stack: widens it, or boxes it, widened to the wrapper's primitive when
+         * the target is a wrapper, cast otherwise.
+         */
+        private static void fromPrimitive(CodeBuilder code, TypeKind argument, ClassDesc target) {
+            if (target.isPrimitive()) {
+                widen(code, argument, TypeKind.from(target));
+                return;
+            }
+            TypeKind unwrapped = unwrapped(target);
+            if (unwrapped != null) {
+                widen(code, argument, unwrapped);
+                box(code, unwrapped);
+            } else {
+                box(code, argument);
+                cast(code, target);
+            }
+        }
+
+        /**
+         * Converts a reference on top of the stack to a primitive: unboxes a wrapper and widens it, or casts to the
+         * wrapper a {@code boolean} or a {@code char} needs, or to {@code Number}, and unboxes.
+         */
+        private static void toPrimitive(CodeBuilder code, ClassDesc source, TypeKind kind) {
             TypeKind unwrapped = unwrapped(source);
             if (unwrapped != null) {
                 unbox(code, wrapper(unwrapped), unwrapped);

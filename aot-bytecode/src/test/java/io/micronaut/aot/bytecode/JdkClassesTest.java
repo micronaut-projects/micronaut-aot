@@ -24,6 +24,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -54,7 +55,7 @@ class JdkClassesTest {
 
         assertNotNull(string);
         assertTrue(string.exported());
-        assertTrue((string.flags() & ClassFile.ACC_PUBLIC) != 0);
+        assertNotEquals(0, string.flags() & ClassFile.ACC_PUBLIC);
         assertEquals("java/lang/Object", string.superName());
         assertTrue(string.interfaces().contains("java/io/Serializable"));
         Integer valueOf = string.method("valueOf", "(Ljava/lang/Object;)Ljava/lang/String;");
@@ -78,7 +79,7 @@ class JdkClassesTest {
         Integer forName = JdkClasses.find("java/lang/Class").method("forName",
                 "(Ljava/lang/String;)Ljava/lang/Class;");
         assertNotNull(forName);
-        assertTrue((forName & JdkClasses.JdkClass.CALLER_SENSITIVE) != 0);
+        assertNotEquals(0, forName & JdkClasses.JdkClass.CALLER_SENSITIVE);
         assertEquals(0, JdkClasses.find("java/lang/Class").method("getName", "()Ljava/lang/String;")
                 & JdkClasses.JdkClass.CALLER_SENSITIVE);
 
@@ -88,7 +89,7 @@ class JdkClassesTest {
 
         assertNull(JdkClasses.find("java/lang/NoSuchClass"));
         assertNull(JdkClasses.find("com/example/Application"));
-        assertTrue((JdkClasses.find("java/util/function/Function").flags() & ClassFile.ACC_INTERFACE) != 0);
+        assertNotEquals(0, JdkClasses.find("java/util/function/Function").flags() & ClassFile.ACC_INTERFACE);
     }
 
     @Test

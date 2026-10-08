@@ -68,19 +68,9 @@ final class DirectoryRewriter {
             try (Stream<Path> walk = Files.walk(source)) {
                 paths = walk.sorted().toList();
             }
-            String link = null;
             Map<String, Path> files = new HashMap<>();
             List<ClassTransformPipeline.ClassEntry> classes = new ArrayList<>();
-            for (Path path : paths) {
-                String entryName = entryName(source, path);
-                if (Files.isSymbolicLink(path)) {
-                    link = link == null ? entryName : link;
-                } else if (Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
-                        && ClassTransformPipeline.isClass(entryName)) {
-                    files.put(entryName, path);
-                    classes.add(new ClassTransformPipeline.ClassEntry(entryName, Files.size(path)));
-                }
-            }
+            String link = classes(source, paths, files, classes);
             ClassTransformPipeline.JarRun run = pipeline.start(new ClassTransformPipeline.Layer(name, index, false,
                     false));
             if (run.plans()) {
@@ -99,6 +89,31 @@ final class DirectoryRewriter {
             throw new IOException("Cannot rewrite the classes of " + name + ": " + ClassTransformPipeline.describe(e),
                     e);
         }
+    }
+
+    /**
+     * Collects the class files of a directory, without following links.
+     *
+     * @param paths   every path below the directory, in order
+     * @param files   receives each class file by entry name
+     * @param classes receives each class file's entry, in order
+     * @return the entry name of the first symbolic link, or {@code null} when there is none
+     * @throws IOException if a file's size cannot be read
+     */
+    private static String classes(Path source, List<Path> paths, Map<String, Path> files,
+                                  List<ClassTransformPipeline.ClassEntry> classes) throws IOException {
+        String link = null;
+        for (Path path : paths) {
+            String entryName = entryName(source, path);
+            if (Files.isSymbolicLink(path)) {
+                link = link == null ? entryName : link;
+            } else if (Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
+                    && ClassTransformPipeline.isClass(entryName)) {
+                files.put(entryName, path);
+                classes.add(new ClassTransformPipeline.ClassEntry(entryName, Files.size(path)));
+            }
+        }
+        return link;
     }
 
     /**

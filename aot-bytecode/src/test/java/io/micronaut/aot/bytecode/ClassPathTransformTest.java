@@ -126,8 +126,9 @@ class ClassPathTransformTest {
         // Desugaring alone is a step; so is stripping alone, and the jar may be named by another spelling of its path.
         ClassPathTransform.Request.builder().classPath(List.of(application, jar)).outputDirectory(output)
                 .desugarLambdas(true).build();
-        assertThrows(IllegalStateException.class, () -> ClassPathTransform.Request.builder()
-                .classPath(List.of(application, jar)).outputDirectory(output).desugarLambdas(false).build());
+        ClassPathTransform.Request.Builder noStep = ClassPathTransform.Request.builder()
+                .classPath(List.of(application, jar)).outputDirectory(output).desugarLambdas(false);
+        assertThrows(IllegalStateException.class, noStep::build);
         Path spelled = jar.getParent().resolve("../switch/./library.jar");
         ClassPathTransform.Result result = ClassPathTransform.run(ClassPathTransform.Request.builder()
                 .classPath(List.of(application, jar)).outputDirectory(output).stripLocalVariables(List.of(spelled))

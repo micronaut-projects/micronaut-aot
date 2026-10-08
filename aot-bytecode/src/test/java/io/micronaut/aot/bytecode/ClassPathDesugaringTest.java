@@ -537,17 +537,13 @@ class ClassPathDesugaringTest {
 
     @Test
     void theDesugarStepIsNamedInTheRequestAndItsForeignPackagesArePackageNames() {
-        assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
-                .foreignPackages(Set.of("io/micronaut/runner")));
-        assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
-                .foreignPackages(Set.of("io.micronaut.")));
-        assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
-                .foreignPackages(Set.of("")));
-        for (String name : List.of("io..micronaut", ".io", "io micronaut", "1x", "io.1x")) {
-            assertThrows(IllegalArgumentException.class, () -> ClassPathTransform.Request.builder()
-                    .foreignPackages(Set.of(name)), name);
+        ClassPathTransform.Request.Builder builder = ClassPathTransform.Request.builder();
+        for (String name : List.of("io/micronaut/runner", "io.micronaut.", "", "io..micronaut", ".io", "io micronaut",
+                "1x", "io.1x")) {
+            Set<String> packages = Set.of(name);
+            assertThrows(IllegalArgumentException.class, () -> builder.foreignPackages(packages), name);
         }
-        ClassPathTransform.Request.builder().foreignPackages(Set.of("io.micronaut.runner", "a", "_x.$y1"));
+        builder.foreignPackages(Set.of("io.micronaut.runner", "a", "_x.$y1"));
     }
 
     @Test

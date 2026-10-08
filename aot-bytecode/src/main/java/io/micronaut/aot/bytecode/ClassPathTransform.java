@@ -81,12 +81,7 @@ public final class ClassPathTransform {
         ExecutorService pool = request.parallelism == 1 ? null
                 : Executors.newFixedThreadPool(request.parallelism, ClassPathTransform::thread);
         try {
-            ClassPathModel.Interner strings = new ClassPathModel.Interner();
-            List<Callable<ClassPathModel.LayerScan>> scans = new ArrayList<>(classPath.size());
-            for (Path entry : classPath) {
-                scans.add(() -> scan(entry, request.desugar, strings));
-            }
-            ClassPathModel model = ClassPathModel.merge(all(scans, pool));
+            ClassPathModel model = model(request, pool);
 
             List<String> warnings = new ArrayList<>();
             boolean strip = request.strip;
@@ -98,13 +93,7 @@ public final class ClassPathTransform {
                         + ", which reads local-variable tables at run time");
                 strip = false;
             }
-            List<ClassTransformPipeline.Step> steps = new ArrayList<>(2);
-            if (request.desugar) {
-                steps.add(new LambdaDesugarer(model, request.foreignPackages));
-            }
-            if (strip) {
-                steps.add(new LocalVariableStripper());
-            }
+            List<ClassTransformPipeline.Step> steps = steps(request, model, strip);
             if (steps.isEmpty()) {
                 return new Result(classPath, "Stripped no local-variable table, because a library on the class"
                         + " path reads them at run time", warnings, List.of());
@@ -112,26 +101,8 @@ public final class ClassPathTransform {
             ClassTransformPipeline pipeline = new ClassTransformPipeline(steps, model);
             List<Integer> positions = new ArrayList<>();
             List<Path> targets = new ArrayList<>();
-            List<Callable<JarRewriter.Outcome>> rewrites = new ArrayList<>();
-            for (int position = 0; position < classPath.size(); position++) {
-                boolean stripped = strip && request.stripped[position];
-                if (!stripped && !(request.desugar && model.hasLambdas(position))) {
-                    continue;
-                }
-                Path source = classPath.get(position);
-                Path target = request.outputDirectory.resolve(Integer.toString(position))
-                        .resolve(source.getFileName().toString());
-                int index = position;
-                positions.add(position);
-                targets.add(target);
-                if (Files.isDirectory(source)) {
-                    rewrites.add(() -> DirectoryRewriter.rewrite(source, target, pipeline, source.toString(),
-                            index));
-                } else {
-                    rewrites.add(() -> JarRewriter.rewrite(source, target, pipeline, source.toString(), index,
-                            stripped));
-                }
-            }
+            List<Callable<JarRewriter.Outcome>> rewrites = schedule(request, model, pipeline, strip, positions,
+                    targets);
             List<JarRewriter.Outcome> outcomes = all(rewrites, pool);
 
             List<Path> result = new ArrayList<>(classPath);
@@ -142,7 +113,7 @@ public final class ClassPathTransform {
                 int position = positions.get(i);
                 reports.add(outcome.report());
                 Result.Entry entry = new Result.Entry(classPath.get(position), outcome);
-                if (strip && request.stripped[position] || entry.sitesRewritten() + entry.sitesLeftTotal() > 0) {
+                if (listed(strip && request.stripped[position], entry)) {
                     entries.add(entry);
                 }
                 if (outcome.written()) {
@@ -160,6 +131,79 @@ public final class ClassPathTransform {
                 pool.shutdownNow();
             }
         }
+    }
+
+    /**
+     * Scans every entry of the class path, on the pool when there is one, and merges the scans.
+     */
+    private static ClassPathModel model(Request request, ExecutorService pool) throws IOException {
+        ClassPathModel.Interner strings = new ClassPathModel.Interner();
+        List<Callable<ClassPathModel.LayerScan>> scans = new ArrayList<>(request.classPath.size());
+        for (Path entry : request.classPath) {
+            scans.add(() -> scan(entry, request.desugar, strings));
+        }
+        return ClassPathModel.merge(all(scans, pool));
+    }
+
+    /**
+     * The enabled steps, in the order they run: desugaring, then stripping.
+     */
+    private static List<ClassTransformPipeline.Step> steps(Request request, ClassPathModel model, boolean strip) {
+        List<ClassTransformPipeline.Step> steps = new ArrayList<>(2);
+        if (request.desugar) {
+            steps.add(new LambdaDesugarer(model, request.foreignPackages));
+        }
+        if (strip) {
+            steps.add(new LocalVariableStripper());
+        }
+        return steps;
+    }
+
+    /**
+     * The tasks that rewrite the entries the steps run over: the jars named for stripping, when the strip step runs,
+     * and the entries with a lambda call site, when lambdas are desugared.
+     *
+     * @param positions receives the position of each entry to rewrite, in class-path order
+     * @param targets   receives the copy each one is rewritten into
+     * @return the tasks, in the same order
+     */
+    private static List<Callable<JarRewriter.Outcome>> schedule(Request request, ClassPathModel model,
+                                                                ClassTransformPipeline pipeline, boolean strip,
+                                                                List<Integer> positions, List<Path> targets) {
+        List<Callable<JarRewriter.Outcome>> rewrites = new ArrayList<>();
+        for (int position = 0; position < request.classPath.size(); position++) {
+            boolean stripped = strip && request.stripped[position];
+            if (stripped || request.desugar && model.hasLambdas(position)) {
+                Path source = request.classPath.get(position);
+                Path target = request.outputDirectory.resolve(Integer.toString(position))
+                        .resolve(source.getFileName().toString());
+                positions.add(position);
+                targets.add(target);
+                rewrites.add(rewrite(source, target, pipeline, position, stripped));
+            }
+        }
+        return rewrites;
+    }
+
+    /**
+     * The task that rewrites one entry: a directory into a directory copy, a jar into a jar copy.
+     *
+     * @param stripped whether the strip step runs over the jar
+     */
+    private static Callable<JarRewriter.Outcome> rewrite(Path source, Path target, ClassTransformPipeline pipeline,
+                                                         int index, boolean stripped) {
+        if (Files.isDirectory(source)) {
+            return () -> DirectoryRewriter.rewrite(source, target, pipeline, source.toString(), index);
+        }
+        return () -> JarRewriter.rewrite(source, target, pipeline, source.toString(), index, stripped);
+    }
+
+    /**
+     * Whether an entry the steps ran over is listed in the result: a jar named for stripping, when the strip step
+     * ran, or an entry with a lambda call site.
+     */
+    private static boolean listed(boolean stripped, Result.Entry entry) {
+        return stripped || entry.sitesRewritten() + entry.sitesLeftTotal() > 0;
     }
 
     private static ClassPathModel.LayerScan scan(Path entry, boolean members, ClassPathModel.Interner strings)

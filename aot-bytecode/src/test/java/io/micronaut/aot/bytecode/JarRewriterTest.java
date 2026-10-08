@@ -176,9 +176,9 @@ class JarRewriterTest {
         manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
         Path source = ClassFixtures.jar(temp.resolve("desugared-" + method + "/fix.jar"), manifest, ordered,
                 method.equals("STORED") ? ordered.keySet() : Set.of());
-        ClassPathModel model = LambdaFixtures.model(layers);
+        ClassPathModel scenarioModel = LambdaFixtures.model(layers);
         ClassTransformPipeline pipeline = new ClassTransformPipeline(
-                List.of(new LambdaDesugarer(model, Set.of()), new LocalVariableStripper()), model);
+                List.of(new LambdaDesugarer(scenarioModel, Set.of()), new LocalVariableStripper()), scenarioModel);
         Path target = temp.resolve("desugared-" + method + "/out/1/fix.jar");
 
         JarRewriter.Outcome outcome = JarRewriter.rewrite(source, target, pipeline, "libs/fix.jar", 1, true);

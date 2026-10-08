@@ -456,22 +456,85 @@ final class ClassTransformPipeline {
     }
 
     /**
-     * A class a step generated.
-     *
-     * @param name  its entry name
-     * @param bytes its content
+     * A class a step generated. It holds its bytes as they are, so it has no value equality.
      */
-    record Generated(String name, byte[] bytes) {
+    static final class Generated {
+
+        private final String name;
+        private final byte[] bytes;
+
+        /**
+         * A generated class.
+         *
+         * @param name  its entry name
+         * @param bytes its content
+         */
+        Generated(String name, byte[] bytes) {
+            this.name = name;
+            this.bytes = bytes;
+        }
+
+        /**
+         * The class's entry name.
+         *
+         * @return the entry name
+         */
+        String name() {
+            return name;
+        }
+
+        /**
+         * The class's content.
+         *
+         * @return the bytes
+         */
+        byte[] bytes() {
+            return bytes;
+        }
     }
 
     /**
-     * What is written for a class of a planned nest.
-     *
-     * @param bytes     the class's accepted bytes, the original array when nothing changed it
-     * @param generated the classes written right after it, in order
-     * @param rewritten whether a step changed the class, so {@code bytes} are not the original's
+     * What is written for a class of a planned nest. It holds the class's bytes as they are, so it has no value
+     * equality.
      */
-    record Planned(byte[] bytes, List<Generated> generated, boolean rewritten) {
+    static final class Planned {
+
+        private final byte[] bytes;
+        private final List<Generated> generated;
+        private final boolean rewritten;
+
+        private Planned(byte[] bytes, List<Generated> generated, boolean rewritten) {
+            this.bytes = bytes;
+            this.generated = generated;
+            this.rewritten = rewritten;
+        }
+
+        /**
+         * The class's accepted bytes.
+         *
+         * @return the bytes, the original array when nothing changed the class
+         */
+        byte[] bytes() {
+            return bytes;
+        }
+
+        /**
+         * The classes written right after it.
+         *
+         * @return the generated classes, in order
+         */
+        List<Generated> generated() {
+            return generated;
+        }
+
+        /**
+         * Whether a step changed the class.
+         *
+         * @return whether {@link #bytes()} are not the original's
+         */
+        boolean rewritten() {
+            return rewritten;
+        }
     }
 
     /**
@@ -856,21 +919,7 @@ final class ClassTransformPipeline {
                 byte[] original = entry.getValue().original();
                 Attempt result = accepted == null ? Attempt.UNCHANGED : accepted.results.get(entryName);
                 byte[] output = result.bytes == null ? original : result.bytes;
-                for (int i = 0; i < steps.size(); i++) {
-                    Step step = steps.get(i);
-                    if (!counted[i]) {
-                        continue;
-                    }
-                    if ((step == first || step == second)
-                            && (step == desugarer || applies[i] && step.matches(entryName, original))) {
-                        fallbacks[i]++;
-                    } else if (result.active.contains(step)) {
-                        rewritten[i]++;
-                        saved[i] += original.length - output.length;
-                    } else {
-                        unchanged[i]++;
-                    }
-                }
+                countNestClass(entryName, original, output, result, first, second);
                 List<Generated> following = accepted == null ? List.of()
                         : accepted.generated.getOrDefault(entryName, List.of());
                 for (Generated generatedClass : following) {
@@ -882,6 +931,43 @@ final class ClassTransformPipeline {
             if (accepted != null) {
                 sites += unit.sites();
                 bridges += unit.bridges();
+            }
+        }
+
+        /**
+         * Counts one class of a nest for every counted step.
+         */
+        private void countNestClass(String entryName, byte[] original, byte[] output, Attempt result, Step first,
+                                    Step second) {
+            for (int i = 0; i < steps.size(); i++) {
+                if (counted[i]) {
+                    Step step = steps.get(i);
+                    count(i, dropped(i, step, entryName, original, first, second), result.active.contains(step),
+                            original.length - output.length);
+                }
+            }
+        }
+
+        /**
+         * Whether a step that a nest dropped would have run over one of its classes: desugaring always, another
+         * step when it applies to the entry and its pre-filter matches.
+         */
+        private boolean dropped(int index, Step step, String entryName, byte[] original, Step first, Step second) {
+            return (step == first || step == second)
+                    && (step == desugarer || applies[index] && step.matches(entryName, original));
+        }
+
+        /**
+         * Counts one class for one step: as a fallback, as rewritten with what it saved, or as unchanged.
+         */
+        private void count(int index, boolean fallback, boolean active, int bytesSaved) {
+            if (fallback) {
+                fallbacks[index]++;
+            } else if (active) {
+                rewritten[index]++;
+                saved[index] += bytesSaved;
+            } else {
+                unchanged[index]++;
             }
         }
 
@@ -931,47 +1017,57 @@ final class ClassTransformPipeline {
          */
         private Attempt attempt(byte[] original, List<Step> candidates, LambdaDesugarer.ClassPlan nest) {
             Attribution attribution = new Attribution();
-            Step blame = candidates.get(0);
+            attribution.blame = candidates.get(0);
             try {
-                boolean rebuild = rebuildsPool(candidates);
-                ClassFile context = rebuild ? rebuilt : shared;
-                ClassModel model = context.parse(original);
-                List<Step> active = new ArrayList<>(candidates.size());
-                for (Step step : candidates) {
-                    blame = step;
-                    if (step == desugarer ? nest != null : step.changes(model)) {
-                        active.add(step);
-                    }
-                }
-                if (active.isEmpty()) {
-                    return Attempt.UNCHANGED;
-                }
-                blame = active.get(0);
-                if (rebuild && !rebuildsPool(active)) {
-                    // Rule a: the step that rebuilds the pool declined, so every other step keeps it shared, and the
-                    // class must be parsed again with its debug elements.
-                    context = shared;
-                    model = context.parse(original);
-                }
-                ClassTransform transform = null;
-                for (Step step : active) {
-                    blame = step;
-                    ClassTransform own = step == desugarer ? nest.transform() : step.transform(model);
-                    ClassTransform gated = new Gate(step, attribution).andThen(own);
-                    transform = transform == null ? gated : transform.andThen(gated);
-                }
-                blame = active.get(0);
-                transform = transform.andThen(new Gate(null, attribution))
-                        .andThen(OriginalFrames.of(model).reattaching());
-                byte[] output = context.transformClass(model, transform);
-                attribution.current = null;
-                return gated(original, output, active);
+                return transformed(original, candidates, nest, attribution);
             } catch (Gate.Failure failure) {
-                return Attempt.failed(failure.step == null ? blame : failure.step, describe(failure.getCause()));
+                return Attempt.failed(failure.step == null ? attribution.blame : failure.step,
+                        describe(failure.getCause()));
             } catch (RuntimeException | LinkageError | AssertionError | StackOverflowError failure) {
-                Step step = attribution.current == null ? blame : attribution.current;
+                Step step = attribution.current == null ? attribution.blame : attribution.current;
                 return Attempt.failed(step, describe(failure));
             }
+        }
+
+        /**
+         * The body of {@link #attempt(byte[], List, LambdaDesugarer.ClassPlan)}, which keeps the step to blame up to
+         * date as it asks and runs each one.
+         */
+        private Attempt transformed(byte[] original, List<Step> candidates, LambdaDesugarer.ClassPlan nest,
+                                    Attribution attribution) {
+            boolean rebuild = rebuildsPool(candidates);
+            ClassFile context = rebuild ? rebuilt : shared;
+            ClassModel model = context.parse(original);
+            List<Step> active = new ArrayList<>(candidates.size());
+            for (Step step : candidates) {
+                attribution.blame = step;
+                if (step == desugarer ? nest != null : step.changes(model)) {
+                    active.add(step);
+                }
+            }
+            if (active.isEmpty()) {
+                return Attempt.UNCHANGED;
+            }
+            attribution.blame = active.get(0);
+            if (rebuild && !rebuildsPool(active)) {
+                // Rule a: the step that rebuilds the pool declined, so every other step keeps it shared, and the
+                // class must be parsed again with its debug elements.
+                context = shared;
+                model = context.parse(original);
+            }
+            ClassTransform transform = null;
+            for (Step step : active) {
+                attribution.blame = step;
+                ClassTransform own = step == desugarer ? nest.transform() : step.transform(model);
+                ClassTransform gated = new Gate(step, attribution).andThen(own);
+                transform = transform == null ? gated : transform.andThen(gated);
+            }
+            attribution.blame = active.get(0);
+            transform = transform.andThen(new Gate(null, attribution))
+                    .andThen(OriginalFrames.of(model).reattaching());
+            byte[] output = context.transformClass(model, transform);
+            attribution.current = null;
+            return gated(original, output, active);
         }
 
         /**
@@ -1047,7 +1143,10 @@ final class ClassTransformPipeline {
      * one after the other, not inside each other.
      */
     private static final class Attribution {
+        /** The step whose start or end handler is running, set by the gates. */
         private Step current;
+        /** The step to blame for a failure outside the gates: the one being asked or set up, or the first. */
+        private Step blame;
     }
 
     /**

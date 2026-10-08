@@ -167,8 +167,7 @@ class EndToEndTest {
         Process process = new ProcessBuilder(java.toString(), "-Xverify:all", "-Dmicronaut.server.port=" + port,
                 "-cp", join(classPath), "e2eapp.Application")
                 .redirectErrorStream(true).redirectOutput(log.toFile()).start();
-        try {
-            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
+        try (HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build()) {
             HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/hello"))
                     .timeout(Duration.ofSeconds(10)).build();
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(120);

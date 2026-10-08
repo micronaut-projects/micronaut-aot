@@ -92,10 +92,10 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
     /** The name of the step, which reports and notes use. */
     static final String NAME = "desugarLambdas";
 
-    /** The constant pool string every class with a lambda call site holds. */
-    private static final byte[] MARKER = "java/lang/invoke/LambdaMetafactory".getBytes(StandardCharsets.UTF_8);
-
     private static final String METAFACTORY_OWNER = "java/lang/invoke/LambdaMetafactory";
+
+    /** The constant pool string every class with a lambda call site holds. */
+    private static final byte[] MARKER = METAFACTORY_OWNER.getBytes(StandardCharsets.UTF_8);
 
     private static final String METAFACTORY = "metafactory";
 
@@ -449,24 +449,9 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
         if (!seen.add(internalName)) {
             return false;
         }
-        List<String> interfaces;
-        String packageName = packageOf(internalName);
-        if (JdkClasses.owns(packageName) && !model.holdsPackage(packageName)) {
-            JdkClasses.JdkClass jdk = JdkClasses.find(internalName);
-            if (jdk == null || jdk.method(CLASS_INIT, NO_ARGUMENTS) != null && jdk.declaresConcreteInstanceMethod()) {
-                return true;
-            }
-            interfaces = jdk.interfaces();
-        } else {
-            Optional<ClassPathModel.Copy> copy = model.winner(internalName);
-            if (copy.isEmpty() || !certain(internalName)) {
-                return true;
-            }
-            if (copy.get().member(CLASS_INIT, NO_ARGUMENTS) != null && copy.get().declaresConcreteInstanceMethod()
-                    && !internalName.equals(initializing) && !quiet(copy.get(), checking)) {
-                return true;
-            }
-            interfaces = copy.get().interfaces();
+        List<String> interfaces = quietlyInitialized(internalName, initializing, checking);
+        if (interfaces == null) {
+            return true;
         }
         for (String superinterface : interfaces) {
             if (initializesLoudly(superinterface, seen, initializing, checking)) {
@@ -474,6 +459,27 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
             }
         }
         return false;
+    }
+
+    /**
+     * The superinterfaces of an interface whose own initialization, if the JVM runs it for a class that implements
+     * the interface, is quiet; {@code null} when it may not be.
+     */
+    private List<String> quietlyInitialized(String internalName, String initializing, Set<String> checking) {
+        String packageName = packageOf(internalName);
+        if (JdkClasses.owns(packageName) && !model.holdsPackage(packageName)) {
+            JdkClasses.JdkClass jdk = JdkClasses.find(internalName);
+            boolean loud = jdk == null
+                    || jdk.method(CLASS_INIT, NO_ARGUMENTS) != null && jdk.declaresConcreteInstanceMethod();
+            return loud ? null : jdk.interfaces();
+        }
+        Optional<ClassPathModel.Copy> copy = model.winner(internalName);
+        if (copy.isEmpty() || !certain(internalName)) {
+            return null;
+        }
+        boolean initialized = copy.get().member(CLASS_INIT, NO_ARGUMENTS) != null
+                && copy.get().declaresConcreteInstanceMethod() && !internalName.equals(initializing);
+        return initialized && !quiet(copy.get(), checking) ? null : copy.get().interfaces();
     }
 
     /**
@@ -539,6 +545,36 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
         return bootstrap.name().stringValue();
     }
 
+    /**
+     * Collects the {@code metafactory} sites of a class, numbered by their position among the
+     * {@code invokedynamic} instructions of their method, and counts its {@code altMetafactory} sites as left.
+     *
+     * @param sitesPerMethod receives the number of {@code invokedynamic} instructions of each method with code
+     */
+    private static void collect(ClassModel host, HostPlan plan, List<Found> found,
+                                Map<String, Integer> sitesPerMethod) {
+        for (MethodModel method : host.methods()) {
+            Optional<CodeModel> code = method.code();
+            if (code.isEmpty()) {
+                continue;
+            }
+            String methodKey = key(method);
+            int ordinal = 0;
+            for (CodeElement element : code.get()) {
+                if (element instanceof InvokeDynamicInstruction indy) {
+                    String bootstrap = bootstrap(indy);
+                    if (METAFACTORY.equals(bootstrap)) {
+                        found.add(new Found(methodKey, ordinal, indy));
+                    } else if (ALT_METAFACTORY.equals(bootstrap)) {
+                        plan.left[Reason.ALT_METAFACTORY.ordinal()]++;
+                    }
+                    ordinal++;
+                }
+            }
+            sitesPerMethod.put(methodKey, ordinal);
+        }
+    }
+
     private static List<ClassDesc> nestMembers(ClassModel model) {
         Optional<NestMembersAttribute> attribute = model.findAttribute(Attributes.nestMembers());
         if (attribute.isEmpty()) {
@@ -557,7 +593,7 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
     enum Reason {
 
         /** The bootstrap is {@code altMetafactory}: a serializable, marker-interface or bridged lambda. */
-        ALT_METAFACTORY("altMetafactory"),
+        ALT_METAFACTORY(LambdaDesugarer.ALT_METAFACTORY),
 
         /**
          * The host, its nest host, the implementation's owner, the functional interface or a captured receiver's
@@ -914,6 +950,26 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
     }
 
     /**
+     * How a generated class calls a site's implementation.
+     *
+     * @param invocation the instruction it uses
+     * @param instance   whether the implementation takes a receiver
+     * @param special    whether the site's handle is an {@code invokespecial} of a method of the host
+     */
+    private record Call(LambdaClasses.Invocation invocation, boolean instance, boolean special) {
+    }
+
+    /**
+     * A site's implementation, as its owner declares it.
+     *
+     * @param flags            its access flags
+     * @param ownerIsInterface whether its owner is an interface
+     * @param bridged          whether the generated class reaches it through a bridge on the host
+     */
+    private record Resolved(int flags, boolean ownerIsInterface, boolean bridged) {
+    }
+
+    /**
      * Plans one class path entry. It is confined to the thread that rewrites the entry.
      */
     private final class Planner {
@@ -1045,26 +1101,7 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
             HostPlan plan = new HostPlan();
             List<Found> found = new ArrayList<>();
             Map<String, Integer> sitesPerMethod = new HashMap<>();
-            for (MethodModel method : host.methods()) {
-                Optional<CodeModel> code = method.code();
-                if (code.isEmpty()) {
-                    continue;
-                }
-                String methodKey = key(method);
-                int ordinal = 0;
-                for (CodeElement element : code.get()) {
-                    if (element instanceof InvokeDynamicInstruction indy) {
-                        String bootstrap = bootstrap(indy);
-                        if (METAFACTORY.equals(bootstrap)) {
-                            found.add(new Found(methodKey, ordinal, indy));
-                        } else if (ALT_METAFACTORY.equals(bootstrap)) {
-                            plan.left[Reason.ALT_METAFACTORY.ordinal()]++;
-                        }
-                        ordinal++;
-                    }
-                }
-                sitesPerMethod.put(methodKey, ordinal);
-            }
+            collect(host, plan, found, sitesPerMethod);
             if (found.isEmpty()) {
                 return plan;
             }
@@ -1072,18 +1109,11 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
             Reason excluded = excluded(hostName);
             Nest nest = null;
             if (excluded == null && major >= NESTMATE_MAJOR) {
-                String nestHostName = host.findAttribute(Attributes.nestHost())
-                        .map(attribute -> attribute.nestHost().asInternalName()).orElse(hostName);
-                if (nestHostName.equals(hostName)) {
-                    nest = new Nest(hostName, bytes, nestMembers(host));
+                Object outcome = nestOf(host, hostName, bytes);
+                if (outcome instanceof Reason reason) {
+                    excluded = reason;
                 } else {
-                    excluded = excluded(nestHostName);
-                    if (excluded == null) {
-                        nest = nest(nestHostName);
-                        if (nest == null || !nest.holds(hostName)) {
-                            excluded = Reason.NEST;
-                        }
-                    }
+                    nest = (Nest) outcome;
                 }
             }
             if (excluded != null) {
@@ -1097,18 +1127,30 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
             Host context = new Host(host, hostName, new LambdaClasses.Home(ClassDesc.ofInternalName(hostName), major,
                     host.minorVersion(), nest == null ? null : ClassDesc.ofInternalName(nest.name), sourceFile), nest);
             for (Found site : found) {
-                Object outcome = context.site(site.indy);
-                if (outcome instanceof Reason reason) {
-                    plan.left[reason.ordinal()]++;
-                    continue;
-                }
-                LambdaClasses.Site planned = (LambdaClasses.Site) outcome;
-                plan.sites.add(planned);
-                plan.sitesByMethod.computeIfAbsent(site.method,
-                        method -> new LambdaClasses.Site[sitesPerMethod.get(method)])[site.ordinal] = planned;
+                plan.add(site, context.site(site.indy), sitesPerMethod);
             }
             LambdaClasses.share(plan.sites);
             return plan;
+        }
+
+        /**
+         * The nest of a host of class-file version 55 or later, or why it cannot be rewritten: its nest host must be
+         * the host itself, or a certain base class of this entry that lists the host as a member.
+         *
+         * @return the {@link Nest}, or the {@link Reason}
+         */
+        private Object nestOf(ClassModel host, String hostName, byte[] bytes) throws IOException {
+            String nestHostName = host.findAttribute(Attributes.nestHost())
+                    .map(attribute -> attribute.nestHost().asInternalName()).orElse(hostName);
+            if (nestHostName.equals(hostName)) {
+                return new Nest(hostName, bytes, nestMembers(host));
+            }
+            Reason excluded = excluded(nestHostName);
+            if (excluded != null) {
+                return excluded;
+            }
+            Nest nest = nest(nestHostName);
+            return nest == null || !nest.holds(hostName) ? Reason.NEST : nest;
         }
 
         /**
@@ -1214,125 +1256,163 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
                         || !(arguments.get(2) instanceof MethodTypeDesc instantiatedType)) {
                     return Reason.SHAPE;
                 }
-                MethodTypeDesc factoryType = indy.typeSymbol();
-                String samName = indy.name().stringValue();
-                ClassDesc functionalInterface = factoryType.returnType();
-                if (!functionalInterface.isClassOrInterface() || !implementation.owner().isClassOrInterface()) {
+                LambdaClasses.Shape shape = new LambdaClasses.Shape(indy.typeSymbol(), indy.name().stringValue(),
+                        samType, instantiatedType);
+                if (!shape.factoryType().returnType().isClassOrInterface()
+                        || !implementation.owner().isClassOrInterface()) {
                     return Reason.SHAPE;
                 }
                 String owner = internalName(implementation.owner());
-                LambdaClasses.Invocation invocation;
-                boolean instance = true;
-                boolean special = false;
-                switch (implementation.kind()) {
-                    case STATIC, INTERFACE_STATIC -> {
-                        invocation = LambdaClasses.Invocation.STATIC;
-                        instance = false;
-                    }
-                    case VIRTUAL -> invocation = LambdaClasses.Invocation.VIRTUAL;
-                    case INTERFACE_VIRTUAL -> invocation = LambdaClasses.Invocation.INTERFACE;
-                    case SPECIAL, INTERFACE_SPECIAL -> {
-                        if (!owner.equals(name)) {
-                            return Reason.SUPER_CALL;
-                        }
-                        // As LambdaMetafactory does for a private method of the caller itself, and only for one: the
-                        // member must turn out to be private below.
-                        special = true;
-                        invocation = implementation.isOwnerInterface() ? LambdaClasses.Invocation.INTERFACE
-                                : LambdaClasses.Invocation.VIRTUAL;
-                    }
-                    case CONSTRUCTOR -> {
-                        invocation = LambdaClasses.Invocation.CONSTRUCTOR;
-                        instance = false;
-                    }
-                    default -> {
-                        return Reason.SHAPE;
-                    }
+                Object called = call(implementation, owner);
+                if (called instanceof Reason reason) {
+                    return reason;
                 }
+                Call call = (Call) called;
                 MethodTypeDesc implType = implementation.invocationType();
                 MethodTypeDesc implDescriptor = MethodTypeDesc.ofDescriptor(implementation.lookupDescriptor());
-                String implName = invocation == LambdaClasses.Invocation.CONSTRUCTOR ? LambdaClasses.CONSTRUCTOR
-                        : implementation.methodName();
-                if (!LambdaClasses.shaped(factoryType, samName, samType, instantiatedType, implType, instance)) {
+                String implName = call.invocation() == LambdaClasses.Invocation.CONSTRUCTOR
+                        ? LambdaClasses.CONSTRUCTOR : implementation.methodName();
+                if (!LambdaClasses.shaped(shape.factoryType(), shape.samName(), samType, instantiatedType, implType,
+                        call.instance())) {
                     return Reason.SHAPE;
                 }
-
-                boolean bridged = false;
-                int flags;
-                boolean ownerIsInterface;
-                String ownerPackage = packageOf(owner);
-                if (JdkClasses.owns(ownerPackage)) {
-                    if (model.holdsPackage(ownerPackage)) {
-                        // The class path holds a class of a package of the JDK: which copy loads depends on the
-                        // loader and on the runtime image.
-                        return Reason.SHADOWED_OR_UNCERTAIN;
-                    }
-                    JdkClasses.JdkClass jdk = JdkClasses.find(owner);
-                    if (jdk == null || (jdk.flags() & ClassFile.ACC_PUBLIC) == 0 || !jdk.exported()) {
-                        return Reason.OWNER_ACCESS;
-                    }
-                    Integer method = jdk.method(implName, implementation.lookupDescriptor());
-                    if (method == null || (method & ClassFile.ACC_PUBLIC) == 0) {
-                        return Reason.OWNER_ACCESS;
-                    }
-                    if ((method & JdkClasses.JdkClass.CALLER_SENSITIVE) != 0) {
-                        return Reason.CALLER_SENSITIVE;
-                    }
-                    if ((method & ClassFile.ACC_NATIVE) != 0 && (method & ClassFile.ACC_VARARGS) != 0
-                            && owner.startsWith("java/lang/invoke/")) {
-                        // A signature-polymorphic method: its descriptor is the call site's, not the method's.
-                        return Reason.SHAPE;
-                    }
-                    flags = method;
-                    ownerIsInterface = (jdk.flags() & ClassFile.ACC_INTERFACE) != 0;
-                } else {
-                    if (!certain(owner)) {
-                        return Reason.SHADOWED_OR_UNCERTAIN;
-                    }
-                    Optional<ClassPathModel.Copy> copy = model.winner(owner);
-                    if (copy.isEmpty()) {
-                        return Reason.OWNER_ACCESS;
-                    }
-                    ClassPathModel.Member member = copy.get().member(implName, implementation.lookupDescriptor());
-                    if (member == null) {
-                        return Reason.OWNER_ACCESS;
-                    }
-                    flags = member.flags();
-                    ownerIsInterface = copy.get().isInterface();
-                    if ((flags & ClassFile.ACC_PRIVATE) != 0) {
-                        if (owner.equals(name)) {
-                            bridged = home.major() < NESTMATE_MAJOR;
-                        } else if (nest == null || !inNest(owner, copy.get())) {
-                            return Reason.OWNER_ACCESS;
-                        }
-                    } else if (!model.isAccessible(owner, implName, implementation.lookupDescriptor(), packageName)) {
-                        return Reason.OWNER_ACCESS;
-                    }
+                Object found = JdkClasses.owns(packageOf(owner)) ? jdkMember(owner, implName, implementation)
+                        : classPathMember(owner, implName, implementation);
+                if (found instanceof Reason reason) {
+                    return reason;
                 }
-                if (special && (flags & ClassFile.ACC_PRIVATE) == 0) {
+                Resolved member = (Resolved) found;
+                Reason refused = refused(call, member, implementation, shape, implType);
+                if (refused != null) {
+                    return refused;
+                }
+                return allocate(shape, new LambdaClasses.Target(implementation.owner(),
+                        implementation.isOwnerInterface(), implName, implDescriptor, implType, call.invocation(),
+                        (member.flags() & ClassFile.ACC_STATIC) != 0), member.bridged());
+            }
+
+            /**
+             * How the generated class calls the implementation, or why it cannot.
+             *
+             * @return the {@link Call}, or the {@link Reason}
+             */
+            private Object call(DirectMethodHandleDesc implementation, String owner) {
+                return switch (implementation.kind()) {
+                    case STATIC, INTERFACE_STATIC -> new Call(LambdaClasses.Invocation.STATIC, false, false);
+                    case VIRTUAL -> new Call(LambdaClasses.Invocation.VIRTUAL, true, false);
+                    case INTERFACE_VIRTUAL -> new Call(LambdaClasses.Invocation.INTERFACE, true, false);
+                    // As LambdaMetafactory does for a private method of the caller itself, and only for one: the
+                    // member must turn out to be private.
+                    case SPECIAL, INTERFACE_SPECIAL -> !owner.equals(name) ? Reason.SUPER_CALL
+                            : new Call(implementation.isOwnerInterface() ? LambdaClasses.Invocation.INTERFACE
+                            : LambdaClasses.Invocation.VIRTUAL, true, true);
+                    case CONSTRUCTOR -> new Call(LambdaClasses.Invocation.CONSTRUCTOR, false, false);
+                    default -> Reason.SHAPE;
+                };
+            }
+
+            /**
+             * The implementation, when its owner is in a package of the JDK, or why the generated class could not
+             * call it.
+             *
+             * @return the {@link Resolved} member, or the {@link Reason}
+             */
+            private Object jdkMember(String owner, String implName, DirectMethodHandleDesc implementation) {
+                if (model.holdsPackage(packageOf(owner))) {
+                    // The class path holds a class of a package of the JDK: which copy loads depends on the loader
+                    // and on the runtime image.
+                    return Reason.SHADOWED_OR_UNCERTAIN;
+                }
+                JdkClasses.JdkClass jdk = JdkClasses.find(owner);
+                if (jdk == null || (jdk.flags() & ClassFile.ACC_PUBLIC) == 0 || !jdk.exported()) {
+                    return Reason.OWNER_ACCESS;
+                }
+                Integer method = jdk.method(implName, implementation.lookupDescriptor());
+                if (method == null || (method & ClassFile.ACC_PUBLIC) == 0) {
+                    return Reason.OWNER_ACCESS;
+                }
+                if ((method & JdkClasses.JdkClass.CALLER_SENSITIVE) != 0) {
+                    return Reason.CALLER_SENSITIVE;
+                }
+                if ((method & ClassFile.ACC_NATIVE) != 0 && (method & ClassFile.ACC_VARARGS) != 0
+                        && owner.startsWith("java/lang/invoke/")) {
+                    // A signature-polymorphic method: its descriptor is the call site's, not the method's.
+                    return Reason.SHAPE;
+                }
+                return new Resolved(method, (jdk.flags() & ClassFile.ACC_INTERFACE) != 0, false);
+            }
+
+            /**
+             * The implementation, when its owner is a class of the class path, or why the generated class could not
+             * call it. A private implementation of the host below class-file version 55 is reached through a bridge.
+             *
+             * @return the {@link Resolved} member, or the {@link Reason}
+             */
+            private Object classPathMember(String owner, String implName, DirectMethodHandleDesc implementation) {
+                if (!certain(owner)) {
+                    return Reason.SHADOWED_OR_UNCERTAIN;
+                }
+                Optional<ClassPathModel.Copy> copy = model.winner(owner);
+                if (copy.isEmpty()) {
+                    return Reason.OWNER_ACCESS;
+                }
+                ClassPathModel.Member member = copy.get().member(implName, implementation.lookupDescriptor());
+                if (member == null) {
+                    return Reason.OWNER_ACCESS;
+                }
+                int flags = member.flags();
+                boolean bridged = false;
+                if ((flags & ClassFile.ACC_PRIVATE) != 0) {
+                    if (owner.equals(name)) {
+                        bridged = home.major() < NESTMATE_MAJOR;
+                    } else if (nest == null || !inNest(owner, copy.get())) {
+                        return Reason.OWNER_ACCESS;
+                    }
+                } else if (!model.isAccessible(owner, implName, implementation.lookupDescriptor(), packageName)) {
+                    return Reason.OWNER_ACCESS;
+                }
+                return new Resolved(flags, copy.get().isInterface(), bridged);
+            }
+
+            /**
+             * Why a site whose implementation resolved still stays, or {@code null} when it is rewritten.
+             */
+            private Reason refused(Call call, Resolved member, DirectMethodHandleDesc implementation,
+                                   LambdaClasses.Shape shape, MethodTypeDesc implType) {
+                if (call.special() && (member.flags() & ClassFile.ACC_PRIVATE) == 0) {
                     // LambdaMetafactory keeps an invokespecial of a member that is not private non-virtual, through
                     // the method handle; an invokevirtual would dispatch to an override in a subclass instead.
                     return Reason.SUPER_CALL;
                 }
-                if (((flags & ClassFile.ACC_STATIC) != 0) != (invocation == LambdaClasses.Invocation.STATIC)
-                        || ownerIsInterface != implementation.isOwnerInterface()
-                        || ownerIsInterface && invocation == LambdaClasses.Invocation.CONSTRUCTOR) {
+                boolean isStatic = (member.flags() & ClassFile.ACC_STATIC) != 0;
+                if (isStatic != (call.invocation() == LambdaClasses.Invocation.STATIC)
+                        || member.ownerIsInterface() != implementation.isOwnerInterface()
+                        || member.ownerIsInterface() && call.invocation() == LambdaClasses.Invocation.CONSTRUCTOR) {
                     return Reason.SHAPE;
                 }
-                if (bridged) {
-                    Reason reason = unbridgeable();
-                    if (reason != null) {
-                        return reason;
-                    }
+                Reason bridge = member.bridged() ? unbridgeable() : null;
+                if (bridge != null) {
+                    return bridge;
                 }
-                Reason unresolved = resolve(factoryType, samType, instantiatedType, implType, instance);
+                MethodTypeDesc factoryType = shape.factoryType();
+                Reason unresolved = resolve(factoryType, shape.samType(), shape.instantiatedType(), implType,
+                        call.instance());
                 if (unresolved != null) {
                     return unresolved;
                 }
+                ClassDesc functionalInterface = factoryType.returnType();
                 if (initializesLoudly(internalName(functionalInterface), new HashSet<>(), null, new HashSet<>())) {
                     return Reason.INTERFACE_INIT;
                 }
+                return null;
+            }
 
+            /**
+             * Numbers a site that is rewritten and names its generated class and its bridge, unless a name is taken.
+             *
+             * @return the {@link LambdaClasses.Site}, or {@link Reason#NAME_TAKEN}
+             */
+            private Object allocate(LambdaClasses.Shape shape, LambdaClasses.Target target, boolean bridged) {
                 int number = next++;
                 String generatedName = name + LambdaClasses.GENERATED_INFIX + number;
                 String bridgeName = bridged ? LambdaClasses.BRIDGE_PREFIX + number : null;
@@ -1342,10 +1422,7 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
                         || fileName.getBytes(StandardCharsets.UTF_8).length > MAX_FILE_NAME_BYTES) {
                     return Reason.NAME_TAKEN;
                 }
-                return new LambdaClasses.Site(home, ClassDesc.ofInternalName(generatedName),
-                        new LambdaClasses.Shape(factoryType, samName, samType, instantiatedType),
-                        new LambdaClasses.Target(implementation.owner(), implementation.isOwnerInterface(), implName,
-                                implDescriptor, implType, invocation, (flags & ClassFile.ACC_STATIC) != 0),
+                return new LambdaClasses.Site(home, ClassDesc.ofInternalName(generatedName), shape, target,
                         bridgeName);
             }
 
@@ -1411,36 +1488,51 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
                 if (LambdaDesugarer.this.serializable(functionalInterface, new HashSet<>())) {
                     return Reason.SHAPE;
                 }
-                int captured = factoryType.parameterCount();
-                if (instance && captured > 0) {
-                    ClassDesc receiver = factoryType.parameterType(0);
-                    while (receiver.isArray()) {
-                        receiver = receiver.componentType();
-                    }
-                    if (!receiver.isPrimitive()) {
-                        int kind = kindOf(internalName(receiver));
-                        if (kind == UNCERTAIN) {
-                            return Reason.SHADOWED_OR_UNCERTAIN;
-                        }
-                        if (kind == UNRESOLVED) {
-                            return Reason.UNRESOLVED_TYPE;
-                        }
-                    }
+                Reason receiver = instance ? receiver(factoryType) : null;
+                if (receiver != null) {
+                    return receiver;
                 }
+                return castsResolve(factoryType.parameterCount(), samType, instantiatedType, implType) ? null
+                        : Reason.UNRESOLVED_TYPE;
+            }
+
+            /**
+             * Why the type of a captured receiver does not settle, or {@code null} when it does or there is none.
+             */
+            private Reason receiver(MethodTypeDesc factoryType) {
+                if (factoryType.parameterCount() == 0) {
+                    return null;
+                }
+                ClassDesc receiver = factoryType.parameterType(0);
+                while (receiver.isArray()) {
+                    receiver = receiver.componentType();
+                }
+                if (receiver.isPrimitive()) {
+                    return null;
+                }
+                int kind = kindOf(internalName(receiver));
+                if (kind == UNCERTAIN) {
+                    return Reason.SHADOWED_OR_UNCERTAIN;
+                }
+                return kind == UNRESOLVED ? Reason.UNRESOLVED_TYPE : null;
+            }
+
+            /**
+             * Whether every type the interface method casts an argument or the result to resolves.
+             */
+            private boolean castsResolve(int captured, MethodTypeDesc samType, MethodTypeDesc instantiatedType,
+                                         MethodTypeDesc implType) {
                 for (int i = 0; i < samType.parameterCount(); i++) {
                     ClassDesc argument = samType.parameterType(i);
                     ClassDesc functionalType = instantiatedType.parameterType(i);
                     ClassDesc target = implType.parameterType(captured + i);
                     if (!argument.equals(functionalType) && !resolvesType(functionalType)
                             || !argument.equals(target) && !resolvesType(target)) {
-                        return Reason.UNRESOLVED_TYPE;
+                        return false;
                     }
                 }
                 ClassDesc expected = samType.returnType();
-                if (implType.returnType().equals(expected) || resolvesType(expected)) {
-                    return null;
-                }
-                return Reason.UNRESOLVED_TYPE;
+                return implType.returnType().equals(expected) || resolvesType(expected);
             }
         }
     }
@@ -1454,5 +1546,19 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
         private final Map<String, LambdaClasses.Site[]> sitesByMethod = new HashMap<>();
         private Nest nest;
         private String unitName;
+
+        /**
+         * Records what one site became: a site to rewrite, at its position in its method, or a reason it stays.
+         */
+        private void add(Found site, Object outcome, Map<String, Integer> sitesPerMethod) {
+            if (outcome instanceof Reason reason) {
+                left[reason.ordinal()]++;
+                return;
+            }
+            LambdaClasses.Site planned = (LambdaClasses.Site) outcome;
+            sites.add(planned);
+            sitesByMethod.computeIfAbsent(site.method,
+                    method -> new LambdaClasses.Site[sitesPerMethod.get(method)])[site.ordinal] = planned;
+        }
     }
 }
