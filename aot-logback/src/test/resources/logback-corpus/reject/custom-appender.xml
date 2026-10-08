@@ -1,0 +1,6 @@
+<configuration>
+    <appender name="CUSTOM" class="com.example.logging.CustomAppender"/>
+    <root level="INFO">
+        <appender-ref ref="CUSTOM"/>
+    </root>
+</configuration>

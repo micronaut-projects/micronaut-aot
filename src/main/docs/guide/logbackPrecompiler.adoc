@@ -1,0 +1,169 @@
+The `micronaut-aot-logback` module compiles an application's `logback.xml` into a Logback `Configurator` at build time.
+Without a `Configurator` service, Logback parses `logback.xml` with its Joran framework on the main thread at every start.
+An application that carries the generated configurator does neither.
+
+WARNING: This module is internal to the Micronaut build plugins: its API, the names it generates and its rules may change in any release.
+
+Unlike the `logback.xml.to.java` optimizer, this module is not an AOT optimizer.
+It does not start the application, uses no `AOTContext`, and needs no AOT run: the Micronaut Gradle and Maven plugins and Micronaut Runner call it in-process with plain paths and get class files back.
+Its artifact, `io.micronaut.aot:micronaut-aot-logback`, has no dependencies.
+An application does not depend on it: its build plugin calls it.
+
+The engine fails closed.
+Whenever it cannot prove that the generated code builds exactly the `LoggerContext` Joran builds, it generates nothing and says why, and Logback reads `logback.xml` at startup as it always did.
+It also stands down when a `Configurator` is already registered on the class path it is given, which is the case for an application that `logback.xml.to.java` has already optimized.
+It cannot see an optimizer that runs later, on an application that already carries its output: a build that applies both has to decide which one configures Logback.
+
+== How the build plugins call it
+
+This section describes what the Micronaut build plugins do, for those who maintain them.
+`LogbackPrecompiler` is `@Internal`: it is not an API for applications or for other build tools.
+
+snippet::example.logback.LogbackPrecompilation[project-base="doc-examples/example", source="main", indent="0", tags="precompile"]
+
+The inputs are:
+
+[cols="1,3"]
+|===
+|Input |Meaning
+
+|`applicationOutput`
+|The application's own output in class path order: its resource roots and its class directories, or a jar. Pass the class directories as well as the resources: the engine stands down when the application carries a Logback or SLF4J class, or a `Configurator` service file, which an annotation processor writes to the class output. When two roots hold the same name, the first wins, except for `logback.xml`: when two roots have one, the engine stands down.
+
+|`runtimeClasspath`
+|The runtime class path after the application, in order: jars or directories. The engine takes logback-classic, logback-core and slf4j-api from here, never from the caller's own class path.
+
+|`targetRelease`
+|The lowest Java release the application runs on. The generated classes are class files of Java 25, so the engine stands down below 25.
+
+|`closedClassPath`
+|`true` only when the class path given here is exactly the one the application runs on. `false` by default. See <<logbackPrecompilerGuards, Guards for open class paths>>.
+|===
+
+The `Result` has a `status()`, one `message()` for the caller to log, the generated `entries()`, and `warnings()`:
+
+* `GENERATED`: the message says what was compiled. The plugin writes the entries below a directory, which has to be on the application's class path next to its `logback.xml`, or a packager adds them to an archive. All of them go to the same place: the configurator calls the classes copied next to it, which are package-private, so they have to be on the same class loader.
+* `STOOD_DOWN`: nothing was generated, and the message names the reason. This is expected for many applications.
+* `FAILED`: nothing was generated because a generated name is already taken, the output of an earlier call is still in the application output, the class path could not be read, or the engine failed. The message is worth a warning.
+
+`warnings()` holds lines that the plugin logs at warning level, each on its own, after the message.
+Only a `GENERATED` result can have any, and most have none: the one case today is a packaged file that may enable distributed configuration (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>).
+The list is never `null`.
+
+`precompile` never throws for anything about its inputs, so a build that calls it does not fail because of Logback.
+Removing the output of an earlier build is the caller's job.
+A caller that writes into one of the application roots it passes, such as the class directory, has to remove that output before it calls `precompile` again, not after. While it is there the result is `FAILED` and the earlier output stays in use, whatever has changed in the application since.
+The output is the service file and the classes of the package `io.micronaut.aot.logback.generated`.
+`logback.xml` has to stay in the application, because the fallbacks below read it.
+
+`LogbackPrecompiler.applicationInputs()` returns, as Ant-style patterns, the entries of the application output that can change the result.
+A build plugin may declare its inputs with them, so that the step stays up to date when ordinary classes and resources change.
+Of everything else in the application output the engine reads the name and nothing more.
+On the runtime class path it reads the names of every entry, the manifests of logback-classic and logback-core, and the packaged `application*` and `bootstrap*` configuration files of every entry.
+
+The engine never loads application classes.
+It reads `logback.xml` with Logback's own parser and model builder, taken from the application's Logback jars, in an isolated class loader.
+It instantiates only the `ch.qos.logback` classes the file names, and never starts an appender.
+
+== What it generates
+
+Three classes in the package `io.micronaut.aot.logback.generated` and one service file:
+
+* `LogbackConfigurator`, the configurator, as a class file of Java 25;
+* `JoranFallback`, which every path that hands over to Joran goes through, so that the literal path never loads Joran;
+* `ClassPathGuard`, unless the class path is closed;
+* `META-INF/services/ch.qos.logback.classic.spi.Configurator`.
+
+== The subset
+
+The engine compiles a `logback.xml` made of:
+
+* appenders of public `ch.qos.logback` classes with `String`, `boolean` or `int` properties and at most one `PatternLayoutEncoder` with a pattern;
+* loggers, the root logger and appender references.
+
+Everything else stands the engine down, and the message names the element: variables, `<property>`, `<include>`, `<if>`, `<conversionRule>`, filters, rolling policies, custom appenders and a `<configuration>` with `debug`, `scan` or `packagingData` on.
+So does what Joran itself corrects: two appenders with the same `<file>`, a property element without text, a `<name>` element inside an appender.
+The `logback.xml` that Micronaut Launch generates is inside the subset.
+
+== When it stands down
+
+Besides a file outside the subset, the engine generates nothing when:
+
+* `targetRelease` is below 25;
+* the application output carries a Logback or SLF4J class of its own;
+* logback-classic, logback-core or slf4j-api is missing, a Logback jar declares no `Implementation-Version`, the two versions differ, or the version is outside the tested range, which is `[1.5.37, 1.6)`;
+* there is no `logback.xml`, or more than one class path entry or more than one application root has one, which Logback reports at startup;
+* any class path entry has a `logback-test.xml`, a `logback.groovy` or a versioned Logback file under `META-INF/versions/`;
+* any entry of the class path it is given already registers a `Configurator`;
+* a packaged `application*` or `bootstrap*` configuration file, at the root or under `config/` of an application root or of any entry of the runtime class path, may set `logger.config` or `logback.configurationFile`, or may import configuration with `micronaut.config.import`. Micronaut applies such a location only without a `Configurator` service, and the generated code cannot see it (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>). An import can load a class path resource of any name, a file, an environment variable or what a custom provider supplies, and what it loads can set the location or import more. The engine does not follow imports, so it stands down on any import, whatever it names. Every such file is read, also one that an earlier entry has under the same name: Micronaut reads the file of a dependency when the application has none of that name, and it can merge the files of every entry, depending on its configuration loading strategy. The names are wider than what Micronaut reads by default, which is `application` and `bootstrap`, with an optional environment suffix, at the root of the class path: `config/` is read only when `overrideConfigLocations` adds a location such as `classpath:config/`. A false positive only costs the optimisation.
+
+One case of these same files does not stand the engine down but adds a warning to a `GENERATED` result: a file that may enable Micronaut's distributed configuration client (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>).
+
+== What the configurator does at run time
+
+On every call, in this order:
+
+. If the `logback.configurationFile` system property is set, it runs Logback's own default lookup.
+. On a second or later call, which is Micronaut's logging refresh, it configures from the first of these that is set: an environment variable named `logback.configurationFile`, the `logger.config` system property, the `LOGGER_CONFIG` environment variable, an environment variable named `logger.config`.
+. If `logback.debug` or `logback.statusListenerClass` is set, or `-Dmicronaut.logback.precompiled=false`, it runs Logback's default lookup.
+. On an open class path, if a guard fails, it runs Logback's default lookup.
+. Otherwise it applies the content of `logback.xml` literally, in Joran's order.
+
+`-Dmicronaut.logback.precompiled=false` is the opt-out: with it every call hands over to Joran. It does not bring back a location that only Micronaut sees, described below.
+
+[[logbackPrecompilerLocations]]
+=== Locations only Micronaut sees
+
+Micronaut applies `logger.config`, or a `logback.configurationFile` of its own configuration, on its logging refresh. When any `logger.*` property is set, that refresh runs at startup and again on every refresh event.
+Without a `Configurator` service it configures Logback from that location.
+With one, it calls the service's `configure(LoggerContext)` and passes it nothing else: the location stays in Micronaut's `LogbackLoggingSystem`, and Micronaut copies it neither into a system property nor into the `LoggerContext`.
+
+So the generated configurator applies a location only where it can read it itself, as the first two rules above list: the `logback.configurationFile` and `logger.config` system properties, and the `logback.configurationFile`, `LOGGER_CONFIG` and `logger.config` environment variables.
+A location that comes from any other property source is not applied, and the compiled configuration stays in use:
+
+* a program argument, such as `java -jar app.jar --logger.config=custom.xml`. A `-Dlogger.config=custom.xml` written after the jar or the main class is a program argument too, not a system property: Micronaut keeps it in the property source of its command line. The configurator does not read the command line of the process instead, from the `sun.java.command` property or from `ProcessHandle.current().info().arguments()`: the command line does not say which arguments the application passed to Micronaut, and it is only one of the sources listed here;
+* a configuration file that no packaged file names: `config/application.yml` in the working directory; a file named by the `micronaut.config.files` system property or the `MICRONAUT_CONFIG_FILES` environment variable, on the file system or, with a `classpath:` prefix, on the class path; a bootstrap configuration file named by the `micronaut.bootstrap.name` system property;
+* configuration that `micronaut.config.import` imports when one of the sources of this list declares the import, whatever it imports, a class path resource included;
+* any other property source, such as distributed configuration or properties passed to `ApplicationContext.builder()`.
+
+Pass the location as a JVM system property, `java -Dlogger.config=custom.xml -jar app.jar`, or as the `LOGGER_CONFIG` environment variable instead.
+The opt-out does not help: the configurator then runs Logback's default lookup, which reads `logback.xml`, because Micronaut still calls the configurator instead of reading the location.
+From Micronaut 5.3, the refresh applies such a location itself, whatever `Configurator` is registered: see https://github.com/micronaut-projects/micronaut-core/pull/13400[micronaut-core#13400].
+The build can read the packaged `application*` and `bootstrap*` files, and none of the sources above.
+So it stands down when one of those files might set the location, or might import configuration with `micronaut.config.import`, which the build does not follow, wherever the import points.
+
+Distributed configuration is one of the sources the build cannot read: it cannot know what a configuration server will supply.
+It can see, though, a packaged `application*` or `bootstrap*` file, of an application root or of a dependency, that may enable Micronaut's distributed configuration client: one that sets `micronaut.config-client.enabled` to `true` or to any placeholder.
+The engine then still generates the configurator, and the `GENERATED` result carries one warning for each such file.
+The warning names the file and its root or jar, says that the file may enable the client, that a `logger.config` or `logback.configurationFile` that distributed configuration supplies is not applied while the generated configurator is registered, and gives the workarounds: pass the location as `-Dlogger.config` or `LOGGER_CONFIG`, as above, or turn precompilation off in the build plugin, so that no configurator is generated.
+It also says that `-Dmicronaut.logback.precompiled=false` does not help, for the reason above.
+A `.properties` file is parsed. In any other format the engine checks the text, ignoring case: the word `config-client` (or `configClient`) and an `enabled` key set to `true`, `yes` or `on` anywhere in the file give the warning.
+In every format, a placeholder counts as well, quoted or not (in a `.properties` file quotes are part of the value, so only an unquoted one counts), whatever its default and also without one: `+${CONFIG_CLIENT_ENABLED}+`, `+${CONFIG_CLIENT_ENABLED:false}+` and `+${CONFIG_CLIENT_ENABLED:true}+` all give the warning, and so does the escaped `+"\${CONFIG_CLIENT_ENABLED}"+` of a double-quoted Groovy string. Micronaut resolves a placeholder at run time, from sources the build cannot see, so it may resolve to `true`.
+A false positive only costs a warning line. `enabled: false`, or a mention of `config-client` without an `enabled` key, gives none, unless another `enabled` key of the same file is set to `true` or to a placeholder: the text rule does not know which section a key belongs to.
+A client that is enabled in any other way is not seen, and gives no warning: by an environment variable such as `MICRONAUT_CONFIG_CLIENT_ENABLED`, a system property or properties passed to `ApplicationContext.builder()`; by a file outside the application and its dependencies, such as one that `micronaut.config.files` names; by a bootstrap configuration file whose name starts with neither `application` nor `bootstrap`, which the `micronaut.bootstrap.name` system property selects; or by a value that a packaged Groovy file computes, such as `enabled = System.getenv('CONFIG_CLIENT_ENABLED') ?: false`.
+
+[[logbackPrecompilerGuards]]
+== Guards for open class paths
+
+Outside a packaging that fixes the class path, the class path can change after the build: a later test run sees the same output directory, an IDE leaves stale output, a file is mounted into a container image.
+So unless the caller sets `closedClassPath(true)`, the configurator hands over to Joran when:
+
+* a `logback-test.xml` is visible, or
+* the first visible `logback.xml` is missing, or differs from the compiled file in size or CRC-32.
+
+It looks where Joran would, through the class loader that defines logback-classic, and it looks again on every call.
+So a `logback.xml` that is edited while the application runs is read by Joran on the next logging refresh, as it would be without the generated configurator.
+Each call costs two class loader lookups, one read of `logback.xml` and its CRC-32.
+Logback calls the configurator once when it initialises, and Micronaut once per logging refresh, which it runs only when a `logger.*` property is set; a log call never runs the guards.
+The first call costs a few milliseconds, most of it the class loader's first lookups, which the application makes later anyway; every later call takes well under a millisecond.
+
+The guards have limits. After any of these changes the generated configurator is still applied, although Joran would give another result:
+
+* A second `logback.xml` is added to the class path after the build. Logback would report it at startup.
+* The class path changes in another way that the build checked. Nothing but the two guards is checked again at run time: not the Logback version, not a `Configurator` that another entry registers, not a packaged `logger.config` or `micronaut.config.import`. With a Logback outside the tested range, the generated classes are untested and may not even link.
+
+Build again after such a change: the build then stands down, or compiles the class path as it now is.
+Until then, `-Dmicronaut.logback.precompiled=false` gives Joran's result back in two of these cases only: a second `logback.xml`, and another Logback version as long as the generated classes still load. Every call then runs Logback's default lookup, which reads `logback.xml`.
+So the opt-out does not help in the other cases. Where the generated configurator is called instead of a `Configurator` that another entry registers, it runs that lookup, not the other `Configurator`. A packaged `logger.config`, or one that a packaged import loads, stays unapplied, as a location only Micronaut sees (see <<logbackPrecompilerLocations, Locations only Micronaut sees>>): pass it as a JVM system property or as `LOGGER_CONFIG` until the next build.
+
+`closedClassPath(true)` is for a packager whose archive is the whole class path. The build-time checks then guarantee what the guards check, and `ClassPathGuard` is not generated.

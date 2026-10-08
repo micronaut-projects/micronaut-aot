@@ -4,6 +4,8 @@ releaseHistory: Release History
 quickStart:
   title: Quick Start
 standardOptimizers: Standard Optimizers
+logbackPrecompiler:
+  title: Precompiling logback.xml
 diagnosticsReport:
   title: Diagnostics Report
 classPathTransform:

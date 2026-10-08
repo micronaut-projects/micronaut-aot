@@ -12,12 +12,13 @@ The following documentation is for users who want to implement their own AOT opt
 
 == Micronaut AOT projects
 
-The Micronaut AOT project consists of 4 main modules:
+The Micronaut AOT project consists of 5 main modules:
 
 - `micronaut-aot-core` provides the APIs for implementing "AOT optimizers", or code generators.
 - `micronaut-aot-api` exposes the public API for interacting with the AOT compiler. It mostly consists of the `MicronautAotOptimizer` class which is responsible for loading the different AOT modules via _service loading_, then driving the AOT process.
 - `micronaut-aot-std-optimizers` implements a number of standard Micronaut AOT optimizers.
 - `micronaut-aot-cli` is the command line tool responsible for invoking the AOT compiler. It is recommended to integrate with Micronaut AOT via this CLI to ensure proper classloader isolation.
+- `micronaut-aot-logback` compiles an application's `logback.xml` into a Logback `Configurator` at build time. The Micronaut build plugins call it; its API is internal to them. It is independent of the other modules and of the AOT compiler: see <<logbackPrecompiler, Precompiling logback.xml>>.
 
 == How it works
 
