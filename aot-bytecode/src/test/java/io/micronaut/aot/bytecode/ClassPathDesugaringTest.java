@@ -606,23 +606,25 @@ class ClassPathDesugaringTest {
         } catch (UnsupportedOperationException | IOException e) {
             link = null;
         }
+        List<Path> classPath = List.of(directory);
         for (Path output : outputs) {
             IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                    () -> desugar(List.of(directory), output), output::toString);
+                    () -> desugar(classPath, output), output::toString);
             assertEquals("The output directory " + output + " is inside the class path directory " + directory
                     + ": what a run writes there would become part of that directory, so choose an output directory"
                     + " outside it", failure.getMessage());
         }
         if (link != null) {
-            Path linked = link;
-            assertThrows(IllegalArgumentException.class, () -> desugar(List.of(linked), directory.resolve("out")),
+            List<Path> linked = List.of(link);
+            Path inside = directory.resolve("out");
+            assertThrows(IllegalArgumentException.class, () -> desugar(linked, inside),
                     "the directory named through a link");
         }
         assertEquals(before, tree(directory), "nothing is written into the directory");
 
         // A directory next to it, whose name starts with the directory's, is outside it.
         Path sibling = temp.resolve("nested/classes-out");
-        ClassPathTransform.Result result = desugar(List.of(directory), sibling);
+        ClassPathTransform.Result result = desugar(classPath, sibling);
         assertEquals(List.of(sibling.resolve("0/classes")), result.classPath());
         assertEquals(before, tree(directory));
     }
