@@ -31,7 +31,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -49,10 +51,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code classPathCorpusTest} task sets from the resolved corpus configurations of this module's build. The task is
  * not part of {@code check}; the "Class path corpus" workflow runs it.</p>
  *
- * <p>An application fails when any rewritten class verifies worse than its original, whether the gate caught it,
- * which a fallback note records, or not. It also fails when its class path names a file that does not exist, holds no
- * jar, or when no class of it was rewritten: a run that transformed nothing has verified nothing. The counts and every
- * fallback are printed.</p>
+ * <p>Both steps run, in an open class path: lambdas are desugared in every jar, and every jar is named for stripping.
+ * An application fails when any rewritten class verifies worse than its original, whether the gate caught it, which
+ * a fallback note records, or not, when a generated class does not verify cleanly against the rewritten class path,
+ * and when a copy holds anything but the jar's own entries and generated classes. It also fails when its class path
+ * names a file that does not exist, holds no jar, or when no class or no lambda call site of it was rewritten: a run
+ * that transformed nothing has verified nothing. The counts, the sites left by reason and every fallback are
+ * printed.</p>
  */
 @Tag("class-path-corpus")
 class ClassPathCorpusTest {
@@ -88,6 +93,7 @@ class ClassPathCorpusTest {
         ClassPathTransform.Result result = ClassPathTransform.run(ClassPathTransform.Request.builder()
                 .classPath(jars)
                 .outputDirectory(temp.resolve(application))
+                .desugarLambdas(true)
                 .stripLocalVariables(jars)
                 .build());
         long millis = (System.nanoTime() - start) / 1_000_000;
@@ -95,10 +101,17 @@ class ClassPathCorpusTest {
         System.out.println(application + ": " + jars.size() + " jars, " + millis + " ms");
         System.out.println(application + ": " + result.summary());
         result.warnings().forEach(warning -> System.out.println(application + ": warning: " + warning));
+        Map<String, Integer> left = new TreeMap<>();
+        int sites = 0;
+        int nestFallbacks = 0;
         for (ClassPathTransform.Result.Entry entry : result.entries()) {
             entry.kept().ifPresent(reason -> System.out.println(application + ": kept " + entry.path() + ": " + reason));
             entry.notes().forEach(note -> System.out.println(application + ": fallback " + note));
+            entry.sitesLeft().forEach((reason, count) -> left.merge(reason, count, Integer::sum));
+            sites += entry.sitesRewritten();
+            nestFallbacks += entry.nestFallbacks();
         }
+        System.out.println(application + ": sites left by reason " + left + ", nest fallbacks " + nestFallbacks);
 
         // Every class the run rewrote, verified again on both sides against a model of the original class path, with
         // the gate's comparison, which ignores the bytecode offset an error names: a rebuilt pool moves the errors a
@@ -109,8 +122,17 @@ class ClassPathCorpusTest {
         }
         ClassPathModel model = ClassPathModel.merge(scans);
         Function<byte[], List<String>> verifier = ClassTransformPipeline.verifierOf(model);
+        // A generated class has no original: it verifies cleanly against the rewritten class path, which holds the
+        // other generated classes and the rewritten hosts.
+        List<ClassPathModel.LayerScan> rewrittenScans = new ArrayList<>();
+        for (Path entry : result.classPath()) {
+            rewrittenScans.add(ClassPathModel.scan(entry, entry.toString(), name -> false));
+        }
+        Function<byte[], List<String>> generatedVerifier =
+                ClassTransformPipeline.verifierOf(ClassPathModel.merge(rewrittenScans));
         List<String> grown = new ArrayList<>();
         int rewritten = 0;
+        int generated = 0;
         for (int position = 0; position < jars.size(); position++) {
             Path copy = result.classPath().get(position);
             if (copy.equals(jars.get(position))) {
@@ -118,10 +140,20 @@ class ClassPathCorpusTest {
             }
             Map<String, byte[]> before = classes(jars.get(position));
             Map<String, byte[]> after = classes(copy);
-            assertEquals(before.keySet(), after.keySet(), copy + " holds the same classes");
+            Set<String> added = new TreeSet<>(after.keySet());
+            added.removeAll(before.keySet());
+            assertTrue(after.keySet().containsAll(before.keySet()), copy + " holds the jar's classes");
+            for (String name : added) {
+                assertTrue(name.contains(LambdaClasses.GENERATED_INFIX), copy + " holds " + name);
+                generated++;
+                List<String> errors = generatedVerifier.apply(after.get(name));
+                if (!errors.isEmpty()) {
+                    grown.add(jars.get(position).getFileName() + " " + name + ": " + errors.get(0));
+                }
+            }
             for (Map.Entry<String, byte[]> entry : after.entrySet()) {
                 byte[] original = before.get(entry.getKey());
-                if (Arrays.equals(original, entry.getValue())) {
+                if (original == null || Arrays.equals(original, entry.getValue())) {
                     continue;
                 }
                 rewritten++;
@@ -138,9 +170,11 @@ class ClassPathCorpusTest {
                 }
             }
         }
-        System.out.println(application + ": " + rewritten + " rewritten classes verified again");
+        System.out.println(application + ": " + rewritten + " rewritten and " + generated
+                + " generated classes verified again");
         assertEquals(List.of(), grown, application + ": classes whose verification errors grew");
         assertTrue(rewritten > 0, application + ": no class of " + jars.size() + " jars was rewritten");
+        assertTrue(sites > 0 && generated > 0, application + ": no lambda call site was rewritten");
     }
 
     private static Map<String, byte[]> classes(Path jar) throws IOException {

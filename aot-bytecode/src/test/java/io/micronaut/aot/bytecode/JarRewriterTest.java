@@ -20,35 +20,46 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.CRC32;
+import java.util.zip.ZipEntry;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * How {@link JarRewriter} fails: the failure that stopped a copy is the one thrown, a failure to delete the copy is
- * added to it as suppressed, and the message says what failed even when the failure has no message of its own.
+ * How {@link JarRewriter} writes a copy, with the classes desugaring generates right after their hosts, and how it
+ * fails: the failure that stopped a copy is the one thrown, a failure to delete the copy is added to it as suppressed,
+ * and the message says what failed even when the failure has no message of its own.
  */
 class JarRewriterTest {
 
@@ -112,7 +123,7 @@ class JarRewriterTest {
         ClassTransformPipeline pipeline = new ClassTransformPipeline(List.of(new LocalVariableStripper()), model);
 
         IOException failure = assertThrows(IOException.class,
-                () -> JarRewriter.rewrite(corrupt, target, pipeline, NAME, true));
+                () -> JarRewriter.rewrite(corrupt, target, pipeline, NAME, 0, true));
 
         assertEquals("Cannot rewrite the classes of " + NAME + ": ZipException: The entry " + SECOND
                 + " does not match its recorded CRC-32", failure.getMessage());
@@ -138,7 +149,7 @@ class JarRewriterTest {
         ClassTransformPipeline pipeline = new ClassTransformPipeline(List.of(holder), model);
 
         IOException failure = assertThrows(IOException.class,
-                () -> JarRewriter.rewrite(corrupt, target, pipeline, NAME, true));
+                () -> JarRewriter.rewrite(corrupt, target, pipeline, NAME, 0, true));
 
         assertEquals("Cannot rewrite the classes of " + NAME + ": ZipException: The entry " + SECOND
                 + " does not match its recorded CRC-32", failure.getMessage(), "the failure that stopped the copy");
@@ -146,6 +157,81 @@ class JarRewriterTest {
         assertEquals(1, cause.getSuppressed().length, () -> List.of(cause.getSuppressed()).toString());
         assertInstanceOf(DirectoryNotEmptyException.class, cause.getSuppressed()[0]);
         assertTrue(Files.isDirectory(target.resolve("held")));
+    }
+
+    /**
+     * The nest host comes last in the jar, so the jar has to be planned before it is written. Each generated class is
+     * written right after its host, with its host's time and method, and every rewritten or generated entry carries the
+     * size and CRC-32 of its own bytes: a {@code STORED} entry cannot be written without them.
+     */
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"STORED", "DEFLATED"})
+    void desugaredHostsAndTheirGeneratedClassesCarryTheCrcOfTheirBytesAndStayTogether(String method)
+            throws Exception {
+        List<LambdaFixtures.Layer> layers = LambdaFixtures.scenario(temp.resolve("desugared-" + method), 25);
+        Map<String, byte[]> ordered = new LinkedHashMap<>(layers.get(1).entries());
+        byte[] nestHost = ordered.remove("fix/Scenario.class");
+        ordered.put("fix/Scenario.class", nestHost);
+        Manifest manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        Path source = ClassFixtures.jar(temp.resolve("desugared-" + method + "/fix.jar"), manifest, ordered,
+                method.equals("STORED") ? ordered.keySet() : Set.of());
+        ClassPathModel scenarioModel = LambdaFixtures.model(layers);
+        ClassTransformPipeline pipeline = new ClassTransformPipeline(
+                List.of(new LambdaDesugarer(scenarioModel, Set.of()), new LocalVariableStripper()), scenarioModel);
+        Path target = temp.resolve("desugared-" + method + "/out/1/fix.jar");
+
+        JarRewriter.Outcome outcome = JarRewriter.rewrite(source, target, pipeline, "libs/fix.jar", 1, true);
+
+        assertTrue(outcome.written());
+        try (ZipFile before = new ZipFile(source.toFile()); ZipFile after = new ZipFile(target.toFile())) {
+            List<? extends ZipEntry> original = Collections.list(before.entries());
+            List<? extends ZipEntry> written = Collections.list(after.entries());
+            List<String> names = new ArrayList<>();
+            written.forEach(entry -> names.add(entry.getName()));
+            assertEquals(original.stream().map(ZipEntry::getName).toList(),
+                    names.stream().filter(name -> !name.contains(LambdaClasses.GENERATED_INFIX)).toList(),
+                    "the entries the jar had keep their order");
+            int generated = 0;
+            for (int i = 0; i < written.size(); i++) {
+                ZipEntry entry = written.get(i);
+                byte[] content;
+                try (InputStream in = after.getInputStream(entry)) {
+                    content = in.readAllBytes();
+                }
+                CRC32 crc = new CRC32();
+                crc.update(content);
+                assertEquals(crc.getValue(), entry.getCrc(), entry.getName() + " carries the CRC of its bytes");
+                assertEquals(content.length, entry.getSize(), entry.getName());
+                int infix = entry.getName().indexOf(LambdaClasses.GENERATED_INFIX);
+                if (infix < 0) {
+                    continue;
+                }
+                generated++;
+                String host = entry.getName().substring(0, infix);
+                String previous = written.get(i - 1).getName();
+                assertTrue(previous.equals(host + ".class")
+                                || previous.startsWith(host + LambdaClasses.GENERATED_INFIX),
+                        entry.getName() + " sits right after its host, not after " + previous);
+                ZipEntry hostEntry = after.getEntry(host + ".class");
+                assertEquals(hostEntry.getTime(), entry.getTime(), entry.getName() + " takes its host's time");
+                assertEquals(hostEntry.getMethod(), entry.getMethod(), entry.getName() + " takes its host's method");
+                assertEquals(entry.getName().substring(0, entry.getName().length() - 6),
+                        ClassFile.of().parse(content).thisClass().asInternalName(),
+                        "the entry holds the class it names");
+            }
+            ClassTransformPipeline.JarReport report = outcome.report();
+            assertEquals(report.desugared().generated(), generated, "every generated class is an entry");
+            assertTrue(generated > 0, report.desugared()::toString);
+            assertEquals(List.of(), report.notes());
+            assertNotEquals(before.getEntry("fix/Scenario.class").getCrc(), after.getEntry("fix/Scenario.class")
+                    .getCrc(), "the nest host was rewritten where it is");
+            try (InputStream in = after.getInputStream(after.getEntry("fix/Scenario.class"))) {
+                assertEquals(0, LambdaFixtures.sites(in.readAllBytes(), LambdaFixtures.METAFACTORY));
+            }
+            assertEquals(original.stream().filter(entry -> entry.getName().endsWith(".class")).count(),
+                    (long) report.counts().get(0).classes(), "desugaring counts each class the jar had once");
+        }
     }
 
     @Test
@@ -205,7 +291,8 @@ class JarRewriterTest {
         }
 
         @Override
-        public String summary(ClassTransformPipeline.StepCount total, int jars) {
+        public String summary(ClassTransformPipeline.StepCount total,
+                              List<ClassTransformPipeline.JarReport> reports) {
             return name() + ": " + total;
         }
     }
