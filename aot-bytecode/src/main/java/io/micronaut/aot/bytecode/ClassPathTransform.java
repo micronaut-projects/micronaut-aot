@@ -348,7 +348,8 @@ public final class ClassPathTransform {
              * Where rewritten copies are written: each under a subdirectory named by its entry's index in the class
              * path, with the entry's own file name. Required. The caller owns the directory and cleans it. It must
              * not hold an entry of the class path, such as a copy that an earlier run wrote there, because a run
-             * replaces and deletes files in it.
+             * replaces and deletes files in it, nor be inside a directory of the class path, which would then hold
+             * what a run writes.
              *
              * @param directory the output directory
              * @return this builder
@@ -457,8 +458,9 @@ public final class ClassPathTransform {
              * @throws IllegalStateException    if the class path or the output directory is missing, or no step is
              *                                  enabled
              * @throws IllegalArgumentException if a jar to strip is not an entry of the class path, or is a
-             *                                  directory, or if an entry of the class path is inside the output
-             *                                  directory
+             *                                  directory, if an entry of the class path is inside the output
+             *                                  directory, or if the output directory is inside a directory of the
+             *                                  class path
              */
             public Request build() {
                 if (classPath == null) {
@@ -474,9 +476,15 @@ public final class ClassPathTransform {
                 List<Path> normalized = new ArrayList<>(classPath.size());
                 for (Path entry : classPath) {
                     normalized.add(entry.toAbsolutePath().normalize());
-                    if (real(entry).startsWith(output)) {
+                    Path location = real(entry);
+                    if (location.startsWith(output)) {
                         throw new IllegalArgumentException("The class path entry " + entry
                                 + " is inside the output directory " + outputDirectory);
+                    }
+                    if (output.startsWith(location) && Files.isDirectory(location)) {
+                        throw new IllegalArgumentException("The output directory " + outputDirectory
+                                + " is inside the class path directory " + entry + ": what a run writes there would"
+                                + " become part of that directory, so choose an output directory outside it");
                     }
                 }
                 boolean[] stripped = new boolean[classPath.size()];
@@ -510,13 +518,20 @@ public final class ClassPathTransform {
             }
 
             /**
-             * A path with its symbolic links resolved when it exists, so that two spellings of one file compare
-             * equal; otherwise absolute and normalized, as nothing can be inside a directory that does not exist.
+             * A path with the symbolic links of its deepest existing ancestor resolved, so that two spellings of one
+             * file compare equal, and so do two spellings of an output directory that a run has not created yet.
              */
             private static Path real(Path path) {
                 Path absolute = path.toAbsolutePath().normalize();
+                Path existing = absolute;
+                while (existing != null && !Files.exists(existing)) {
+                    existing = existing.getParent();
+                }
+                if (existing == null) {
+                    return absolute;
+                }
                 try {
-                    return absolute.toRealPath();
+                    return existing.toRealPath().resolve(existing.relativize(absolute));
                 } catch (IOException e) {
                     return absolute;
                 }

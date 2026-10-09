@@ -279,6 +279,24 @@ class ClassPathTransformTest {
     }
 
     @Test
+    void theOutputDirectoryMustNotBeInsideADirectoryOfTheClassPathEvenWhenOnlyJarsAreStripped() throws Exception {
+        Path jar = ClassFixtures.jar(temp.resolve("inside/library.jar"), library);
+        Path output = application.resolve("out");
+
+        // Stripping copies no directory, but the copy of the jar would be packaged with the application's classes.
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+                () -> ClassPathTransform.Request.builder()
+                        .classPath(List.of(application, jar))
+                        .outputDirectory(output)
+                        .stripLocalVariables(List.of(jar))
+                        .build());
+        assertEquals("The output directory " + output + " is inside the class path directory " + application
+                + ": what a run writes there would become part of that directory, so choose an output directory"
+                + " outside it", failure.getMessage());
+        assertFalse(Files.exists(output));
+    }
+
+    @Test
     void twoJarsWithTheSameFileNameGetSeparateCopiesAndARunOverTheOutputRewritesNothing() throws Exception {
         Path first = ClassFixtures.jar(temp.resolve("same-name/a/library.jar"), library);
         Path second = ClassFixtures.jar(temp.resolve("same-name/b/library.jar"), library);

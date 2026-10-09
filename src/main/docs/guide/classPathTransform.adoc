@@ -26,7 +26,7 @@ The request takes:
 |The runtime class path, in the order the application's class loader searches it, the application's own output first: jars or directories. Required. Every class on it is part of the model that a rewritten class is verified against, so pass the whole class path, not only the jars to rewrite.
 
 |`outputDirectory`
-|Where the rewritten copies go. Required. A copy, of a jar or of a directory, is written under a subdirectory named by the index of its entry in `classPath`, with the entry's own file name, so two entries with the same file name never collide. The caller owns the directory and cleans it. It must not hold an entry of `classPath`, such as a copy that an earlier run wrote there, because a run replaces and deletes files in it: the request is rejected otherwise. Run again from the original class path into a clean directory.
+|Where the rewritten copies go. Required. A copy, of a jar or of a directory, is written under a subdirectory named by the index of its entry in `classPath`, with the entry's own file name, so two entries with the same file name never collide. The caller owns the directory and cleans it. It must not hold an entry of `classPath`, such as a copy that an earlier run wrote there, because a run replaces and deletes files in it, nor be inside a directory of `classPath`, which would then hold what a run writes: the request is rejected otherwise. Run again from the original class path into a clean directory.
 
 |`desugarLambdas`
 |Whether to desugar the lambda call sites of every entry, jars and directories, the application's own classes included. Default `false`.
