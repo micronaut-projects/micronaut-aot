@@ -520,20 +520,21 @@ public final class ClassPathTransform {
             /**
              * A path with the symbolic links of its deepest existing ancestor resolved, so that two spellings of one
              * file compare equal, and so do two spellings of an output directory that a run has not created yet.
+             * Links are resolved before {@code ..} is applied, as the file system does when a run writes there.
              */
             private static Path real(Path path) {
-                Path absolute = path.toAbsolutePath().normalize();
+                Path absolute = path.toAbsolutePath();
                 Path existing = absolute;
                 while (existing != null && !Files.exists(existing)) {
                     existing = existing.getParent();
                 }
                 if (existing == null) {
-                    return absolute;
+                    return absolute.normalize();
                 }
                 try {
-                    return existing.toRealPath().resolve(existing.relativize(absolute));
+                    return existing.toRealPath().resolve(existing.relativize(absolute)).normalize();
                 } catch (IOException e) {
-                    return absolute;
+                    return absolute.normalize();
                 }
             }
         }

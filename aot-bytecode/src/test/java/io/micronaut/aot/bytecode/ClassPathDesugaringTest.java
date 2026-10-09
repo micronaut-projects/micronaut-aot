@@ -599,6 +599,10 @@ class ClassPathDesugaringTest {
         try {
             Files.createSymbolicLink(link, directory);
             outputs.add(link.resolve("out"));
+            // The file system follows a link before the '..' after it: this names classes/out, not nested/out.
+            Path intoPackage = temp.resolve("nested/intoPackage");
+            Files.createSymbolicLink(intoPackage, directory.resolve("nst"));
+            outputs.add(intoPackage.resolve("../out"));
         } catch (UnsupportedOperationException | IOException e) {
             link = null;
         }
