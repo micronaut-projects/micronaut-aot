@@ -24,9 +24,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
@@ -37,12 +39,16 @@ import java.util.zip.ZipOutputStream;
 /**
  * Writes the copy of a jar whose classes a {@link ClassTransformPipeline} rewrites.
  *
- * <p>The copy holds every entry of the jar, in the order of its central directory, with its name, its comment, its
- * MS-DOS time, its extended timestamps and its compression method. A class of at most
- * {@link ClassTransformPipeline#MAX_CLASS_SIZE} is read whole, checked against its recorded size and CRC-32, and
- * handed to the pipeline; a class the pipeline rewrites gets the size and CRC-32 of its new bytes. Every other entry,
- * the manifest and a larger class included, is copied: a {@code STORED} entry as it is, checked against its CRC-32,
- * and a {@code DEFLATED} entry inflated and deflated again. So every entry keeps its content except the classes the
+ * <p>When the pipeline plans whole nests, the jar is planned first, because a nest host may come after its members:
+ * the classes of the accepted nests are rewritten and verified before any entry is written. The copy then holds
+ * every entry of the jar, in the order of its central directory, with its name, its comment, its MS-DOS time, its
+ * extended timestamps and its compression method. A class of a planned nest is written as the pipeline accepted it,
+ * followed right away by the classes generated for it, each with its host's MS-DOS time and compression method and
+ * no extra field. Any other class of at most {@link ClassTransformPipeline#MAX_CLASS_SIZE} is read whole, checked
+ * against its recorded size and CRC-32, and handed to the pipeline. A rewritten or generated class gets the size and
+ * CRC-32 of its own bytes, a {@code STORED} one before its header is written. Every other entry, the manifest and a
+ * larger class included, is copied: a {@code STORED} entry as it is, checked against its CRC-32, and a
+ * {@code DEFLATED} entry inflated and deflated again. So every entry keeps its content except the classes the
  * pipeline rewrote, and the compressed bytes of a {@code DEFLATED} entry depend on the JDK that writes them.</p>
  *
  * <p>A jar is left as it is, and no copy is written, when no class changes, when it is signed, because its
@@ -65,12 +71,13 @@ final class JarRewriter {
      * @param target     the copy to write; it is replaced if it exists, and deleted when nothing changes
      * @param pipeline   the pipeline
      * @param name       what notes and reports call the jar
+     * @param index      the jar's position in the class path
      * @param thirdParty whether the caller declared the jar a third-party jar
      * @return whether the copy was written, what the pipeline did, and why the jar was left as it is, if it was
      * @throws IOException if the jar cannot be read, an entry does not match its recorded size or CRC-32, or the copy
      *                     cannot be written
      */
-    static Outcome rewrite(Path source, Path target, ClassTransformPipeline pipeline, String name,
+    static Outcome rewrite(Path source, Path target, ClassTransformPipeline pipeline, String name, int index,
                            boolean thirdParty) throws IOException {
         try (ZipFile zip = new ZipFile(source.toFile())) {
             List<ZipEntry> entries = new ArrayList<>(zip.size());
@@ -85,11 +92,15 @@ final class JarRewriter {
                     repeated = entry.getName();
                 }
             }
-            ClassTransformPipeline.JarRun run = pipeline.start(new ClassTransformPipeline.Layer(name, signed,
+            ClassTransformPipeline.JarRun run = pipeline.start(new ClassTransformPipeline.Layer(name, index, signed,
                     thirdParty));
-            if (!run.applies() || repeated != null) {
+            if (run.plans()) {
+                run.plan(new ZipClasses(zip, entries, repeated != null));
+            }
+            String kept = keptReason(signed, repeated);
+            if (kept != null || !run.rewrites()) {
                 passClasses(entries, run);
-                return new Outcome(false, run.report(), keptReason(signed, repeated));
+                return new Outcome(false, run.report(), kept);
             }
             boolean changed = write(zip, entries, target, run);
             return new Outcome(changed, run.report(), null);
@@ -104,8 +115,8 @@ final class JarRewriter {
      */
     private static void passClasses(List<ZipEntry> entries, ClassTransformPipeline.JarRun run) {
         for (ZipEntry entry : entries) {
-            if (ClassTransformPipeline.isClass(entry.getName())) {
-                run.pass();
+            if (!entry.isDirectory() && ClassTransformPipeline.isClass(entry.getName())) {
+                run.pass(entry.getName());
             }
         }
     }
@@ -183,18 +194,30 @@ final class JarRewriter {
     }
 
     /**
-     * Writes one entry of the copy: a class the pipeline reads goes through it, and every other entry is copied.
+     * Writes one entry of the copy: a class of a planned nest as the pipeline accepted it, followed by its generated
+     * classes, a class the pipeline reads through it, and every other entry as it is.
      *
-     * @return whether the pipeline rewrote the entry
+     * @return whether the pipeline rewrote the entry or generated classes for it
      */
     private static boolean writeEntry(ZipFile zip, ZipEntry entry, ZipOutputStream out,
                                       ClassTransformPipeline.JarRun run, CRC32 crc) throws IOException {
         ZipEntry copy = new ZipEntry(entry);
-        if (ClassTransformPipeline.isClass(entry.getName())) {
+        if (!entry.isDirectory() && ClassTransformPipeline.isClass(entry.getName())) {
+            ClassTransformPipeline.Planned planned = run.planned(entry.getName());
+            if (planned != null) {
+                writeBytes(out, copy, planned.bytes(), planned.rewritten(), crc);
+                for (ClassTransformPipeline.Generated generated : planned.generated()) {
+                    ZipEntry generatedEntry = new ZipEntry(generated.name());
+                    generatedEntry.setMethod(entry.getMethod());
+                    generatedEntry.setTimeLocal(entry.getTimeLocal());
+                    writeBytes(out, generatedEntry, generated.bytes(), true, crc);
+                }
+                return planned.rewritten() || !planned.generated().isEmpty();
+            }
             if (run.reads(entry.getSize())) {
                 return writeClass(zip, entry, copy, out, run, crc);
             }
-            run.pass();
+            run.pass(entry.getName());
         }
         put(out, copy);
         try (InputStream in = zip.getInputStream(entry)) {
@@ -215,19 +238,28 @@ final class JarRewriter {
         byte[] original = read(zip, entry, crc);
         byte[] output = run.process(entry.getName(), original);
         boolean changed = output != original;
+        writeBytes(out, copy, output, changed, crc);
+        return changed;
+    }
+
+    /**
+     * Writes an entry whose bytes are in memory. A new or changed entry gets the size and CRC-32 of its bytes before
+     * its header is written, which a {@code STORED} entry needs and a {@code DEFLATED} one is checked against.
+     */
+    private static void writeBytes(ZipOutputStream out, ZipEntry entry, byte[] bytes, boolean changed, CRC32 crc)
+            throws IOException {
         if (changed) {
             crc.reset();
-            crc.update(output, 0, output.length);
-            copy.setSize(output.length);
-            copy.setCrc(crc.getValue());
-            if (copy.getMethod() == ZipEntry.STORED) {
-                copy.setCompressedSize(output.length);
+            crc.update(bytes, 0, bytes.length);
+            entry.setSize(bytes.length);
+            entry.setCrc(crc.getValue());
+            if (entry.getMethod() == ZipEntry.STORED) {
+                entry.setCompressedSize(bytes.length);
             }
         }
-        put(out, copy);
-        out.write(output);
+        put(out, entry);
+        out.write(bytes);
         out.closeEntry();
-        return changed;
     }
 
     /**
@@ -272,6 +304,70 @@ final class JarRewriter {
             throw new ZipException("The entry " + entry.getName() + " does not match its recorded CRC-32");
         }
         return bytes;
+    }
+
+    /**
+     * The classes of a jar, as the planning step reads them.
+     */
+    private static final class ZipClasses implements ClassTransformPipeline.JarClasses {
+
+        private final ZipFile zip;
+        private final List<ClassTransformPipeline.ClassEntry> classes = new ArrayList<>();
+        private final Map<String, ZipEntry> byName = new HashMap<>();
+        private final boolean kept;
+        private final CRC32 crc = new CRC32();
+
+        private ZipClasses(ZipFile zip, List<ZipEntry> entries, boolean kept) {
+            this.zip = zip;
+            this.kept = kept;
+            for (ZipEntry entry : entries) {
+                if (!entry.isDirectory() && ClassTransformPipeline.isClass(entry.getName())
+                        && byName.putIfAbsent(entry.getName(), entry) == null) {
+                    classes.add(new ClassTransformPipeline.ClassEntry(entry.getName(), entry.getSize()));
+                }
+            }
+        }
+
+        @Override
+        public List<ClassTransformPipeline.ClassEntry> classes() {
+            return classes;
+        }
+
+        @Override
+        public long size(String entryName) {
+            ZipEntry entry = byName.get(entryName);
+            return entry == null ? -1 : entry.getSize();
+        }
+
+        @Override
+        public boolean multiRelease() {
+            try {
+                return ClassPathModel.isMultiRelease(zip);
+            } catch (IOException e) {
+                return false;
+            }
+        }
+
+        @Override
+        public boolean kept() {
+            return kept;
+        }
+
+        @Override
+        public byte[] read(String entryName) throws IOException {
+            ZipEntry entry = byName.get(entryName);
+            if (entry == null) {
+                throw new ZipException("No class entry " + entryName);
+            }
+            if (kept) {
+                // The jar holds a name twice, and a read by name may return either copy: it is read only to count
+                // the sites it leaves, so no copy is checked against the other's size and CRC-32.
+                try (InputStream in = zip.getInputStream(entry)) {
+                    return in.readAllBytes();
+                }
+            }
+            return JarRewriter.read(zip, entry, crc);
+        }
     }
 
     /**

@@ -66,7 +66,7 @@ import java.util.Optional;
  *
  * <p>Libraries that read local-variable tables at run time lose what they read. When the class path contains one
  * of the {@linkplain #isKnownReader(String) known readers}, {@link ClassPathTransform} strips nothing and returns a
- * warning.</p>
+ * warning; desugaring, which does not depend on those tables, still runs.</p>
  *
  * <p>The class is self-contained: the transform, its options and every decline rule live here. Besides
  * {@code java.lang.classfile} it depends only on the pipeline's {@link ClassTransformPipeline.Step} contract, not
@@ -139,7 +139,7 @@ final class LocalVariableStripper implements ClassTransformPipeline.Step {
 
     @Override
     public boolean appliesTo(ClassTransformPipeline.Layer layer) {
-        return layer.thirdParty() && !layer.signed();
+        return layer.thirdParty();
     }
 
     @Override
@@ -209,9 +209,9 @@ final class LocalVariableStripper implements ClassTransformPipeline.Step {
     }
 
     @Override
-    public String summary(ClassTransformPipeline.StepCount total, int jars) {
+    public String summary(ClassTransformPipeline.StepCount total, List<ClassTransformPipeline.JarReport> reports) {
         return "Stripped local-variable tables from " + total.rewritten() + " of " + total.classes()
-                + " dependency classes in " + jars + " jars (" + total.bytesSaved() + " bytes saved, "
+                + " dependency classes in " + reports.size() + " jars (" + total.bytesSaved() + " bytes saved, "
                 + total.fallbacks() + " fallbacks)";
     }
 
@@ -289,7 +289,7 @@ final class LocalVariableStripper implements ClassTransformPipeline.Step {
      * @param marker the bytes to look for, at least one
      * @return whether {@code bytes} contains {@code marker}
      */
-    private static boolean contains(byte[] bytes, byte[] marker) {
+    static boolean contains(byte[] bytes, byte[] marker) {
         byte first = marker[0];
         int last = bytes.length - marker.length;
         for (int i = 0; i <= last; i++) {

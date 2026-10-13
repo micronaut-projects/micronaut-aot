@@ -32,30 +32,32 @@ final class ClassPathRewriting {
     private ClassPathRewriting() {
     }
 
-    static List<Path> stripThirdPartyJars(List<Path> runtimeClasspath,
-                                          List<Path> thirdPartyJars,
-                                          Path outputDirectory,
-                                          Path reportFile,
-                                          Consumer<String> log,
-                                          Consumer<String> warn) throws IOException {
-        //tag::strip[]
+    static List<Path> rewrite(List<Path> runtimeClasspath,
+                              List<Path> thirdPartyJars,
+                              Path outputDirectory,
+                              Path reportFile,
+                              Consumer<String> log,
+                              Consumer<String> warn) throws IOException {
+        //tag::desugar[]
         ClassPathTransform.Result result = ClassPathTransform.run(
             ClassPathTransform.Request.builder()
                 .classPath(runtimeClasspath)
                 .outputDirectory(outputDirectory)
+                .desugarLambdas(true)
                 .stripLocalVariables(thirdPartyJars)
                 .build());
-        log.accept(result.summary());
+        result.summary().lines().forEach(log);
         result.warnings().forEach(warn);
         List<String> report = new ArrayList<>();
-        for (ClassPathTransform.Result.Entry jar : result.entries()) {
-            report.add("%s\t%d\t%d\t%d\t%d\t%s".formatted(jar.path(), jar.classesStripped(),
-                jar.classesUnchanged(), jar.fallbacks(), jar.bytesSaved(), jar.kept().orElse("")));
-            report.addAll(jar.notes());
+        for (ClassPathTransform.Result.Entry entry : result.entries()) {
+            report.add("%s\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s".formatted(entry.path(), entry.classesStripped(),
+                entry.classesUnchanged(), entry.fallbacks(), entry.bytesSaved(), entry.sitesRewritten(),
+                entry.classesGenerated(), entry.sitesLeft(), entry.kept().orElse("")));
+            report.addAll(entry.notes());
         }
         Files.write(reportFile, report);
         List<Path> packaged = result.classPath();
-        //end::strip[]
+        //end::desugar[]
         return packaged;
     }
 }

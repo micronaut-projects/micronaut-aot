@@ -98,7 +98,7 @@ class ClassPathTransformTest {
     }
 
     @Test
-    void aRequestNamesAClassPathAnOutputAndAtLeastOneJarToStrip() throws IOException {
+    void aRequestEnablesAtLeastOneStep() throws IOException {
         Path jar = ClassFixtures.jar(temp.resolve("switch/library.jar"), library);
         Path output = temp.resolve("switch/out");
 
@@ -123,7 +123,12 @@ class ClassPathTransformTest {
                         .outputDirectory(output).stripLocalVariables(List.of(application)).build());
         assertTrue(directory.getMessage().contains("A directory is never stripped"), directory::getMessage);
 
-        // A request with only this step is valid, and the jar may be named by another spelling of its path.
+        // Desugaring alone is a step; so is stripping alone, and the jar may be named by another spelling of its path.
+        ClassPathTransform.Request.builder().classPath(List.of(application, jar)).outputDirectory(output)
+                .desugarLambdas(true).build();
+        ClassPathTransform.Request.Builder noStep = ClassPathTransform.Request.builder()
+                .classPath(List.of(application, jar)).outputDirectory(output).desugarLambdas(false);
+        assertThrows(IllegalStateException.class, noStep::build);
         Path spelled = jar.getParent().resolve("../switch/./library.jar");
         ClassPathTransform.Result result = ClassPathTransform.run(ClassPathTransform.Request.builder()
                 .classPath(List.of(application, jar)).outputDirectory(output).stripLocalVariables(List.of(spelled))
@@ -274,6 +279,21 @@ class ClassPathTransformTest {
     }
 
     @Test
+    void theOutputDirectoryMustNotBeInsideADirectoryOfTheClassPathEvenWhenOnlyJarsAreStripped() throws Exception {
+        Path jar = ClassFixtures.jar(temp.resolve("inside/library.jar"), library);
+        Path output = application.resolve("out");
+
+        // Stripping copies no directory, but the copy of the jar would be packaged with the application's classes.
+        ClassPathTransform.Request.Builder builder = ClassPathTransform.Request.builder()
+                .classPath(List.of(application, jar)).outputDirectory(output).stripLocalVariables(List.of(jar));
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, builder::build);
+        assertEquals("The output directory " + output + " is inside the class path directory " + application
+                + ": what a run writes there would become part of that directory, so choose an output directory"
+                + " outside it", failure.getMessage());
+        assertFalse(Files.exists(output));
+    }
+
+    @Test
     void twoJarsWithTheSameFileNameGetSeparateCopiesAndARunOverTheOutputRewritesNothing() throws Exception {
         Path first = ClassFixtures.jar(temp.resolve("same-name/a/library.jar"), library);
         Path second = ClassFixtures.jar(temp.resolve("same-name/b/library.jar"), library);
@@ -405,17 +425,27 @@ class ClassPathTransformTest {
         List<Path> classPath = new ArrayList<>();
         classPath.add(application);
         classPath.addAll(jars);
+        // A library with lambdas, at the release that needs bridges, for both steps to rewrite.
+        List<LambdaFixtures.Layer> layers = LambdaFixtures.scenario(temp.resolve("determinism/lambdas"), 8);
+        Path lambdas = ClassFixtures.jar(temp.resolve("determinism/fix.jar"), layers.get(1).entries());
+        classPath.add(lambdas);
+        jars.add(lambdas);
 
         List<ClassPathTransform.Result> results = new ArrayList<>();
         for (int parallelism : new int[] {1, 8, 1, 8}) {
             results.add(ClassPathTransform.run(ClassPathTransform.Request.builder()
                     .classPath(classPath)
                     .outputDirectory(temp.resolve("determinism/out-" + results.size()))
+                    .desugarLambdas(true)
                     .stripLocalVariables(jars)
                     .parallelism(parallelism)
                     .build()));
         }
 
+        ClassPathTransform.Result.Entry desugared = results.get(0).entries().get(results.get(0).entries().size() - 1);
+        assertEquals(lambdas, desugared.path());
+        assertTrue(desugared.sitesRewritten() > 0 && desugared.bridges() > 0 && desugared.classesStripped() > 0,
+                desugared::toString);
         for (ClassPathTransform.Result result : results.subList(1, results.size())) {
             assertEquals(results.get(0).summary(), result.summary());
             assertEquals(results.get(0).entries().toString(), result.entries().toString());

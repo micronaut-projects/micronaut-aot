@@ -70,6 +70,40 @@ class ClassPathModelTest {
         assertEquals(3, model.size());
     }
 
+    /**
+     * What desugaring needs to tell a certain name from an uncertain one: how many entries hold a name, whether any
+     * holds a versioned copy of it, whatever its manifest says, and which packages the class path holds. A class too
+     * large to read, or whose entry does not match its name, still takes its name.
+     */
+    @Test
+    void theModelCountsTheEntriesThatHoldANameAndItsVersionedCopies() {
+        ClassPathModel model = model(
+                layer("first", false, Map.of(
+                        entry(SHARED), type(SHARED, "java/lang/Object"),
+                        "META-INF/versions/11/com/example/Versioned.class", type("com/example/Versioned",
+                                "java/lang/Object"),
+                        "META-INF/versions/09/com/example/Leading.class", type("com/example/Leading",
+                                "java/lang/Object"))),
+                layer("second", false, Map.of(
+                        entry(SHARED), type(SHARED, "java/lang/Object"),
+                        entry("com/example/Versioned"), type("com/example/Versioned", "java/lang/Object"),
+                        entry("org/other/Misnamed"), type("org/other/Elsewhere", "java/lang/Object"))));
+
+        assertEquals(2, model.holders(SHARED));
+        assertEquals(1, model.holders("com/example/Versioned"));
+        assertTrue(model.versioned("com/example/Versioned"), "a versioned copy in a jar that is not multi-release");
+        assertFalse(model.versioned(SHARED));
+        assertFalse(model.versioned("com/example/Leading"), "a leading zero is no version");
+        assertEquals(1, model.holders("org/other/Misnamed"));
+        assertTrue(model.known("org/other/Misnamed"), "its name is taken, though no loader can define it");
+        assertTrue(model.holdsPackage("org/other"));
+        assertFalse(model.holdsPackage("org"));
+        assertEquals(0, model.holders("com/example/Nowhere"));
+        assertFalse(model.known("com/example/Nowhere"));
+        assertFalse(model.hasMembers(), "a header-only scan records no member table");
+        assertFalse(model.hasLambdas(0));
+    }
+
     @Test
     void theWinnerOfAMultiReleaseJarIsTheHighestVariantTheRunningJdkLoads() {
         int feature = Runtime.version().feature();

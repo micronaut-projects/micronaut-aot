@@ -1,8 +1,8 @@
 The `micronaut-aot-bytecode` module rewrites the class files of an application's runtime class path at build time.
 A build plugin gives it the class path and gets back a class path to package: each entry as it was, or a rewritten copy of it.
-The one step it has today strips the local-variable tables of the third-party jars that the plugin names (<<classPathTransformStrip, Stripping local-variable tables>>).
+It has two steps, which a request enables separately and which run in one pass: desugaring lambdas (<<classPathTransformDesugar, Desugaring lambdas>>), then stripping the local-variable tables of the third-party jars that the plugin names (<<classPathTransformStrip, Stripping local-variable tables>>).
 
-WARNING: This module is internal to the Micronaut build plugins, and the step is experimental: its API, its rules and its output may change in any release.
+WARNING: This module is internal to the Micronaut build plugins and Micronaut Runner, and its steps are experimental: its API, its rules and its output may change in any release.
 
 Unlike the optimizers of Micronaut AOT, this module does not start the application, uses no `AOTContext`, and needs no AOT run.
 It reads class files and writes copies, and never loads a class of the class path.
@@ -14,7 +14,7 @@ An application does not depend on it: its build plugin calls it.
 This section describes what a build plugin does, for those who maintain one.
 `ClassPathTransform` is `@Internal`: it is not an API for applications.
 
-snippet::example.bytecode.ClassPathRewriting[project-base="doc-examples/example", source="main", indent="0", tags="strip"]
+snippet::example.bytecode.ClassPathRewriting[project-base="doc-examples/example", source="main", indent="0", tags="desugar"]
 
 The request takes:
 
@@ -26,10 +26,16 @@ The request takes:
 |The runtime class path, in the order the application's class loader searches it, the application's own output first: jars or directories. Required. Every class on it is part of the model that a rewritten class is verified against, so pass the whole class path, not only the jars to rewrite.
 
 |`outputDirectory`
-|Where the rewritten copies go. Required. A copy is written under a subdirectory named by the index of its entry in `classPath`, with the entry's own file name, so two entries with the same file name never collide. The caller owns the directory and cleans it. It must not hold an entry of `classPath`, such as a copy that an earlier run wrote there, because a run replaces and deletes files in it: the request is rejected otherwise. Run again from the original class path into a clean directory.
+|Where the rewritten copies go. Required. A copy, of a jar or of a directory, is written under a subdirectory named by the index of its entry in `classPath`, with the entry's own file name, so two entries with the same file name never collide. The caller owns the directory and cleans it. It must not hold an entry of `classPath`, such as a copy that an earlier run wrote there, because a run replaces and deletes files in it, nor be inside a directory of `classPath`, which would then hold what a run writes: the request is rejected otherwise. Run again from the original class path into a clean directory.
+
+|`desugarLambdas`
+|Whether to desugar the lambda call sites of every entry, jars and directories, the application's own classes included. Default `false`.
+
+|`foreignPackages`
+|Packages, with their subpackages, whose classes the runtime may resolve from somewhere other than `classPath`, such as a launcher's own classes, as dotted names. Desugaring leaves every site that depends on one of their classes. Default: none.
 
 |`stripLocalVariables`
-|The jars whose classes are stripped: third-party jars only, each an entry of `classPath`. Never pass the application's output, a module of the application's own build, such as a Gradle project dependency or a module of the Maven reactor, or a directory: their classes are user code, and users debug their locals. The request is rejected when a jar is not an entry of `classPath`, when it is a directory, and when no jar is named, because the request then enables no step.
+|The jars whose classes are stripped: third-party jars only, each an entry of `classPath`. Never pass the application's output, a module of the application's own build, such as a Gradle project dependency or a module of the Maven reactor, or a directory: their classes are user code, and users debug their locals. The request is rejected when a jar is not an entry of `classPath`, when it is a directory, and when neither this nor `desugarLambdas` enables a step.
 
 |`parallelism`
 |The number of worker threads, by default the available processors. The output does not depend on it.
@@ -37,32 +43,66 @@ The request takes:
 
 The `Result` has:
 
-* `classPath()`: the class path to package, in the order of the request. A jar with a rewritten class is replaced by its copy, which keeps the jar's file name, so the `Class-Path` attribute of a manifest that names it stays valid. Every other entry is returned as it was given, and keeps its bytes and its hash.
-* `summary()`: one line to log, such as `Stripped local-variable tables from 7102 of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)`.
+* `classPath()`: the class path to package, in the order of the request. An entry with a rewritten class is replaced by its copy, which keeps the entry's file name, so the `Class-Path` attribute of a manifest that names it stays valid. Every other entry is returned as it was given, and keeps its bytes and its hash.
+* `summary()`: one line per step to log, desugaring first, such as `Desugared 2960 lambda call sites into 1978 generated classes in 37 class path entries (815 classes rewritten, 360 bridges, 33 sites left as invokedynamic, 0 nest fallbacks)` and `Stripped local-variable tables from 7102 of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)`.
 * `warnings()`: lines to log as warnings, each on its own. Usually empty, never `null`.
-* `entries()`: what the step did to each jar named by `stripLocalVariables`, in class-path order, for the plugin to write under the build's reports in its own format; empty when the step stood down because of a library that reads local-variable tables. The counts are numbers, so nothing needs parsing. Each `Entry` has:
-** `path()`: the jar, as `classPath` gave it;
-** `classesStripped()`, `classesUnchanged()` and `fallbacks()`: the jar's classes that lost their tables, that were left as they were, and that were written as they were because the step failed on them or their rewrite verified worse. Each class of the jar counts once;
+* `entries()`: what the steps did to each jar named by `stripLocalVariables`, and to each entry that holds a lambda call site when lambdas are desugared, in class-path order, for the plugin to write under the build's reports in its own format. The counts are numbers, so nothing needs parsing. Each `Entry` has:
+** `path()`: the jar or directory, as `classPath` gave it;
+** `classesStripped()`, `classesUnchanged()` and `fallbacks()`: the jar's classes that lost their tables, that were left as they were, and that were written as they were because the step failed on them or their rewrite verified worse. Each class of a jar named for stripping counts once;
 ** `bytesSaved()`: how many bytes smaller the stripped classes became, uncompressed;
-** `kept()`: why no class of the jar went through the step, such as `the jar is signed`, or empty;
-** `notes()`: one line per fallback, tab-separated: the jar, the class, the step and the first verification error or failure.
+** `sitesRewritten()`, `classesDesugared()`, `classesGenerated()`, `bridges()` and `nestFallbacks()`: the lambda call sites rewritten, the existing classes rewritten, the classes generated, the bridges added and the nests left as they were;
+** `sitesLeft()`: the lambda call sites left as they were, by reason, such as `altMetafactory` or `shadowedOrUncertain`, for display;
+** `kept()`: why no class of the entry went through the steps, such as `the jar is signed`, or empty;
+** `notes()`: one line per fallback, tab-separated: the entry, the class or the nest, the step and the first verification error or failure.
 
 `run` throws only when it cannot read a jar it rewrites, or cannot write a copy.
 A class that it cannot parse, rewrite or verify is written as it was, and a note of its jar's entry names it.
 The module logs nothing.
 
 A copy holds every entry of the original jar, in the same order, with the same name, comment, time and compression method, and the manifest as it was.
-Only the classes that a step rewrote change; every other entry keeps its content.
+Only the classes that a step rewrote change, and each generated class follows its host, with its host's time and compression method; every other entry keeps its content.
 `DEFLATED` entries are compressed again, so the copy's compressed bytes depend on the JDK that writes it.
-A signed jar, and a jar that holds an entry name twice, are left as they are.
+A signed jar, a jar that holds an entry name twice, and a directory that holds a symbolic link are left as they are.
+A directory's copy holds every file and directory of the original, with its modification time.
 
 The rewritten bytes depend on the JDK build that runs the transform, for example through the order of the constant pool.
 The output is reproducible, whatever the parallelism, only with the same JDK build.
 A plugin therefore runs the transform on the project's Java toolchain and makes the toolchain's version an input of its task.
 
 The transform belongs to packaging, not to development.
-A plugin applies it to fat JARs and Docker images, and runs it before anything that records the jars' sizes or modification times, such as the training of a JDK AOT cache.
+A plugin applies it to fat JARs and Docker images, before Shadow or Shade merge the class path and before anything that records the jars' sizes or modification times, such as the training of a JDK AOT cache.
 It does not apply it to run tasks, tests, IDE class paths or native images, which do not package the class path or do not load class files at run time.
+
+[[classPathTransformDesugar]]
+== Desugaring lambdas
+
+Every lambda and method reference compiles to an `invokedynamic` call site.
+The first time one runs, `LambdaMetafactory` spins a hidden class for it, defines it and links the site.
+Only a trained JDK AOT cache spares a start that work, so a fat JAR started with `java -jar`, or an image without a cache, pays it for every site that startup reaches, most of them in the dependencies.
+The step generates those classes at build time, next to the class that holds the site, and points the site at them.
+With a JDK AOT cache, the step makes about no difference.
+
+The sites of one class that share the functional interface, the interface method and the captured types share generated classes, `<Host>$$Lambda$R<n>`, each serving as many of them as keep its interface method within HotSpot's default inlining size (`FreqInlineSize`, 325 bytes), dispatching on a small tag.
+A class whose version is below Java 11 has no nestmates: its private lambda bodies are reached through static synthetic bridges, `$desugared$lambda$<n>`, added to it.
+
+A site is rewritten only when the generated class provably resolves what the site resolved, and each rewritten class, and each generated one, is verified as stripped classes are.
+These stay as they are:
+
+* serializable and marker-interface lambdas (`altMetafactory`), and every other bootstrap, such as string concatenation;
+* the classes of a signed jar, the `META-INF/versions/` variants of a multi-release jar, and `module-info`;
+* a site whose class, nest host, implementation, functional interface or captured receiver has a name that two entries hold, or that has a `META-INF/versions/` copy anywhere, because a fat JAR or an image does not tell which copy loads; or a name in a `foreignPackages` package, or in a package of the JDK that the class path also holds;
+* a private implementation in a Java 8 interface, or in a serializable Java 8 class other than an enum without a `static final serialVersionUID`, whose bridge would be public or would change the default `serialVersionUID`;
+* a site whose functional interface, or one of its superinterfaces, has a default method and a static initializer that does more than create its own lambdas and instances of classes whose constructors do nothing: the JVM runs that initializer before it initializes the generated class, and the initializer may reach the site again, on the same thread or another, before the class is ready;
+* a site whose functional interface is serializable without `altMetafactory`, whose lambda refuses to be serialized.
+
+What changes for the application, and what to document for users:
+
+* The lambda classes are no longer hidden: they have stable names, `Class.forName` finds them, `Class.getNestMembers()` lists them, and class path scanners and Java agents see them as ordinary, synthetic, package-private classes. Their names keep `$$Lambda`, which agents such as OpenTelemetry's and Datadog's recognize. Reflection sees ordinary members: a canonical name, fields `f0`... instead of `arg$1`..., a static `create` method, and, for a Java 8 class, no nest host.
+* Two lambdas of one class with the same functional interface, method and captured types may have the same `getClass()`. The Java Language Specification allows it.
+* Each call through a lambda adds one frame to stack traces and to `StackWalker`, two in a Java 8 class whose lambda body is reached through a bridge, and neither has a line number, so a method reached through a method reference that looks up its caller sees the generated class.
+* Java 8 classes gain bridges, which `getDeclaredMethods()` returns, and jars gain `.class` entries.
+* A rewritten jar is a modified third-party binary: it no longer has the published artifact's hashes, which scanners such as Snyk Container use to identify it, and licence-compliance processes may need to know. A jar without a lambda call site keeps its bytes.
+* The JDK rules are judged against the JDK that runs the transform: run it on the feature release the application runs on, with a runtime that has the JDK modules the application uses.
 
 [[classPathTransformStrip]]
 == Stripping local-variable tables

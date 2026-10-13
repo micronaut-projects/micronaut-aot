@@ -78,7 +78,7 @@ class ClassTransformPipelineTest {
             """;
 
     private static final ClassTransformPipeline.Layer DEPENDENCY =
-            new ClassTransformPipeline.Layer("libs/fixture.jar", false, true);
+            new ClassTransformPipeline.Layer("libs/fixture.jar", 0, false, true);
 
     @TempDir
     static Path temp;
@@ -382,11 +382,11 @@ class ClassTransformPipelineTest {
         ClassTransformPipeline pipeline = new ClassTransformPipeline(List.of(rewriteLdc), model);
 
         ClassTransformPipeline.JarRun run = pipeline.start(
-                new ClassTransformPipeline.Layer("libs/signed.jar", true, true));
+                new ClassTransformPipeline.Layer("libs/signed.jar", 0, true, true));
 
         assertFalse(run.applies(), "no step applies to a signed jar");
         assertFalse(run.reads(subject.length), "a signed jar's classes are never read into memory");
-        run.pass();
+        run.pass(SUBJECT + ".class");
         assertEquals(List.of(new ClassTransformPipeline.StepCount("rewriteLdc", 0, 1, 0, 0)), run.report().counts());
         assertEquals(0, rewriteLdc.hits.get());
     }
@@ -458,7 +458,7 @@ class ClassTransformPipelineTest {
         ClassTransformPipeline.JarRun first = pipeline.start(DEPENDENCY);
         first.process(SUBJECT + ".class", subject);
         ClassTransformPipeline.JarRun second = pipeline.start(DEPENDENCY);
-        second.pass();
+        second.pass(SUBJECT + ".class");
 
         List<ClassTransformPipeline.StepCount> totals = pipeline.totals(List.of(first.report(), second.report()));
 
@@ -542,7 +542,8 @@ class ClassTransformPipelineTest {
         }
 
         @Override
-        public String summary(ClassTransformPipeline.StepCount total, int jars) {
+        public String summary(ClassTransformPipeline.StepCount total,
+                              List<ClassTransformPipeline.JarReport> reports) {
             return name + ": " + total;
         }
     }

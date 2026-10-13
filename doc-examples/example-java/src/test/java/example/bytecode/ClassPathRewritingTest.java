@@ -33,30 +33,34 @@ class ClassPathRewritingTest {
     Path temporaryDirectory;
 
     @Test
-    void stripsTheThirdPartyJarsOfAClassPath() throws Exception {
+    void desugarsTheClassPathAndStripsItsThirdPartyJars() throws Exception {
         Path core = jarOf(Internal.class);
         Path context = jarOf(ApplicationContext.class);
-        Path outputDirectory = temporaryDirectory.resolve("stripped");
-        Path reportFile = temporaryDirectory.resolve("strip-report.tsv");
+        Path outputDirectory = temporaryDirectory.resolve("rewritten");
+        Path reportFile = temporaryDirectory.resolve("report.tsv");
         List<String> log = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
 
-        List<Path> packaged = ClassPathRewriting.stripThirdPartyJars(List.of(context, core), List.of(core),
+        List<Path> packaged = ClassPathRewriting.rewrite(List.of(context, core), List.of(core),
             outputDirectory, reportFile, log::add, warnings::add);
 
-        assertEquals(List.of(context, outputDirectory.resolve("1").resolve(core.getFileName())), packaged,
-            "only the named jar is replaced, by a copy of the same name");
-        assertEquals(1, log.size());
-        assertTrue(log.get(0).startsWith("Stripped local-variable tables from "), log::toString);
+        assertEquals(List.of(outputDirectory.resolve("0").resolve(context.getFileName()),
+            outputDirectory.resolve("1").resolve(core.getFileName())), packaged,
+            "each jar is replaced by a copy of the same name");
+        assertEquals(2, log.size(), log::toString);
+        assertTrue(log.get(0).startsWith("Desugared "), log::toString);
+        assertTrue(log.get(1).startsWith("Stripped local-variable tables from "), log::toString);
         assertEquals(List.of(), warnings);
-        assertTrue(Files.size(packaged.get(1)) < Files.size(core), "the copy is smaller");
         List<String> report = Files.readAllLines(reportFile);
-        assertEquals(1, report.size(), report::toString);
-        String[] counts = report.get(0).split("\t", -1);
+        assertEquals(2, report.size(), report::toString);
+        String[] contextCounts = report.get(0).split("\t", -1);
+        assertEquals(context.toString(), contextCounts[0]);
+        assertTrue(Integer.parseInt(contextCounts[5]) > 0, "lambda call sites of micronaut-context were rewritten");
+        String[] counts = report.get(1).split("\t", -1);
         assertEquals(core.toString(), counts[0]);
         assertTrue(Integer.parseInt(counts[1]) > 0, report::toString);
         assertEquals("0", counts[3], "no fallback");
-        assertEquals("", counts[5], "the jar went through the step");
+        assertEquals("", counts[8], "the jar went through the steps");
     }
 
     private static Path jarOf(Class<?> type) throws Exception {

@@ -56,7 +56,7 @@ val mainCompileClasspath = sourceSets.main.map { it.compileClasspath }
 
 tasks.named<Test>("test") {
     useJUnitPlatform {
-        excludeTags("class-path-corpus")
+        excludeTags("class-path-corpus", "end-to-end")
     }
     inputs.files(publishedPom).withPropertyName("publishedPom").withPathSensitivity(PathSensitivity.NONE)
     inputs.files(publishedModule).withPropertyName("publishedModule").withPathSensitivity(PathSensitivity.NONE)
@@ -136,5 +136,44 @@ tasks.register<Test>("classPathCorpusTest") {
         corpusClassPaths.forEach { (application, configuration) ->
             systemProperty("aot.bytecode.corpus.$application", configuration.asPath)
         }
+    }
+}
+
+// The end-to-end test: a Micronaut application with an application lambda and a Java 8 library that needs a bridge,
+// compiled in the test with micronaut-inject-java, desugared with its runtime class path (the corpus's hello-netty), and
+// started under -Xverify:all from both class paths. Like the corpus, it resolves Micronaut jars, so it is not part of
+// check: the "Class path corpus" workflow runs it.
+val endToEndProcessor = configurations.create("endToEndProcessor") {
+    isCanBeConsumed = false
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+    }
+}
+dependencies {
+    endToEndProcessor(platform(libs.corpus.micronaut.platform))
+    endToEndProcessor("io.micronaut:micronaut-inject-java")
+}
+val endToEndClassPath = corpusClassPaths.toMap().getValue("hello-netty")
+
+tasks.register<Test>("endToEndTest") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Desugars a Micronaut application and its runtime class path, and starts both under -Xverify:all"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("end-to-end")
+    }
+    inputs.files(endToEndClassPath).withPropertyName("classPath").withNormalizer(ClasspathNormalizer::class)
+    inputs.files(endToEndProcessor).withPropertyName("processorPath").withNormalizer(ClasspathNormalizer::class)
+    outputs.upToDateWhen { false }
+    extensions.findByType<com.gradle.develocity.agent.gradle.test.DevelocityTestConfiguration>()
+        ?.predictiveTestSelection { enabled.set(false) }
+    testLogging.showStandardStreams = true
+    doFirst {
+        systemProperty("aot.bytecode.e2e.classPath", endToEndClassPath.asPath)
+        systemProperty("aot.bytecode.e2e.processorPath", endToEndProcessor.asPath)
     }
 }
