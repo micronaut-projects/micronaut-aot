@@ -1,0 +1,24 @@
+<configuration>
+    <property name="APP_LEVEL" value="WARN"/>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder><pattern>OUT %level %logger - %msg%n</pattern></encoder>
+    </appender>
+    <appender name="ERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <encoder><pattern>ERR %level %logger - %msg%n</pattern></encoder>
+    </appender>
+    <appender name="UNUSED" class="ch.qos.logback.core.FileAppender">
+        <file>unused.log</file>
+        <encoder><pattern>%msg%n</pattern></encoder>
+    </appender>
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="STDOUT"/>
+    </appender>
+    <logger name="com.example.a" level="WARN"/>
+    <logger name="com.example.a.b" level="INHERITED"/>
+    <logger name="com.example.c" level="${APP_LEVEL}"/>
+    <root level="INFO">
+        <appender-ref ref="ASYNC"/>
+        <appender-ref ref="ERR"/>
+    </root>
+</configuration>
