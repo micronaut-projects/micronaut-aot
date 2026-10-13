@@ -25,6 +25,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.lang.classfile.AccessFlags;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassTransform;
+import java.lang.classfile.CodeBuilder;
+import java.lang.classfile.CodeElement;
+import java.lang.classfile.CodeTransform;
 import java.lang.classfile.MethodModel;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
@@ -38,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 
 import static io.micronaut.aot.serviceindex.Fixtures.BEAN_DEFINITIONS;
 import static io.micronaut.aot.serviceindex.ServiceIndexGenerator.LOADER_SERVICE;
@@ -54,6 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StandDownTest {
 
     private static final ClassDesc CLASS_LOADER = ClassDesc.of("java.lang.ClassLoader");
+
+    private static final ClassDesc INDEX = ClassDesc.of("io.micronaut.core.io.service.ServiceIndex");
 
     private static final String LOADER_ENTRY = ServiceIndexGenerator.GENERATED_PATH + "ServiceIndexLoader.class";
 
@@ -96,14 +102,10 @@ class StandDownTest {
     @EnumSource(OtherApi.class)
     void aMicronautCoreWithAnotherApi(OtherApi api) throws Exception {
         Path holder = Fixtures.jar(temporary.resolve("app.jar"), Fixtures.application());
-        Fixtures.Content core = Fixtures.read(Fixtures.coreJar());
-        String entry = "io/micronaut/core/io/service/" + api.type + ".class";
-        ClassDesc index = ClassDesc.of("io.micronaut.core.io.service.ServiceIndex");
-        ClassFile classFile = ClassFile.of();
         ClassTransform transform = switch (api) {
-            case BUILD_TAKES_A_SET -> replacing("build", MethodTypeDesc.of(index, CLASS_LOADER,
+            case BUILD_TAKES_A_SET -> replacing("build", MethodTypeDesc.of(INDEX, CLASS_LOADER,
                     ConstantDescs.CD_Set));
-            case OF_TRUSTED_WITHOUT_A_CLASS_PATH -> replacing("ofTrusted", MethodTypeDesc.of(index,
+            case OF_TRUSTED_WITHOUT_A_CLASS_PATH -> replacing("ofTrusted", MethodTypeDesc.of(INDEX,
                     CLASS_LOADER, ConstantDescs.CD_Map, ConstantDescs.CD_Map));
             case PRIVATE_CLASS_PATH_ENTRY -> ClassTransform.transformingMethods(
                     method -> method.methodName().equalsString(ConstantDescs.INIT_NAME),
@@ -115,14 +117,42 @@ class StandDownTest {
                         }
                     });
         };
-        core.put(entry, classFile.transformClass(classFile.parse(core.entries.get(entry)), transform));
-        List<Path> libraries = new ArrayList<>(Fixtures.core());
-        libraries.set(libraries.indexOf(Fixtures.coreJar()), Fixtures.jar(temporary.resolve("micronaut-core.jar"), core));
 
-        ServiceIndexGenerator.Result result = generate(holder, libraries);
+        ServiceIndexGenerator.Result result = generate(holder, transformedCore(api.type, transform));
 
         assertNothing(STOOD_DOWN, "has another service index API than the one the generated code calls", result);
         assertTrue(result.message().contains(api.member), result::message);
+    }
+
+    /** micronaut-core fails while it builds the index: the call returns a failure, and throws nothing at the build. */
+    @ParameterizedTest
+    @ValueSource(strings = {"java.lang.IllegalStateException", "java.lang.AssertionError"})
+    void aMicronautCoreThatFails(String failure) throws Exception {
+        Path holder = Fixtures.jar(temporary.resolve("app.jar"), Fixtures.application());
+        ClassDesc thrown = ClassDesc.of(failure);
+
+        ServiceIndexGenerator.Result result = generate(holder, transformedCore("ServiceIndexBuilder",
+                ClassTransform.dropping(element -> element instanceof MethodModel method
+                                && method.methodName().equalsString("build"))
+                        .andThen(ClassTransform.endHandler(builder -> builder.withMethodBody("build",
+                                MethodTypeDesc.of(INDEX, CLASS_LOADER, ClassDesc.of("java.util.Collection")),
+                                ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC, code -> code.new_(thrown).dup()
+                                        .invokespecial(thrown, ConstantDescs.INIT_NAME, ConstantDescs.MTD_void)
+                                        .athrow())))));
+
+        assertNothing(FAILED, "of an unexpected error (" + failure, result);
+    }
+
+    /** The generated loader is run in micronaut-core, and an index that differs from the builder's is not returned. */
+    @Test
+    void aLoaderThatDoesNotRebuildTheIndex() throws Exception {
+        Path holder = Fixtures.jar(temporary.resolve("app.jar"), Fixtures.application());
+
+        ServiceIndexGenerator.Result result = generate(holder, transformedCore("ServiceIndex",
+                atStartOf("ofTrusted", code -> code.aload(1)
+                        .invokeinterface(ConstantDescs.CD_Map, "clear", ConstantDescs.MTD_void))));
+
+        assertNothing(FAILED, "the generated loader does not rebuild micronaut-core's index", result);
     }
 
     @Test
@@ -265,6 +295,32 @@ class StandDownTest {
                         && method.methodName().equalsString(name))
                 .andThen(ClassTransform.endHandler(builder -> builder.withMethodBody(name, type,
                         ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC, code -> code.aconst_null().areturn())));
+    }
+
+    /** micronaut-core's class path, with one class of micronaut-core transformed. */
+    private List<Path> transformedCore(String type, ClassTransform transform) throws Exception {
+        Fixtures.Content core = Fixtures.read(Fixtures.coreJar());
+        String entry = "io/micronaut/core/io/service/" + type + ".class";
+        ClassFile classFile = ClassFile.of();
+        core.put(entry, classFile.transformClass(classFile.parse(core.entries.get(entry)), transform));
+        List<Path> libraries = new ArrayList<>(Fixtures.core());
+        libraries.set(libraries.indexOf(Fixtures.coreJar()), Fixtures.jar(temporary.resolve("micronaut-core.jar"), core));
+        return libraries;
+    }
+
+    private static ClassTransform atStartOf(String method, Consumer<CodeBuilder> start) {
+        return ClassTransform.transformingMethodBodies(model -> model.methodName().equalsString(method),
+                new CodeTransform() {
+                    @Override
+                    public void atStart(CodeBuilder code) {
+                        start.accept(code);
+                    }
+
+                    @Override
+                    public void accept(CodeBuilder code, CodeElement element) {
+                        code.with(element);
+                    }
+                });
     }
 
     private static List<Path> with(Path other) {

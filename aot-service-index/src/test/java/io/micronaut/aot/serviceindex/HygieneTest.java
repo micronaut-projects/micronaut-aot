@@ -66,18 +66,28 @@ class HygieneTest {
         Path jar = Fixtures.fatJar(temporary.resolve("app.jar"), Fixtures.application());
         ClassLoadingMXBean classLoading = ManagementFactory.getClassLoadingMXBean();
         Fixtures.generateFor(jar);
+        // what earlier calls and tests left to collect is collected first, so that only the call is counted
+        long before = -1;
+        for (int i = 0; i < 20 && before != classLoading.getUnloadedClassCount(); i++) {
+            before = classLoading.getUnloadedClassCount();
+            System.gc();
+            Thread.sleep(50);
+        }
+        long loaded = classLoading.getTotalLoadedClassCount();
         long unloaded = classLoading.getUnloadedClassCount();
 
         ServiceIndexGenerator.Result result = Fixtures.generateFor(jar);
-        // the classes of micronaut-core and the generated ones that a call loads
-        for (int i = 0; i < 20 && classLoading.getUnloadedClassCount() < unloaded + 5; i++) {
+        // every class that the call loaded: micronaut-core's and the generated ones
+        long ofTheCall = classLoading.getTotalLoadedClassCount() - loaded;
+        for (int i = 0; i < 20 && classLoading.getUnloadedClassCount() - unloaded < ofTheCall; i++) {
             System.gc();
             Thread.sleep(50);
         }
 
         assertEquals(ServiceIndexGenerator.Status.GENERATED, result.status(), result.message());
-        assertTrue(classLoading.getUnloadedClassCount() >= unloaded + 5,
-                "no class of the call was unloaded: " + (classLoading.getUnloadedClassCount() - unloaded));
+        assertTrue(ofTheCall > 3, "the call loaded " + ofTheCall + " classes");
+        assertTrue(classLoading.getUnloadedClassCount() - unloaded >= ofTheCall, "of the " + ofTheCall
+                + " classes that the call loaded, " + (classLoading.getUnloadedClassCount() - unloaded) + " were unloaded");
     }
 
     @Test
