@@ -60,6 +60,8 @@ loadScripts(document, 'script');</script>
 <ol class="toc-list">
 <li><a href="#classPath(java.util.List)" tabindex="0">classPath(List)</a></li>
 <li><a href="#outputDirectory(java.nio.file.Path)" tabindex="0">outputDirectory(Path)</a></li>
+<li><a href="#desugarLambdas(boolean)" tabindex="0">desugarLambdas(boolean)</a></li>
+<li><a href="#foreignPackages(java.util.Set)" tabindex="0">foreignPackages(Set)</a></li>
 <li><a href="#stripLocalVariables(java.util.Collection)" tabindex="0">stripLocalVariables(Collection)</a></li>
 <li><a href="#parallelism(int)" tabindex="0">parallelism(int)</a></li>
 <li><a href="#build()" tabindex="0">build()</a></li>
@@ -117,6 +119,18 @@ loadScripts(document, 'script');</script>
 output first: jars or directories.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#desugarLambdas(boolean)" class="member-name-link">desugarLambdas</a><wbr>(boolean&nbsp;desugar)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Desugar the lambda and method-reference call sites of every entry of the class path, jars and
+directories, the application's own output included.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#foreignPackages(java.util.Set)" class="member-name-link">foreignPackages</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;packages)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Packages, with their subpackages, whose classes the runtime may resolve from somewhere other than the
+class path, for a launcher whose own loader defines these packages first, such as Micronaut Runner's.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outputDirectory(java.nio.file.Path)" class="member-name-link">outputDirectory</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;directory)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Where rewritten copies are written: each under a subdirectory named by its entry's index in the class
@@ -157,7 +171,7 @@ application's output, a module of the application's own build or a directory.</d
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></span>&nbsp;<span class="element-name">classPath</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&gt;&nbsp;entries)</span></div>
 <div class="block">The runtime class path, in the order the application's class loader searches it, the application's own
 output first: jars or directories. Required. Every class on it is part of the model that rewritten
-classes are verified against; only the entries a step names are rewritten.</div>
+classes are verified against; only the entries a step applies to are rewritten.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>entries</code> - the class path entries</dd>
@@ -175,12 +189,56 @@ classes are verified against; only the entries a step names are rewritten.</div>
 <div class="block">Where rewritten copies are written: each under a subdirectory named by its entry's index in the class
 path, with the entry's own file name. Required. The caller owns the directory and cleans it. It must
 not hold an entry of the class path, such as a copy that an earlier run wrote there, because a run
-replaces and deletes files in it.</div>
+replaces and deletes files in it, nor be inside a directory of the class path, which would then hold
+what a run writes.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>directory</code> - the output directory</dd>
 <dt>Returns:</dt>
 <dd>this builder</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="desugarLambdas(boolean)">
+<h3>desugarLambdas</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></span>&nbsp;<span class="element-name">desugarLambdas</span><wbr><span class="parameters">(boolean&nbsp;desugar)</span></div>
+<div class="block">Desugar the lambda and method-reference call sites of every entry of the class path, jars and
+directories, the application's own output included. Default: <code>false</code>.
+
+<p>A call site that <code>LambdaMetafactory.metafactory</code> links at run time becomes a call to a class
+that the step generates next to the class that holds the site, when the step can prove that the
+generated class resolves what the site resolved; every other site stays <code>invokedynamic</code>. A
+name that two entries hold, or that has a <code>META-INF/versions/</code> copy, is never rewritten, because
+a fat JAR or an image does not tell which copy loads. The generated classes depend on the JDK that runs
+the transform: run it on the feature release the application runs on.</p></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>desugar</code> - whether to desugar</dd>
+<dt>Returns:</dt>
+<dd>this builder</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="foreignPackages(java.util.Set)">
+<h3>foreignPackages</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="ClassPathTransform.Request.Builder.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request.Builder</a></span>&nbsp;<span class="element-name">foreignPackages</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;packages)</span></div>
+<div class="block">Packages, with their subpackages, whose classes the runtime may resolve from somewhere other than the
+class path, for a launcher whose own loader defines these packages first, such as Micronaut Runner's.
+Desugaring never rewrites a site whose host, nest host, implementation owner, functional interface or
+captured receiver is in one of them. Default: none.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>packages</code> - the packages, as dotted names such as <code>io.micronaut.runner</code></dd>
+<dt>Returns:</dt>
+<dd>this builder</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if a name is not a package name</dd>
 </dl>
 </div>
 </section>
@@ -235,8 +293,9 @@ warning, when the class path holds a library that reads local-variable tables at
 <dd><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if the class path or the output directory is missing, or no step is
                                  enabled</dd>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if a jar to strip is not an entry of the class path, or is a
-                                 directory, or if an entry of the class path is inside the output
-                                 directory</dd>
+                                 directory, if an entry of the class path is inside the output
+                                 directory, or if the output directory is inside a directory of the
+                                 class path</dd>
 </dl>
 </div>
 </section>

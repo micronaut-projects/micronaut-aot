@@ -63,6 +63,12 @@ loadScripts(document, 'script');</script>
 <li><a href="#classesUnchanged()" tabindex="0">classesUnchanged()</a></li>
 <li><a href="#fallbacks()" tabindex="0">fallbacks()</a></li>
 <li><a href="#bytesSaved()" tabindex="0">bytesSaved()</a></li>
+<li><a href="#classesDesugared()" tabindex="0">classesDesugared()</a></li>
+<li><a href="#sitesRewritten()" tabindex="0">sitesRewritten()</a></li>
+<li><a href="#classesGenerated()" tabindex="0">classesGenerated()</a></li>
+<li><a href="#bridges()" tabindex="0">bridges()</a></li>
+<li><a href="#nestFallbacks()" tabindex="0">nestFallbacks()</a></li>
+<li><a href="#sitesLeft()" tabindex="0">sitesLeft()</a></li>
 <li><a href="#kept()" tabindex="0">kept()</a></li>
 <li><a href="#notes()" tabindex="0">notes()</a></li>
 <li><a href="#toString()" tabindex="0">toString()</a></li>
@@ -88,8 +94,9 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="annotations">@Internal
 </span><span class="modifiers">public static final class </span><span class="element-name type-name-label">ClassPathTransform.Result.Entry</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">What the strip step did to one jar. Every class of the jar is counted once, as stripped, unchanged or
-fallen back.</div>
+<div class="block">What the steps did to one class path entry, a jar or a directory. Each step that ran over the entry counts
+every class of it once, as rewritten, unchanged or fallen back; a step that did not run over it, such as
+the strip step on an entry not named for it, counts nothing.</div>
 <dl class="notes">
 <dt>Since:</dt>
 <dd>3.2.0</dd>
@@ -109,45 +116,79 @@ fallen back.</div>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#bytesSaved()" class="member-name-link">bytesSaved</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#bridges()" class="member-name-link">bridges</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The static synthetic bridge methods that desugaring added to hosts below class-file version 55, which
+have no nestmates, so that a generated class can reach a private lambda body.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#bytesSaved()" class="member-name-link">bytesSaved</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">How many bytes smaller the stripped classes became, uncompressed.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#classesDesugared()" class="member-name-link">classesDesugared</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The existing classes that desugaring rewrote: hosts whose call sites it rewrote, and nest hosts whose
+<code>NestMembers</code> gained the generated classes.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#classesStripped()" class="member-name-link">classesStripped</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#classesGenerated()" class="member-name-link">classesGenerated</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The classes written without their local-variable tables.</div>
+<div class="block">The classes that desugaring generated, each next to its host.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#classesUnchanged()" class="member-name-link">classesUnchanged</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#classesStripped()" class="member-name-link">classesStripped</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The classes the step left as they were: nothing to strip, a <code>module-info</code>, an attribute the JDK
-does not know, a rewrite that is not smaller, a class too large to read, or a jar left as it is
-(<a href="#kept()"><code>kept()</code></a>).</div>
+<div class="block">The classes written without their local-variable tables.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fallbacks()" class="member-name-link">fallbacks</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#classesUnchanged()" class="member-name-link">classesUnchanged</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The classes written as they were because the step failed on them or their rewrite verified worse than
-the original.</div>
+<div class="block">The classes the strip step left as they were: nothing to strip, a <code>module-info</code>, an attribute the
+JDK does not know, a rewrite that is not smaller, a class too large to read, or a jar left as it is
+(<a href="#kept()"><code>kept()</code></a>).</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#kept()" class="member-name-link">kept</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fallbacks()" class="member-name-link">fallbacks</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Why no class of the jar went through the step, such as <code>the jar is signed</code>; empty when they
-did.</div>
+<div class="block">The classes the strip step wrote without its change because it failed on them or their rewrite
+verified worse than the original.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#kept()" class="member-name-link">kept</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Why no class of the entry was rewritten, such as <code>the jar is signed</code>; empty when the steps ran
+over its classes.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#nestFallbacks()" class="member-name-link">nestFallbacks</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The nests that desugaring planned and then wrote as they were, because a class of the nest failed or
+verified worse.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#notes()" class="member-name-link">notes</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">One line per fallback, for the caller to log or write: tab-separated, the jar, the class, the step and
-the first error.</div>
+<div class="block">One line per fallback, for the caller to log or write: tab-separated, the entry, the class or
+<code>the nest of</code> its nest host, the step and the first error.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#path()" class="member-name-link">path</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The jar, as the request's class path gave it.</div>
+<div class="block">The entry, as the request's class path gave it.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sitesLeft()" class="member-name-link">sitesLeft</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The lambda call sites that desugaring left as <code>invokedynamic</code>, by reason, in a fixed order of the
+reasons, without the reasons that have none.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sitesRewritten()" class="member-name-link">sitesRewritten</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The lambda and method-reference call sites that desugaring rewrote.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
@@ -174,10 +215,10 @@ the first error.</div>
 <h3>path</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a></span>&nbsp;<span class="element-name">path</span>()</div>
-<div class="block">The jar, as the request's class path gave it.</div>
+<div class="block">The entry, as the request's class path gave it.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>the jar</dd>
+<dd>the jar or directory</dd>
 </dl>
 </div>
 </section>
@@ -190,7 +231,7 @@ the first error.</div>
 <div class="block">The classes written without their local-variable tables.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>the number of classes stripped</dd>
+<dd>the number of classes stripped; <code>0</code> when the entry was not named for stripping</dd>
 </dl>
 </div>
 </section>
@@ -200,12 +241,12 @@ the first error.</div>
 <h3>classesUnchanged</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">classesUnchanged</span>()</div>
-<div class="block">The classes the step left as they were: nothing to strip, a <code>module-info</code>, an attribute the JDK
-does not know, a rewrite that is not smaller, a class too large to read, or a jar left as it is
+<div class="block">The classes the strip step left as they were: nothing to strip, a <code>module-info</code>, an attribute the
+JDK does not know, a rewrite that is not smaller, a class too large to read, or a jar left as it is
 (<a href="#kept()"><code>kept()</code></a>).</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>the number of classes unchanged</dd>
+<dd>the number of classes unchanged; <code>0</code> when the entry was not named for stripping</dd>
 </dl>
 </div>
 </section>
@@ -215,11 +256,11 @@ does not know, a rewrite that is not smaller, a class too large to read, or a ja
 <h3>fallbacks</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">fallbacks</span>()</div>
-<div class="block">The classes written as they were because the step failed on them or their rewrite verified worse than
-the original. Each has a line in <a href="#notes()"><code>notes()</code></a>.</div>
+<div class="block">The classes the strip step wrote without its change because it failed on them or their rewrite
+verified worse than the original. Each has a line in <a href="#notes()"><code>notes()</code></a>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>the number of fallbacks</dd>
+<dd>the number of fallbacks; <code>0</code> when the entry was not named for stripping</dd>
 </dl>
 </div>
 </section>
@@ -229,10 +270,102 @@ the original. Each has a line in <a href="#notes()"><code>notes()</code></a>.</d
 <h3>bytesSaved</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">long</span>&nbsp;<span class="element-name">bytesSaved</span>()</div>
-<div class="block">How many bytes smaller the stripped classes became, uncompressed.</div>
+<div class="block">How many bytes smaller the stripped classes became, uncompressed. For a class that both steps rewrote,
+the difference includes desugaring's change.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the bytes saved</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="classesDesugared()">
+<h3>classesDesugared</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">classesDesugared</span>()</div>
+<div class="block">The existing classes that desugaring rewrote: hosts whose call sites it rewrote, and nest hosts whose
+<code>NestMembers</code> gained the generated classes. Micronaut Runner reports it in its
+<code>transforms.txt</code>.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the number of classes desugared</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="sitesRewritten()">
+<h3>sitesRewritten</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">sitesRewritten</span>()</div>
+<div class="block">The lambda and method-reference call sites that desugaring rewrote.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the number of sites rewritten</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="classesGenerated()">
+<h3>classesGenerated</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">classesGenerated</span>()</div>
+<div class="block">The classes that desugaring generated, each next to its host. Sites of one host that share their
+functional interface, interface method and captured types share a class, so there may be fewer
+classes than sites.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the number of classes generated</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="bridges()">
+<h3>bridges</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">bridges</span>()</div>
+<div class="block">The static synthetic bridge methods that desugaring added to hosts below class-file version 55, which
+have no nestmates, so that a generated class can reach a private lambda body. Micronaut Runner reports
+it in its <code>transforms.txt</code>.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the number of bridges</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="nestFallbacks()">
+<h3>nestFallbacks</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">nestFallbacks</span>()</div>
+<div class="block">The nests that desugaring planned and then wrote as they were, because a class of the nest failed or
+verified worse. Each has a line in <a href="#notes()"><code>notes()</code></a>, and its sites count under <code>nestFallback</code> in
+<a href="#sitesLeft()"><code>sitesLeft()</code></a>. Micronaut Runner reports it in its <code>transforms.txt</code>.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the number of nest fallbacks</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="sitesLeft()">
+<h3>sitesLeft</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</span>&nbsp;<span class="element-name">sitesLeft</span>()</div>
+<div class="block">The lambda call sites that desugaring left as <code>invokedynamic</code>, by reason, in a fixed order of the
+reasons, without the reasons that have none. The reasons are <code>altMetafactory</code>,
+<code>shadowedOrUncertain</code>, <code>multiRelease</code>, <code>signedJar</code>, <code>nest</code>, <code>superCall</code>,
+<code>ownerAccess</code>, <code>callerSensitive</code>, <code>unresolvedType</code>, <code>nameTaken</code>,
+<code>java8Interface</code>, <code>serialVersionUid</code>, <code>interfaceInit</code>, <code>shape</code> and
+<code>nestFallback</code>; they are for display, and a release may add one.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the sites left, by reason</dd>
 </dl>
 </div>
 </section>
@@ -242,11 +375,11 @@ the original. Each has a line in <a href="#notes()"><code>notes()</code></a>.</d
 <h3>kept</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">kept</span>()</div>
-<div class="block">Why no class of the jar went through the step, such as <code>the jar is signed</code>; empty when they
-did.</div>
+<div class="block">Why no class of the entry was rewritten, such as <code>the jar is signed</code>; empty when the steps ran
+over its classes.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>the reason, if the jar was left as it is</dd>
+<dd>the reason, if the entry was left as it is</dd>
 </dl>
 </div>
 </section>
@@ -256,8 +389,8 @@ did.</div>
 <h3>notes</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">notes</span>()</div>
-<div class="block">One line per fallback, for the caller to log or write: tab-separated, the jar, the class, the step and
-the first error.</div>
+<div class="block">One line per fallback, for the caller to log or write: tab-separated, the entry, the class or
+<code>the nest of</code> its nest host, the step and the first error.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the notes, never <code>null</code></dd>

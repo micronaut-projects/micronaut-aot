@@ -105,7 +105,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="ClassPathTransform.Result.Entry.html" class="type-name-link" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">What the strip step did to one jar.</div>
+<div class="block">What the steps did to one class path entry, a jar or a directory.</div>
 </div>
 </div>
 </section>
@@ -129,14 +129,17 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#entries()" class="member-name-link">entries</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">What the strip step did to each jar it was given, in class-path order: one element per class path entry
-named by <a href="ClassPathTransform.Request.Builder.html#stripLocalVariables(java.util.Collection)"><code>ClassPathTransform.Request.Builder.stripLocalVariables(Collection)</code></a>, whether it was rewritten or not.</div>
+<div class="block">What the steps did to each class path entry they ran over, in class-path order: one element per jar named
+by <a href="ClassPathTransform.Request.Builder.html#stripLocalVariables(java.util.Collection)"><code>ClassPathTransform.Request.Builder.stripLocalVariables(Collection)</code></a>, whether it was rewritten or not, and, when
+lambdas are desugared, one per entry that holds a lambda call site, whether it was rewritten or not.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#summary()" class="member-name-link">summary</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">One line per enabled step for the caller to log, such as <code>Stripped local-variable tables from 7102
-of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)</code>.</div>
+<div class="block">One line per enabled step for the caller to log, in step order, such as <code>Desugared 2960 lambda call
+sites into 1978 generated classes in 37 class path entries (815 classes rewritten, 360 bridges, 33 sites left
+as invokedynamic, 0 nest fallbacks)</code> and <code>Stripped local-variable tables from 7102 of 8428 dependency
+classes in 49 jars (4868965 bytes saved, 0 fallbacks)</code>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#warnings()" class="member-name-link">warnings</a>()</code></div>
@@ -180,8 +183,10 @@ with nothing rewritten keeps its own path, and so its bytes and its hash.</div>
 <h3>summary</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">summary</span>()</div>
-<div class="block">One line per enabled step for the caller to log, such as <code>Stripped local-variable tables from 7102
-of 8428 dependency classes in 49 jars (4868965 bytes saved, 0 fallbacks)</code>.</div>
+<div class="block">One line per enabled step for the caller to log, in step order, such as <code>Desugared 2960 lambda call
+sites into 1978 generated classes in 37 class path entries (815 classes rewritten, 360 bridges, 33 sites left
+as invokedynamic, 0 nest fallbacks)</code> and <code>Stripped local-variable tables from 7102 of 8428 dependency
+classes in 49 jars (4868965 bytes saved, 0 fallbacks)</code>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the summary</dd>
@@ -208,10 +213,12 @@ the strip step stand down. Usually empty, never <code>null</code>.</div>
 <h3>entries</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a>&gt;</span>&nbsp;<span class="element-name">entries</span>()</div>
-<div class="block">What the strip step did to each jar it was given, in class-path order: one element per class path entry
-named by <a href="ClassPathTransform.Request.Builder.html#stripLocalVariables(java.util.Collection)"><code>ClassPathTransform.Request.Builder.stripLocalVariables(Collection)</code></a>, whether it was rewritten or not. The
-counts are numbers, for the caller to write its report in its own format. Empty when no step ran, because
-a library on the class path reads local-variable tables.</div>
+<div class="block">What the steps did to each class path entry they ran over, in class-path order: one element per jar named
+by <a href="ClassPathTransform.Request.Builder.html#stripLocalVariables(java.util.Collection)"><code>ClassPathTransform.Request.Builder.stripLocalVariables(Collection)</code></a>, whether it was rewritten or not, and, when
+lambdas are desugared, one per entry that holds a lambda call site, whether it was rewritten or not. The
+counts are numbers, for the caller to write its report in its own format. A jar named for stripping is not
+listed for that when the strip step stood down, because a library on the class path reads local-variable
+tables.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the entries</dd>

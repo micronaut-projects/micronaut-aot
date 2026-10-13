@@ -79,14 +79,16 @@ loadScripts(document, 'script');</script>
 <div class="block">Rewrites the class files of an application's runtime class path at build time, for the build plugins to package
 the result instead of the original jars.
 
-<p>The only step today strips the local-variable tables of the third-party jars a caller names
-(<a href="ClassPathTransform.Request.Builder.html#stripLocalVariables(java.util.Collection)"><code>ClassPathTransform.Request.Builder.stripLocalVariables(Collection)</code></a>). Each class is parsed, rewritten and verified once,
-against a model of the whole class path, never against the build tool's own class path; a class whose rewrite
-verifies worse than the original, or on which the step fails, is written as it was. A jar with a rewritten class is
-copied whole, under its own file name, into a directory of its own below the request's output directory; every
-other class path entry keeps its own path, its bytes and its hash. The transform never loads a class of the class
-path, and it logs nothing: the <a href="ClassPathTransform.Result.html" title="class in io.micronaut.aot.bytecode"><code>ClassPathTransform.Result</code></a> carries a summary and warnings for the caller to log, and the counts
-of each jar as numbers, for the caller to report in its own format.</p>
+<p>It has two steps, which a request enables separately: desugaring the lambda and method-reference call sites of
+every entry (<a href="ClassPathTransform.Request.Builder.html#desugarLambdas(boolean)"><code>ClassPathTransform.Request.Builder.desugarLambdas(boolean)</code></a>), and stripping the local-variable tables of the
+third-party jars a caller names (<a href="ClassPathTransform.Request.Builder.html#stripLocalVariables(java.util.Collection)"><code>ClassPathTransform.Request.Builder.stripLocalVariables(Collection)</code></a>). They run in one pass, in
+that order: each class is parsed, rewritten and verified once, against a model of the whole class path, never
+against the build tool's own class path; a class whose rewrite verifies worse than the original, or on which a step
+fails, is written without that step, or as it was. An entry with a rewritten class, a jar or a directory, is copied
+whole, under its own file name, into a directory of its own below the request's output directory; every other class
+path entry keeps its own path, its bytes and its hash. The transform never loads a class of the class path, and it
+logs nothing: the <a href="ClassPathTransform.Result.html" title="class in io.micronaut.aot.bytecode"><code>ClassPathTransform.Result</code></a> carries a summary and warnings for the caller to log, and the counts of each entry
+as numbers, for the caller to report in its own format.</p>
 
 <p>The rewritten bytes depend on the JDK that runs the transform: they are reproducible with the same JDK build,
 whatever the parallelism.</p></div>
