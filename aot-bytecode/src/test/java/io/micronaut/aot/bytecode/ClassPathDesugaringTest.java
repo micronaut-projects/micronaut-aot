@@ -366,6 +366,41 @@ class ClassPathDesugaringTest {
     }
 
     /**
+     * A launcher may not take a package of the JDK from the JDK, as Micronaut Runner's loader does not for the modules
+     * that the application class loader defines, such as {@code jdk.compiler}'s: naming it foreign keeps its sites.
+     */
+    @Test
+    void aForeignPackageOfTheJdkKeepsItsSites() throws Exception {
+        Map<String, byte[]> classes = compile("foreign-jdk", Map.of("user/User.java", """
+                package user;
+                import java.util.concurrent.Callable;
+                import java.util.concurrent.ConcurrentHashMap;
+                import java.util.function.Function;
+                import java.util.function.Supplier;
+                public class User {
+                    public static Supplier<Object> owner() {
+                        return ConcurrentHashMap::new;
+                    }
+                    public static Callable<String> fn() {
+                        return () -> "fn";
+                    }
+                    public static Function<String, String> plain() {
+                        return String::trim;
+                    }
+                }
+                """));
+        Path jar = ClassFixtures.jar(temp.resolve("foreign-jdk/lib.jar"), classes);
+
+        ClassPathTransform.Result result = ClassPathTransform.run(ClassPathTransform.Request.builder()
+                .classPath(List.of(jar)).outputDirectory(temp.resolve("foreign-jdk/out")).desugarLambdas(true)
+                .foreignPackages(Set.of("java.util.concurrent")).build());
+
+        ClassPathTransform.Result.Entry entry = entry(result, jar);
+        assertEquals(Map.of(UNCERTAIN, 2), entry.sitesLeft(), "an owner and a functional interface in the package");
+        assertEquals(1, entry.sitesRewritten(), "the site outside it is rewritten");
+    }
+
+    /**
      * The numbers each entry reports for the scenario, as Micronaut Runner's {@code transforms.txt} lines report
      * them: the sites rewritten, the classes rewritten and generated, the bridges, the nest fallbacks and the sites
      * left by reason.

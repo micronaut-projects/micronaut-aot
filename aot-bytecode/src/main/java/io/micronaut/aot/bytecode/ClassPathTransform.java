@@ -382,7 +382,8 @@ public final class ClassPathTransform {
              * Packages, with their subpackages, whose classes the runtime may resolve from somewhere other than the
              * class path, for a launcher whose own loader defines these packages first, such as Micronaut Runner's.
              * Desugaring never rewrites a site whose host, nest host, implementation owner, functional interface or
-             * captured receiver is in one of them. Default: none.
+             * captured receiver is in one of them, even a package of the JDK, such as one of a module that the
+             * launcher's loader does not take from the JDK. Default: none.
              *
              * @param packages the packages, as dotted names such as {@code io.micronaut.runner}
              * @return this builder

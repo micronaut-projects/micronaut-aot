@@ -338,6 +338,14 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
                 && !(JdkClasses.owns(packageName) && model.holdsPackage(packageName));
     }
 
+    /**
+     * Whether the transform reads the classes of a package from the JDK that runs it: a module of the boot layer holds
+     * the package, and it is not a foreign package, whose classes the runtime may take from elsewhere.
+     */
+    private boolean jdk(String internalPackage) {
+        return JdkClasses.owns(internalPackage) && !foreign(internalPackage);
+    }
+
     private boolean foreign(String internalPackage) {
         for (String foreign : foreignPackages) {
             if (internalPackage.equals(foreign) || internalPackage.startsWith(foreign)
@@ -357,7 +365,7 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
     private int kindOf(String internalName) {
         String packageName = packageOf(internalName);
         int flags;
-        if (JdkClasses.owns(packageName)) {
+        if (jdk(packageName)) {
             if (model.holdsPackage(packageName)) {
                 return UNCERTAIN;
             }
@@ -405,7 +413,7 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
         String superName;
         List<String> interfaces;
         String packageName = packageOf(internalName);
-        if (JdkClasses.owns(packageName) && !model.holdsPackage(packageName)) {
+        if (jdk(packageName) && !model.holdsPackage(packageName)) {
             JdkClasses.JdkClass jdk = JdkClasses.find(internalName);
             if (jdk == null) {
                 return true;
@@ -467,7 +475,7 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
      */
     private List<String> quietlyInitialized(String internalName, String initializing, Set<String> checking) {
         String packageName = packageOf(internalName);
-        if (JdkClasses.owns(packageName) && !model.holdsPackage(packageName)) {
+        if (jdk(packageName) && !model.holdsPackage(packageName)) {
             JdkClasses.JdkClass jdk = JdkClasses.find(internalName);
             boolean loud = jdk == null
                     || jdk.method(CLASS_INIT, NO_ARGUMENTS) != null && jdk.declaresConcreteInstanceMethod();
@@ -1276,7 +1284,7 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
                         call.instance())) {
                     return Reason.SHAPE;
                 }
-                Object found = JdkClasses.owns(packageOf(owner)) ? jdkMember(owner, implName, implementation)
+                Object found = jdk(packageOf(owner)) ? jdkMember(owner, implName, implementation)
                         : classPathMember(owner, implName, implementation);
                 if (found instanceof Reason reason) {
                     return reason;
