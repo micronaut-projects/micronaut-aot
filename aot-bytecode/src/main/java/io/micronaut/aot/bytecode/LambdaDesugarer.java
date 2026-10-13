@@ -339,8 +339,8 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
     }
 
     /**
-     * Whether the transform reads the classes of a package from the JDK that runs it: a module of the boot layer holds
-     * the package, and it is not a foreign package, whose classes the runtime may take from elsewhere.
+     * Whether a package is the JDK's to this transform: a module of the boot layer holds it, and it is not a foreign
+     * package, whose classes the runtime may take from elsewhere. A package the class path also holds stays uncertain.
      */
     private boolean jdk(String internalPackage) {
         return JdkClasses.owns(internalPackage) && !foreign(internalPackage);
@@ -357,8 +357,9 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
     }
 
     /**
-     * What a name resolves to at run time, as far as the build can tell: for a package of the JDK that the class path
-     * does not hold, the JDK's class; otherwise the class path's copy, when the name is certain.
+     * What a name resolves to at run time, as far as the build can tell: for a package of the JDK that is not foreign
+     * and that the class path does not hold, the JDK's class; otherwise the class path's copy, when the name is
+     * certain.
      *
      * @return {@link #UNRESOLVED}, {@link #CLASS}, {@link #INTERFACE} or {@link #UNCERTAIN}
      */
@@ -1320,8 +1321,8 @@ final class LambdaDesugarer implements ClassTransformPipeline.Step {
             }
 
             /**
-             * The implementation, when its owner is in a package of the JDK, or why the generated class could not
-             * call it.
+             * The implementation, when its owner is in a package of the JDK that is not foreign, or why the generated
+             * class could not call it.
              *
              * @return the {@link Resolved} member, or the {@link Reason}
              */
