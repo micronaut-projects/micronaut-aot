@@ -9,6 +9,11 @@ corpus-micronaut-platform = "5.1.5"
 # inside LogbackPrecompiler's tested range, which the Logback of the Micronaut catalog is not yet. Widen that
 # range only by testing another version here.
 logback-precompiler = "1.5.37"
+# The micronaut-core that aot-service-index's tests run the generator against: the first one with ServiceIndexBuilder
+# (micronaut-core#13403). A snapshot until a micronaut-core release contains #13403, then that release.
+service-index-micronaut-core = "5.3.0-SNAPSHOT"
+# The SLF4J binding of the applications that aot-service-index's tests start, which prints micronaut-core's log lines.
+service-index-slf4j = "2.0.17"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
@@ -16,3 +21,5 @@ javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 micronaut-picocli = { module = "io.micronaut.picocli:micronaut-picocli-bom", version.ref = "micronaut-picocli" }
 corpus-micronaut-platform = { module = "io.micronaut.platform:micronaut-platform", version.ref = "corpus-micronaut-platform" }
 logback-precompiler-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-precompiler" }
+service-index-micronaut-core = { module = "io.micronaut:micronaut-core", version.ref = "service-index-micronaut-core" }
+service-index-slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "service-index-slf4j" }
