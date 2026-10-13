@@ -19,6 +19,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * What a {@code ServiceIndex} holds, as plain JDK collections, in the order it iterates.
@@ -31,14 +32,62 @@ record IndexData(Map<String, List<String>> micronautServices,
                  Map<String, List<String>> standardServices,
                  @Nullable List<Entry> classPath) {
 
+    private static final int REPORTED = 10;
+
     /**
-     * How a second index differs from this one, order included.
+     * How a second index differs from this one, order included: micronaut-core loads services in the order the
+     * index iterates them.
      *
      * @param actual the other index
      * @return the first difference, or {@code null} if there is none
      */
     @Nullable String difference(IndexData actual) {
-        throw new UnsupportedOperationException("not implemented");
+        String difference = difference("META-INF/micronaut", micronautServices, actual.micronautServices);
+        if (difference == null) {
+            difference = difference("META-INF/services", standardServices, actual.standardServices);
+        }
+        if (difference == null && !Objects.equals(classPath, actual.classPath)) {
+            difference = "the class path is " + abbreviated(actual.classPath) + " instead of " + abbreviated(classPath);
+        }
+        return difference;
+    }
+
+    /**
+     * @return the number of {@code META-INF/micronaut} entries
+     */
+    int micronautEntries() {
+        return micronautServices.values().stream().mapToInt(List::size).sum();
+    }
+
+    /**
+     * @return the number of {@code META-INF/services} names
+     */
+    int standardNames() {
+        return standardServices.values().stream().mapToInt(List::size).sum();
+    }
+
+    private static @Nullable String difference(String location, Map<String, List<String>> expected,
+                                               Map<String, List<String>> actual) {
+        List<String> expectedTypes = List.copyOf(expected.keySet());
+        List<String> actualTypes = List.copyOf(actual.keySet());
+        if (!expectedTypes.equals(actualTypes)) {
+            return "the " + location + " types are " + abbreviated(actualTypes) + " instead of "
+                    + abbreviated(expectedTypes);
+        }
+        for (String type : expectedTypes) {
+            if (!expected.get(type).equals(actual.get(type))) {
+                return "the names of " + location + "/" + type + " are " + abbreviated(actual.get(type))
+                        + " instead of " + abbreviated(expected.get(type));
+            }
+        }
+        return null;
+    }
+
+    private static String abbreviated(@Nullable List<?> list) {
+        if (list == null || list.size() <= REPORTED) {
+            return String.valueOf(list);
+        }
+        return list.subList(0, REPORTED).toString().replaceFirst("]$", ", and " + (list.size() - REPORTED) + " more]");
     }
 
     /**
@@ -48,5 +97,10 @@ record IndexData(Map<String, List<String>> micronautServices,
      * @param size its size in bytes, or a negative number to not compare it
      */
     record Entry(String name, long size) {
+
+        @Override
+        public String toString() {
+            return name + " (" + size + ")";
+        }
     }
 }

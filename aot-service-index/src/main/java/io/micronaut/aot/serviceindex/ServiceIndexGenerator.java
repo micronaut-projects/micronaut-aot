@@ -18,10 +18,14 @@ package io.micronaut.aot.serviceindex;
 import io.micronaut.core.annotation.Internal;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +46,13 @@ import java.util.TreeSet;
  * isolated class loader of the class path, whose parent is the platform class loader. The generated loader is
  * emitted with the ClassFile API, verified, and then run in that micronaut-core, which must rebuild exactly the
  * builder's index before anything is returned. No class of the application is loaded or initialised, and nothing of
- * the caller's class path is used.</p>
+ * the caller's class path is used. It needs micronaut-core 5.3.0 or later on the class path, and stands down with an
+ * older one.</p>
+ *
+ * <p>An index describes a class path that cannot change. So a caller runs it last, on the class path as it ships:
+ * after Micronaut AOT, the merging of service files, Shadow or Shade, and any other rewrite of the jars, and before a
+ * JDK AOT cache is trained. It writes {@link Result#entries()} into the holder, replacing entries of the same name,
+ * and deletes {@link Result#removals()}. It never runs it for run tasks, tests or native images.</p>
  *
  * @since 3.2.0
  */
@@ -86,7 +96,115 @@ public final class ServiceIndexGenerator {
      */
     public static Result generate(Request request) {
         Objects.requireNonNull(request, "request");
-        return Result.standDown("not implemented");
+        long start = System.nanoTime();
+        ClassLoader caller = Thread.currentThread().getContextClassLoader();
+        try {
+            return generate(request, start);
+        } catch (VirtualMachineError e) {
+            throw e;
+        } catch (StandDown e) {
+            return Result.standDown(e.getMessage());
+        } catch (Throwable e) {
+            return Result.failed("of an unexpected error", e);
+        } finally {
+            Thread.currentThread().setContextClassLoader(caller);
+        }
+    }
+
+    private static Result generate(Request request, long start) throws Throwable {
+        List<Path> files = request.files();
+        for (Path file : files) {
+            if (!Files.exists(file)) {
+                return Result.failed("the class path entry " + file + " does not exist", null);
+            }
+        }
+        ClassPathSurvey survey;
+        List<IndexData.Entry> classPath;
+        try {
+            survey = ClassPathSurvey.of(files, request.holder());
+            classPath = classPath(request);
+        } catch (IOException e) {
+            return Result.failed("the class path could not be read", e);
+        }
+        if (survey.standDown() != null) {
+            return Result.standDown(survey.standDown());
+        }
+        if (survey.failure() != null) {
+            return Result.failed(survey.failure(), null);
+        }
+        if (survey.nothingToIndex()) {
+            return Result.standDown("the class path has no META-INF/services file and no META-INF/micronaut entry");
+        }
+        try (CoreApi core = CoreApi.open(files)) {
+            // micronaut-core's lookups through the context class loader find neither the application nor the
+            // build tool: nothing of the application is loaded, let alone run.
+            Thread.currentThread().setContextClassLoader(ClassLoader.getPlatformClassLoader());
+            core.check();
+            IndexData built;
+            try {
+                built = core.build(survey.types(), classPath);
+            } catch (IOException e) {
+                return Result.failed("micronaut-core could not read the class path", e);
+            }
+            Map<String, byte[]> classes;
+            try {
+                classes = LoaderEmitter.emit(built, core.loader());
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                return Result.failed("the loader could not be emitted", e);
+            }
+            IndexData loaded;
+            try {
+                loaded = core.run(classes, LOADER_CLASS);
+            } catch (LinkageError e) {
+                // micronaut-core's API was checked: a loader that does not link is a bug of the generator.
+                return Result.failed("the generated loader does not link against micronaut-core", e);
+            }
+            String difference = built.difference(loaded);
+            if (difference != null) {
+                return Result.failed("the generated loader does not rebuild micronaut-core's index: " + difference,
+                        null);
+            }
+            Map<String, byte[]> entries = new LinkedHashMap<>(classes);
+            entries.put(LOADER_SERVICE, survey.loaderService());
+            SortedSet<String> removals = new TreeSet<>(survey.earlierOutput());
+            removals.removeAll(entries.keySet());
+            return Result.generated(message(built, start, survey.replacesAnIndex()), entries, removals);
+        }
+    }
+
+    /**
+     * The class path the index lists: each entry under its runtime name, with its size if it is a jar other than the
+     * holder, which the caller has yet to write.
+     */
+    private static @Nullable List<IndexData.Entry> classPath(Request request) throws IOException {
+        List<String> names = request.runtimeNames();
+        if (names == null) {
+            return null;
+        }
+        List<IndexData.Entry> entries = new ArrayList<>(names.size());
+        for (int i = 0; i < names.size(); i++) {
+            Path file = request.files().get(i);
+            boolean sized = i != request.holder() && !Files.isDirectory(file);
+            entries.add(new IndexData.Entry(names.get(i), sized ? Files.size(file) : -1));
+        }
+        return entries;
+    }
+
+    private static String message(IndexData index, long start, boolean replaces) {
+        List<IndexData.Entry> classPath = index.classPath();
+        String listing;
+        if (classPath == null) {
+            listing = "without a class path";
+        } else if (classPath.size() == 1) {
+            listing = "listing 1 class path entry";
+        } else {
+            listing = "listing " + classPath.size() + " class path entries";
+        }
+        return "Generated a service index of " + index.micronautEntries() + " META-INF/micronaut entries of "
+                + index.micronautServices().size() + " types and " + index.standardNames()
+                + " META-INF/services names of " + index.standardServices().size() + " types, " + listing + ", in "
+                + Duration.ofNanos(System.nanoTime() - start).toMillis() + " ms"
+                + (replaces ? " (it replaces an earlier index)" : "");
     }
 
     /**
@@ -310,8 +428,18 @@ public final class ServiceIndexGenerator {
             return removals;
         }
 
+        private static Result generated(String message, Map<String, byte[]> entries, SortedSet<String> removals) {
+            return new Result(Status.GENERATED, message, entries, removals);
+        }
+
         private static Result standDown(String reason) {
             return new Result(Status.STOOD_DOWN, "No service index was generated because " + reason
+                    + "; the application scans its class path for services at run time", Map.of(), new TreeSet<>());
+        }
+
+        private static Result failed(String reason, @Nullable Throwable cause) {
+            return new Result(Status.FAILED, "No service index was generated because " + reason
+                    + (cause == null ? "" : " (" + cause + ")")
                     + "; the application scans its class path for services at run time", Map.of(), new TreeSet<>());
         }
     }
