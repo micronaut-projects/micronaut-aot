@@ -1,5 +1,4 @@
 io.micronaut.aot
-io.micronaut.aot.bytecode
 io.micronaut.aot.cli
 io.micronaut.aot.core
 io.micronaut.aot.core.codegen
@@ -8,5 +7,4 @@ io.micronaut.aot.core.context
 io.micronaut.aot.core.report
 io.micronaut.aot.info
 io.micronaut.aot.internal
-io.micronaut.aot.logback
 io.micronaut.aot.std.sourcegen
