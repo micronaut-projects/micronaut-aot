@@ -23,6 +23,7 @@ import java.lang.management.ClassLoadingMXBean;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,10 +85,16 @@ class HygieneTest {
         Path jar = Fixtures.fatJar(temporary.resolve("app.jar"), Fixtures.application());
         UnixOperatingSystemMXBean system = (UnixOperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         Fixtures.generateFor(jar);
+        // A jar of its own for each call: the JDK shares one open file between the readers of a jar, so a call that
+        // leaves a jar open would not add a file to one that an earlier call left open.
+        List<Path> jars = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            jars.add(Files.copy(jar, temporary.resolve("app-" + i + ".jar")));
+        }
         long open = system.getOpenFileDescriptorCount();
 
-        for (int i = 0; i < 5; i++) {
-            assertEquals(ServiceIndexGenerator.Status.GENERATED, Fixtures.generateFor(jar).status());
+        for (Path copy : jars) {
+            assertEquals(ServiceIndexGenerator.Status.GENERATED, Fixtures.generateFor(copy).status());
         }
 
         assertTrue(system.getOpenFileDescriptorCount() <= open,
