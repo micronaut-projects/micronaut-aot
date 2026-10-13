@@ -14,6 +14,8 @@ logback-precompiler = "1.5.37"
 service-index-micronaut-core = "5.3.0-SNAPSHOT"
 # The SLF4J binding of the applications that aot-service-index's tests start, which prints micronaut-core's log lines.
 service-index-slf4j = "2.0.17"
+# a micronaut-core without ServiceIndexBuilder, for aot-service-index's stand-down test: keep it below 5.3.0
+service-index-legacy-micronaut-core = "5.2.15"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
@@ -23,3 +25,4 @@ corpus-micronaut-platform = { module = "io.micronaut.platform:micronaut-platform
 logback-precompiler-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-precompiler" }
 service-index-micronaut-core = { module = "io.micronaut:micronaut-core", version.ref = "service-index-micronaut-core" }
 service-index-slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "service-index-slf4j" }
+service-index-legacy-micronaut-core = { module = "io.micronaut:micronaut-core", version.ref = "service-index-legacy-micronaut-core" }

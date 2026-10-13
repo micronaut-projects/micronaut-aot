@@ -34,7 +34,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -55,7 +54,6 @@ final class ClassPathSurvey {
     private static final String MICRONAUT = "META-INF/micronaut/";
     private static final String LOADER_TYPE = LOADER_SERVICE.substring(SERVICES.length());
     private static final String LOADER_ENTRY = LOADER_CLASS.replace('.', '/') + ".class";
-    private static final Pattern VERSIONED_SERVICE = Pattern.compile("META-INF/versions/[0-9]+/META-INF/services/([^/]+)");
     private static final Pattern SIGNATURE = Pattern.compile("META-INF/(SIG-[^/]*|[^/]+\\.(SF|RSA|DSA|EC))");
 
     private final SortedSet<String> types;
@@ -302,13 +300,6 @@ final class ClassPathSurvey {
                 survey.file(SERVICES + file.getFileName());
             }
         }
-        for (Path version : children(root.resolve("META-INF/versions"))) {
-            for (Path file : children(version.resolve(SERVICES))) {
-                if (Files.isRegularFile(file)) {
-                    survey.file("META-INF/versions/" + version.getFileName() + "/" + SERVICES + file.getFileName());
-                }
-            }
-        }
         // As the scan of a directory does, every directory below META-INF/micronaut/ is a type.
         for (Path type : children(root.resolve(MICRONAUT))) {
             if (Files.isDirectory(type)) {
@@ -379,11 +370,6 @@ final class ClassPathSurvey {
                 generated.add(name);
             } else if (SIGNATURE.matcher(name).matches()) {
                 signed = true;
-            } else {
-                Matcher versioned = VERSIONED_SERVICE.matcher(name);
-                if (versioned.matches()) {
-                    type(versioned.group(1));
-                }
             }
         }
 

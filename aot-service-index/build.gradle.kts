@@ -67,7 +67,7 @@ dependencies {
     serviceIndexCore(libs.service.index.micronaut.core)
     serviceIndexLogging(libs.service.index.slf4j.simple)
     // A micronaut-core without ServiceIndexBuilder.
-    legacyCore(mn.micronaut.core)
+    legacyCore(libs.service.index.legacy.micronaut.core)
 
     testImplementation(platform(mnTest.boms.junit))
     testImplementation(mnTest.junit.jupiter.api)
@@ -109,8 +109,6 @@ tasks.named<Test>("test") {
     inputs.files(serviceIndexCore).withPropertyName("serviceIndexCore").withNormalizer(ClasspathNormalizer::class)
     inputs.files(serviceIndexLogging).withPropertyName("serviceIndexLogging").withNormalizer(ClasspathNormalizer::class)
     inputs.files(legacyCore).withPropertyName("legacyCore").withNormalizer(ClasspathNormalizer::class)
-    // The forked applications of the large-index tests need more than the default.
-    maxHeapSize = "1g"
     systemProperty("aot.serviceindex.build", "true")
     doFirst {
         systemProperty("aot.serviceindex.pom", publishedPom.get().absolutePath)

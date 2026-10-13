@@ -38,7 +38,7 @@ import java.util.TreeSet;
  * registers a {@code ServiceIndex} of the application's class path, so that service loading at run time does not
  * scan {@code META-INF/services} and {@code META-INF/micronaut}.
  *
- * <p>It is the engine the Micronaut Gradle and Maven plugins and Micronaut Runner share: they call
+ * <p>It is meant for the Micronaut Gradle and Maven plugins and Micronaut Runner, which call
  * {@link #generate(Request)} in-process with plain paths, once the class path is final, and get class files back. It
  * is internal to them, not an API for applications or other build tools, and may change in any release.</p>
  *
@@ -363,7 +363,10 @@ public final class ServiceIndexGenerator {
 
             /**
              * The entry of the class path that the caller writes the {@link Result} into: the application's jar, or
-             * its class directory. Required.
+             * its class directory. A class directory must be a copy that only the packaged application uses, never
+             * {@code build/classes} or {@code target/classes}, which run tasks, tests and IDEs share: micronaut-core
+             * does not compare the content of a directory, so a bean compiled after this step would not be found.
+             * Required.
              *
              * @param entry one of the {@linkplain #entry(Path) entries}
              * @return this builder
@@ -475,8 +478,13 @@ public final class ServiceIndexGenerator {
         }
 
         private static Result failed(String reason, @Nullable Throwable cause) {
-            return new Result(Status.FAILED, "No service index was generated because " + reason
-                    + (cause == null ? "" : " (" + cause + ")")
+            String detail = "";
+            if (cause != null) {
+                // where it was thrown, for a failure that is a bug
+                StackTraceElement[] trace = cause.getStackTrace();
+                detail = " (" + cause + (trace.length > 0 ? " at " + trace[0] : "") + ")";
+            }
+            return new Result(Status.FAILED, "No service index was generated because " + reason + detail
                     + "; the application scans its class path for services at run time", Map.of(), new TreeSet<>());
         }
     }

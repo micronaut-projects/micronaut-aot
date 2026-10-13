@@ -124,7 +124,10 @@ class StandDownTest {
         assertTrue(result.message().contains(api.member), result::message);
     }
 
-    /** micronaut-core fails while it builds the index: the call returns a failure, and throws nothing at the build. */
+    /**
+     * micronaut-core fails while it builds the index: the call returns a failure that says where, and throws nothing
+     * at the build.
+     */
     @ParameterizedTest
     @ValueSource(strings = {"java.lang.IllegalStateException", "java.lang.AssertionError"})
     void aMicronautCoreThatFails(String failure) throws Exception {
@@ -141,6 +144,9 @@ class StandDownTest {
                                         .athrow())))));
 
         assertNothing(FAILED, "of an unexpected error (" + failure, result);
+        // where it was thrown, which a build tool logs
+        assertTrue(result.message().contains(failure + " at ")
+                && result.message().contains("io.micronaut.core.io.service.ServiceIndexBuilder.build("), result::message);
     }
 
     /** The generated loader is run in micronaut-core, and an index that differs from the builder's is not returned. */
