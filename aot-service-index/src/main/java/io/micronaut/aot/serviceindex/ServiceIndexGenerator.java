@@ -51,8 +51,9 @@ import java.util.TreeSet;
  *
  * <p>An index describes a class path that cannot change. So a caller runs it last, on the class path as it ships:
  * after Micronaut AOT, the merging of service files, Shadow or Shade, and any other rewrite of the jars, and before a
- * JDK AOT cache is trained. It writes {@link Result#entries()} into the holder, replacing entries of the same name,
- * and deletes {@link Result#removals()}. It never runs it for run tasks, tests or native images.</p>
+ * JDK AOT cache is trained. Whatever the {@link Result#status()}, the caller writes {@link Result#entries()} into the
+ * holder, replacing entries of the same name, and deletes {@link Result#removals()}: a call that generates nothing
+ * may still remove an earlier index from the holder. Callers do not run it for run tasks, tests or native images.</p>
  *
  * @since 3.2.0
  */
@@ -98,34 +99,32 @@ public final class ServiceIndexGenerator {
         Objects.requireNonNull(request, "request");
         long start = System.nanoTime();
         ClassLoader caller = Thread.currentThread().getContextClassLoader();
+        ClassPathSurvey survey = null;
         try {
-            return generate(request, start);
+            for (Path file : request.files()) {
+                if (!Files.exists(file)) {
+                    return Result.failed("the class path entry " + file + " does not exist", null);
+                }
+            }
+            try {
+                survey = ClassPathSurvey.of(request.files(), request.holder());
+            } catch (IOException e) {
+                return Result.failed("the class path could not be read", e);
+            }
+            Result result = generate(request, survey, start);
+            return result.status() == Status.GENERATED ? result : removingAnEarlierIndex(result, survey);
         } catch (VirtualMachineError e) {
             throw e;
         } catch (StandDown e) {
-            return Result.standDown(e.getMessage());
+            return removingAnEarlierIndex(Result.standDown(e.getMessage()), survey);
         } catch (Throwable e) {
-            return Result.failed("of an unexpected error", e);
+            return removingAnEarlierIndex(Result.failed("of an unexpected error", e), survey);
         } finally {
             Thread.currentThread().setContextClassLoader(caller);
         }
     }
 
-    private static Result generate(Request request, long start) throws Throwable {
-        List<Path> files = request.files();
-        for (Path file : files) {
-            if (!Files.exists(file)) {
-                return Result.failed("the class path entry " + file + " does not exist", null);
-            }
-        }
-        ClassPathSurvey survey;
-        List<IndexData.Entry> classPath;
-        try {
-            survey = ClassPathSurvey.of(files, request.holder());
-            classPath = classPath(request);
-        } catch (IOException e) {
-            return Result.failed("the class path could not be read", e);
-        }
+    private static Result generate(Request request, ClassPathSurvey survey, long start) throws Throwable {
         if (survey.standDown() != null) {
             return Result.standDown(survey.standDown());
         }
@@ -135,7 +134,13 @@ public final class ServiceIndexGenerator {
         if (survey.nothingToIndex()) {
             return Result.standDown("the class path has no META-INF/services file and no META-INF/micronaut entry");
         }
-        try (CoreApi core = CoreApi.open(files)) {
+        List<IndexData.Entry> classPath;
+        try {
+            classPath = classPath(request);
+        } catch (IOException e) {
+            return Result.failed("the class path could not be read", e);
+        }
+        try (CoreApi core = CoreApi.open(request.files())) {
             // micronaut-core's lookups through the context class loader find neither the application nor the
             // build tool: nothing of the application is loaded, let alone run.
             Thread.currentThread().setContextClassLoader(ClassLoader.getPlatformClassLoader());
@@ -170,6 +175,28 @@ public final class ServiceIndexGenerator {
             removals.removeAll(entries.keySet());
             return Result.generated(message(built, start, survey.replacesAnIndex()), entries, removals);
         }
+    }
+
+    /**
+     * Completes a result that generated nothing so that it removes an earlier index from the holder. Left there, that
+     * index would be used although it may no longer describe the class path, and its loader would fail the start of
+     * an application whose micronaut-core has no service index.
+     */
+    private static Result removingAnEarlierIndex(Result result, @Nullable ClassPathSurvey survey) {
+        if (survey == null || (survey.earlierOutput().isEmpty() && !survey.registersAnIndex())) {
+            return result;
+        }
+        Map<String, byte[]> entries = new LinkedHashMap<>();
+        SortedSet<String> removals = new TreeSet<>(survey.earlierOutput());
+        if (survey.registersAnIndex()) {
+            byte[] loaderService = survey.cleanedLoaderService();
+            if (loaderService.length == 0) {
+                removals.add(LOADER_SERVICE);
+            } else {
+                entries.put(LOADER_SERVICE, loaderService);
+            }
+        }
+        return new Result(result.status(), result.message(), entries, removals);
     }
 
     /**
@@ -367,7 +394,8 @@ public final class ServiceIndexGenerator {
 
     /**
      * The outcome of one generation: its {@link #status()}, one {@link #message()} for the caller to log, the
-     * {@link #entries()} to write into the holder and the {@link #removals()} to delete from it.
+     * {@link #entries()} to write into the holder and the {@link #removals()} to delete from it, which the caller
+     * applies whatever the status.
      *
      * @since 3.2.0
      */
@@ -409,9 +437,14 @@ public final class ServiceIndexGenerator {
          * The entries to write into the holder, by entry name, in order: the classes of the package
          * {@code io.micronaut.aot.serviceindex.generated}, and the whole new
          * {@code META-INF/services/io.micronaut.core.optim.StaticOptimizations$Loader} file, which names the generated
-         * loader first and then keeps the lines the holder had. Each replaces an entry of the same name.
+         * loader first, then the lines the holder had, without an earlier index loader's. Each replaces an entry of
+         * the same name.
          *
-         * @return the entries, unmodifiable; empty unless {@link #status()} is {@link Status#GENERATED}
+         * <p>They are also non-empty for {@link Status#STOOD_DOWN} or {@link Status#FAILED} when those remove an
+         * earlier index from the holder: then they hold the loader file without the index loader. Callers always
+         * apply them.</p>
+         *
+         * @return the entries, unmodifiable
          */
         public Map<String, byte[]> entries() {
             return entries;
@@ -422,7 +455,11 @@ public final class ServiceIndexGenerator {
          * {@code io.micronaut.aot.serviceindex.generated} and {@link #entries()} does not replace. A JVM can register
          * one index only, so the earlier one has to go.
          *
-         * @return the entry names, unmodifiable, sorted; empty unless {@link #status()} is {@link Status#GENERATED}
+         * <p>They are also non-empty for {@link Status#STOOD_DOWN} or {@link Status#FAILED} when those remove an
+         * earlier index from the holder, which then includes the loader file if it names no other loader. Callers
+         * always apply them.</p>
+         *
+         * @return the entry names, unmodifiable, sorted
          */
         public Set<String> removals() {
             return removals;

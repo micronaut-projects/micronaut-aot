@@ -339,9 +339,14 @@ final class Fixtures {
 
     /** A fat jar of the libraries, the probe as its main class, and the application's own entries. */
     static Path fatJar(Path file, Content application) throws IOException {
+        return fatJar(file, application, libraries());
+    }
+
+    /** A fat jar of these libraries, the probe as its main class, and the application's own entries. */
+    static Path fatJar(Path file, Content application, List<Path> libraries) throws IOException {
         Content fat = content().manifest(Map.of("Main-Class", PROBE_CLASS)).probe();
         fat.entries.putAll(application.entries);
-        return jar(file, fat.merge(libraries()));
+        return jar(file, fat.merge(libraries));
     }
 
     // ------------------------------------------------------------------ generation
@@ -355,6 +360,11 @@ final class Fixtures {
     /** Writes a generated result into a jar or a directory, as a caller does. */
     static void apply(Path holder, ServiceIndexGenerator.Result result) throws IOException {
         assertEquals(ServiceIndexGenerator.Status.GENERATED, result.status(), result.message());
+        write(holder, result);
+    }
+
+    /** Writes a result of any status into a jar or a directory, as a caller does. */
+    static void write(Path holder, ServiceIndexGenerator.Result result) throws IOException {
         if (Files.isDirectory(holder)) {
             for (String removal : result.removals()) {
                 Files.delete(holder.resolve(removal));

@@ -15,10 +15,12 @@
  */
 package io.micronaut.aot.serviceindex;
 
+import io.micronaut.aot.serviceindex.Fixtures.Run;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.classfile.AccessFlags;
 import java.lang.classfile.ClassFile;
@@ -27,12 +29,18 @@ import java.lang.classfile.MethodModel;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
+import static io.micronaut.aot.serviceindex.Fixtures.BEAN_DEFINITIONS;
+import static io.micronaut.aot.serviceindex.ServiceIndexGenerator.LOADER_SERVICE;
 import static io.micronaut.aot.serviceindex.ServiceIndexGenerator.Status.FAILED;
 import static io.micronaut.aot.serviceindex.ServiceIndexGenerator.Status.GENERATED;
 import static io.micronaut.aot.serviceindex.ServiceIndexGenerator.Status.STOOD_DOWN;
@@ -198,6 +206,58 @@ class StandDownTest {
         ServiceIndexGenerator.Result result = generate(holder, with(application));
 
         assertEquals(GENERATED, result.status(), result.message());
+    }
+
+    /**
+     * An earlier index in the holder that a call does not replace is removed, and the other loaders are kept. Here,
+     * its loader fails the start of the application, whose micronaut-core has no service index.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void anEarlierIndexIsRemovedWhenStandingDown(boolean otherLoader) throws Exception {
+        Fixtures.Content application = Fixtures.application();
+        // micronaut-core 5.2's own scan fails the probe's lookups of META-INF/services, which pass no condition.
+        List<String> lookups = new ArrayList<>(List.of("micronaut:" + BEAN_DEFINITIONS));
+        if (otherLoader) {
+            application.put(LOADER_SERVICE, "fixture.OtherLoader\n")
+                    .type("fixture.OtherLoader", Fixtures.loaderClass("fixture.OtherLoader", "fixture.One"))
+                    .type("fixture.One", Fixtures.emptyClass("fixture.One"));
+            lookups.add("optimization:fixture.One");
+        }
+        Path jar = Fixtures.fatJar(temporary.resolve("app.jar"), application);
+        ServiceIndexGenerator.Result earlier = Fixtures.generateFor(jar);
+        assertEquals(GENERATED, earlier.status(), earlier.message());
+        // The application, packaged again on a micronaut-core without the builder into a jar that still holds the
+        // earlier index.
+        List<Path> libraries = new ArrayList<>(Fixtures.libraries());
+        libraries.set(libraries.indexOf(Fixtures.coreJar()), Fixtures.legacyCore());
+        Fixtures.Content repackaged = Fixtures.contentOf(application.entries);
+        repackaged.entries.putAll(earlier.entries());
+        Fixtures.fatJar(jar, repackaged, libraries);
+        Run stale = Fixtures.javaJar(jar, List.of(), lookups);
+        assertTrue(stale.exit() != 0 && stale.err().contains("NoClassDefFoundError"), stale::toString);
+
+        ServiceIndexGenerator.Result result = Fixtures.generateFor(jar);
+
+        assertEquals(STOOD_DOWN, result.status(), result.message());
+        assertTrue(result.message().contains("has no ServiceIndexBuilder"), result::message);
+        SortedSet<String> classes = new TreeSet<>(earlier.entries().keySet());
+        classes.remove(LOADER_SERVICE);
+        if (otherLoader) {
+            assertEquals(classes, result.removals());
+            assertEquals(Set.of(LOADER_SERVICE), result.entries().keySet());
+            assertEquals("fixture.OtherLoader\n",
+                    new String(result.entries().get(LOADER_SERVICE), StandardCharsets.UTF_8));
+        } else {
+            classes.add(LOADER_SERVICE);
+            assertEquals(classes, result.removals());
+            assertEquals(Map.of(), result.entries());
+        }
+        Fixtures.write(jar, result);
+        Run run = Fixtures.javaJar(jar, List.of(), lookups);
+        assertEquals("micronaut:" + BEAN_DEFINITIONS + " [fixture.$Hello$Definition$Reference,"
+                + " fixture.$Hi$Definition$Reference]\n" + (otherLoader ? "optimization:fixture.One [true]\n" : ""),
+                run.lookups());
     }
 
     private static ClassTransform replacing(String name, MethodTypeDesc type) {

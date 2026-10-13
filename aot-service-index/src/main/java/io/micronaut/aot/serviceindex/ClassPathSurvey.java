@@ -134,8 +134,14 @@ final class ClassPathSurvey {
      * @return whether the holder already holds or registers an index loader
      */
     boolean replacesAnIndex() {
-        return earlierOutput.contains(LOADER_ENTRY)
-                || (loaderService != null && loaderService.lines().anyMatch(line -> LOADER_CLASS.equals(provider(line))));
+        return earlierOutput.contains(LOADER_ENTRY) || registersAnIndex();
+    }
+
+    /**
+     * @return whether the holder's loader service file names an index loader
+     */
+    boolean registersAnIndex() {
+        return loaderService != null && loaderService.lines().anyMatch(line -> LOADER_CLASS.equals(provider(line)));
     }
 
     /**
@@ -145,12 +151,29 @@ final class ClassPathSurvey {
      * @return the file's content
      */
     byte[] loaderService() {
-        StringBuilder text = new StringBuilder(LOADER_CLASS).append('\n');
+        return (LOADER_CLASS + "\n" + otherLoaderLines()).getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * The holder's loader service file once an earlier index is removed from it: {@link #loaderService()} without
+     * the generated loader.
+     *
+     * @return the file's content, empty if it names no other loader
+     */
+    byte[] cleanedLoaderService() {
+        String lines = otherLoaderLines();
+        return lines.lines().allMatch(line -> provider(line).isEmpty()) ? new byte[0]
+                : lines.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /** Every line of the holder's loader service file, as it was, except an earlier index loader's. */
+    private String otherLoaderLines() {
+        StringBuilder text = new StringBuilder();
         if (loaderService != null) {
             loaderService.lines().filter(line -> !LOADER_CLASS.equals(provider(line)))
                     .forEach(line -> text.append(line).append('\n'));
         }
-        return text.toString().getBytes(StandardCharsets.UTF_8);
+        return text.toString();
     }
 
     /**
