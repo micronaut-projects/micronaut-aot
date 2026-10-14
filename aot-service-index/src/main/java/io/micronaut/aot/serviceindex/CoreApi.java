@@ -49,7 +49,7 @@ final class CoreApi implements Closeable {
     private static final String BUILDER = SERVICE_PACKAGE + "ServiceIndexBuilder";
     private static final String INDEX = SERVICE_PACKAGE + "ServiceIndex";
     private static final String ENTRY = INDEX + "$ClassPathEntry";
-    private static final String LOADER = "io.micronaut.core.optim.StaticOptimizations$Loader";
+    private static final String STATIC_OPTIMIZATIONS_LOADER = "io.micronaut.core.optim.StaticOptimizations$Loader";
     /** A class that every micronaut-core has. */
     private static final String CORE_CLASS = "io/micronaut/core/io/service/SoftServiceLoader.class";
     /** micronaut-core's own version file, which a fat jar keeps, unlike the manifest of micronaut-core's jar. */
@@ -133,9 +133,9 @@ final class CoreApi implements Closeable {
             member = "ServiceIndex$ClassPathEntry.size()";
             MethodHandle entrySize = lookup.findVirtual(entry, "size", MethodType.methodType(long.class));
             member = "StaticOptimizations$Loader.load()";
-            Class<?> loaderType = Class.forName(LOADER, false, loader);
+            Class<?> loaderType = Class.forName(STATIC_OPTIMIZATIONS_LOADER, false, loader);
             if (!loaderType.isInterface()) {
-                throw new NoSuchMethodException(LOADER + " is not an interface");
+                throw new NoSuchMethodException(STATIC_OPTIMIZATIONS_LOADER + " is not an interface");
             }
             MethodHandle load = lookup.findVirtual(loaderType, "load", MethodType.methodType(Object.class));
             api = new Api(index, build, micronautServices, standardServices, classPath, entryName, entrySize, load);

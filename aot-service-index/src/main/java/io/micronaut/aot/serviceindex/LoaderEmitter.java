@@ -112,6 +112,8 @@ final class LoaderEmitter {
     private static final String PACKAGE = ServiceIndexGenerator.GENERATED_PACKAGE + ".";
     private static final ClassDesc LOADER = ClassDesc.of(ServiceIndexGenerator.LOADER_CLASS);
     private static final ClassDesc NAMES = ClassDesc.of(PACKAGE + "ServiceIndexNames");
+    /** The array field of {@code ServiceIndexNames}. */
+    private static final String NAMES_FIELD = "names";
     private static final String PART = PACKAGE + "ServiceIndexPart";
 
     private static final ClassDesc STATIC_OPTIMIZATIONS_LOADER =
@@ -233,23 +235,23 @@ final class LoaderEmitter {
         builder.withVersion(ClassFile.JAVA_25_VERSION, 0)
                 .withFlags(ClassFile.ACC_FINAL | ClassFile.ACC_SUPER)
                 .withSuperclass(CD_ABSTRACT_SET)
-                .withField("names", STRINGS, ClassFile.ACC_PRIVATE | ClassFile.ACC_FINAL)
+                .withField(NAMES_FIELD, STRINGS, ClassFile.ACC_PRIVATE | ClassFile.ACC_FINAL)
                 .withMethodBody(INIT_NAME, MethodTypeDesc.of(CD_void, STRINGS), 0, code -> code
                         .aload(0)
                         .invokespecial(CD_ABSTRACT_SET, INIT_NAME, MTD_void)
                         .aload(0)
                         .aload(1)
-                        .putfield(NAMES, "names", STRINGS)
+                        .putfield(NAMES, NAMES_FIELD, STRINGS)
                         .return_())
                 .withMethodBody("iterator", MethodTypeDesc.of(CD_ITERATOR), ClassFile.ACC_PUBLIC, code -> code
                         .aload(0)
-                        .getfield(NAMES, "names", STRINGS)
+                        .getfield(NAMES, NAMES_FIELD, STRINGS)
                         .invokestatic(CD_ARRAYS, "asList", asList)
                         .invokeinterface(CD_List, "iterator", MethodTypeDesc.of(CD_ITERATOR))
                         .areturn())
                 .withMethodBody("size", MethodTypeDesc.of(CD_int), ClassFile.ACC_PUBLIC, code -> code
                         .aload(0)
-                        .getfield(NAMES, "names", STRINGS)
+                        .getfield(NAMES, NAMES_FIELD, STRINGS)
                         .arraylength()
                         .ireturn());
     }
@@ -261,12 +263,7 @@ final class LoaderEmitter {
                 .withFlags(ClassFile.ACC_FINAL | ClassFile.ACC_SUPER)
                 .withSuperclass(CD_Object);
         if (!part.loads.isEmpty()) {
-            builder.withMethodBody("load", MAPS, ClassFile.ACC_STATIC, code -> {
-                for (int i = 0; i < part.loads.size(); i++) {
-                    code.aload(0).aload(1).invokestatic(part.type, "load" + i, MAPS);
-                }
-                code.return_();
-            });
+            builder.withMethodBody("load", MAPS, ClassFile.ACC_STATIC, code -> loads(code, part));
         }
         for (int i = 0; i < part.loads.size(); i++) {
             List<Put> puts = part.loads.get(i);
@@ -279,32 +276,47 @@ final class LoaderEmitter {
         }
         for (Fill fill : part.fills) {
             builder.withMethodBody(fill.method, MethodTypeDesc.of(CD_void, fill.arrayType()), ClassFile.ACC_STATIC,
-                    code -> {
-                        List<?> elements = fill.elements;
-                        for (int i = 0; i < elements.size(); i++) {
-                            code.aload(0).loadConstant(fill.from + i);
-                            if (elements.get(i) instanceof IndexData.Entry entry) {
-                                entry(code, entry);
-                            } else {
-                                code.loadConstant((String) elements.get(i));
-                            }
-                            code.aastore();
-                        }
-                        code.return_();
-                    });
+                    code -> fill(code, fill));
         }
         if (part.classPath != null) {
             List<Fill> fills = part.classPath;
-            builder.withMethodBody("classPath", MethodTypeDesc.of(CD_List), ClassFile.ACC_STATIC, code -> {
-                code.loadConstant(fills.stream().mapToInt(fill -> fill.elements.size()).sum())
-                        .anewarray(CLASS_PATH_ENTRY);
-                for (Fill fill : fills) {
-                    code.dup().invokestatic(fill.owner, fill.method, MethodTypeDesc.of(CD_void, ENTRIES));
-                }
-                code.invokestatic(CD_List, "of", MethodTypeDesc.of(CD_List, CD_Object.arrayType()), true)
-                        .areturn();
-            });
+            builder.withMethodBody("classPath", MethodTypeDesc.of(CD_List), ClassFile.ACC_STATIC,
+                    code -> classPath(code, fills));
         }
+    }
+
+    /** {@code load(micronaut, standard)}: calls each {@code loadN} of the part. */
+    private static void loads(CodeBuilder code, Part part) {
+        for (int i = 0; i < part.loads.size(); i++) {
+            code.aload(0).aload(1).invokestatic(part.type, "load" + i, MAPS);
+        }
+        code.return_();
+    }
+
+    /** {@code fillN(array)}: stores a slice of names or class path entries into the array. */
+    private static void fill(CodeBuilder code, Fill fill) {
+        List<?> elements = fill.elements;
+        for (int i = 0; i < elements.size(); i++) {
+            code.aload(0).loadConstant(fill.from + i);
+            if (elements.get(i) instanceof IndexData.Entry entry) {
+                entry(code, entry);
+            } else {
+                code.loadConstant((String) elements.get(i));
+            }
+            code.aastore();
+        }
+        code.return_();
+    }
+
+    /** {@code classPath()}: an array of the class path entries, filled by the slices, as a list. */
+    private static void classPath(CodeBuilder code, List<Fill> fills) {
+        code.loadConstant(fills.stream().mapToInt(fill -> fill.elements.size()).sum())
+                .anewarray(CLASS_PATH_ENTRY);
+        for (Fill fill : fills) {
+            code.dup().invokestatic(fill.owner, fill.method, MethodTypeDesc.of(CD_void, ENTRIES));
+        }
+        code.invokestatic(CD_List, "of", MethodTypeDesc.of(CD_List, CD_Object.arrayType()), true)
+                .areturn();
     }
 
     /** {@code map.put(type, wrapped names)}: the micronaut map is the first parameter, the standard one the second. */

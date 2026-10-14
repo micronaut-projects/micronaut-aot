@@ -193,13 +193,21 @@ final class ClassPathSurvey {
         if (entries.get(holder).signed) {
             return name(files.get(holder)) + " is signed, and the entries of the index would break its signature";
         }
+        String outside = manifestClassPathOutside(files, entries);
+        return outside != null ? outside : otherIndex(files, entries, holder);
+    }
+
+    /**
+     * The isolated class loader follows a manifest Class-Path as the JVM does, so a file it names on this machine
+     * would be indexed although it is not the class path the application runs with.
+     */
+    private static @Nullable String manifestClassPathOutside(List<Path> files, List<EntrySurvey> entries)
+            throws IOException {
         Set<Path> classPath = new HashSet<>();
         for (Path file : files) {
             classPath.add(file.toRealPath());
         }
         for (int i = 0; i < entries.size(); i++) {
-            // The isolated class loader follows a manifest Class-Path as the JVM does, so a file it names on this
-            // machine would be indexed although it is not the class path the application runs with.
             for (String name : entries.get(i).manifestClassPath) {
                 Path named = resolve(files.get(i), name);
                 if (named != null && Files.exists(named) && !classPath.contains(named.toRealPath())) {
@@ -208,6 +216,11 @@ final class ClassPathSurvey {
                 }
             }
         }
+        return null;
+    }
+
+    /** An index loader that an entry other than the holder holds or registers: a JVM can register one index. */
+    private static @Nullable String otherIndex(List<Path> files, List<EntrySurvey> entries, int holder) {
         for (int i = 0; i < entries.size(); i++) {
             if (i != holder) {
                 EntrySurvey entry = entries.get(i);

@@ -47,7 +47,7 @@ record IndexData(Map<String, List<String>> micronautServices,
             difference = difference("META-INF/services", standardServices, actual.standardServices);
         }
         if (difference == null && !Objects.equals(classPath, actual.classPath)) {
-            difference = "the class path is " + abbreviated(actual.classPath) + " instead of " + abbreviated(classPath);
+            difference = mismatch("the class path is ", actual.classPath, classPath);
         }
         return difference;
     }
@@ -71,16 +71,19 @@ record IndexData(Map<String, List<String>> micronautServices,
         List<String> expectedTypes = List.copyOf(expected.keySet());
         List<String> actualTypes = List.copyOf(actual.keySet());
         if (!expectedTypes.equals(actualTypes)) {
-            return "the " + location + " types are " + abbreviated(actualTypes) + " instead of "
-                    + abbreviated(expectedTypes);
+            return mismatch("the " + location + " types are ", actualTypes, expectedTypes);
         }
         for (String type : expectedTypes) {
             if (!expected.get(type).equals(actual.get(type))) {
-                return "the names of " + location + "/" + type + " are " + abbreviated(actual.get(type))
-                        + " instead of " + abbreviated(expected.get(type));
+                return mismatch("the names of " + location + "/" + type + " are ", actual.get(type),
+                        expected.get(type));
             }
         }
         return null;
+    }
+
+    private static String mismatch(String subject, @Nullable List<?> actual, @Nullable List<?> expected) {
+        return subject + abbreviated(actual) + " instead of " + abbreviated(expected);
     }
 
     private static String abbreviated(@Nullable List<?> list) {
