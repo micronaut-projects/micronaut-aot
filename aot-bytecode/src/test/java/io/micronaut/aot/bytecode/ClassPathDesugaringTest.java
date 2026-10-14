@@ -366,6 +366,64 @@ class ClassPathDesugaringTest {
     }
 
     /**
+     * A launcher may not take a package of the JDK from the JDK, as Micronaut Runner's loader does not for the modules
+     * that the application class loader defines, such as {@code jdk.compiler}'s: naming it foreign keeps the sites that
+     * depend on it, through the owner, the functional interface, a superinterface or an interface initializer.
+     */
+    @Test
+    void aForeignPackageOfTheJdkKeepsItsSites() throws Exception {
+        Map<String, byte[]> classes = compile("foreign-jdk", Map.of("user/User.java", """
+                package user;
+                import java.util.concurrent.Callable;
+                import java.util.concurrent.ConcurrentHashMap;
+                import java.util.function.Function;
+                import java.util.function.Supplier;
+                public class User {
+                    public static Supplier<Object> owner() {
+                        return ConcurrentHashMap::new;
+                    }
+                    public static Callable<String> fn() {
+                        return () -> "fn";
+                    }
+                    public static Task task() {
+                        return () -> "task";
+                    }
+                    public static Quiet quiet() {
+                        return () -> "quiet";
+                    }
+                    public static Function<String, String> plain() {
+                        return String::trim;
+                    }
+                }
+                """, "user/Task.java", """
+                package user;
+                public interface Task extends java.util.concurrent.Callable<String> {
+                }
+                """, "user/Quiet.java", """
+                package user;
+                public interface Quiet {
+                    java.util.concurrent.Callable<String> C = () -> "c";
+                    Object get();
+                    default String name() {
+                        return "quiet";
+                    }
+                }
+                """));
+        Path jar = ClassFixtures.jar(temp.resolve("foreign-jdk/lib.jar"), classes);
+
+        ClassPathTransform.Result result = ClassPathTransform.run(ClassPathTransform.Request.builder()
+                .classPath(List.of(jar)).outputDirectory(temp.resolve("foreign-jdk/out")).desugarLambdas(true)
+                .foreignPackages(Set.of("java.util.concurrent")).build());
+
+        ClassPathTransform.Result.Entry entry = entry(result, jar);
+        assertEquals(Map.of(UNCERTAIN, 3, LambdaDesugarer.Reason.SHAPE.label(), 1,
+                        LambdaDesugarer.Reason.INTERFACE_INIT.label(), 1), entry.sitesLeft(),
+                "an owner and two functional interfaces in the package, a functional interface that may be"
+                        + " serializable through it, and one whose initializer links a lambda of it");
+        assertEquals(1, entry.sitesRewritten(), "the site outside it is rewritten");
+    }
+
+    /**
      * The numbers each entry reports for the scenario, as Micronaut Runner's {@code transforms.txt} lines report
      * them: the sites rewritten, the classes rewritten and generated, the bridges, the nest fallbacks and the sites
      * left by reason.
