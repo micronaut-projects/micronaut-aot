@@ -10,4 +10,6 @@ diagnosticsReport:
   title: Diagnostics Report
 classPathTransform:
   title: Rewriting the Runtime Class Path
+serviceIndex:
+  title: Generating the Service Index
 repository: Repository

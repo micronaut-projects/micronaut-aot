@@ -55,6 +55,9 @@ import java.util.TreeSet;
  * holder, replacing entries of the same name, and deletes {@link Result#removals()}: a call that generates nothing
  * may still remove an earlier index from the holder. Callers do not run it for run tasks, tests or native images.</p>
  *
+ * <p>At run time, {@code -Dmicronaut.service.index.enabled=false} switches the index off, and
+ * {@code -Dmicronaut.service.index.validate=true} checks it against a scan of the class path.</p>
+ *
  * @since 3.2.0
  */
 @Internal
@@ -347,7 +350,8 @@ public final class ServiceIndexGenerator {
 
             /**
              * Adds the next entry of the class path the application runs with, and the file name it has when the
-             * application runs, which micronaut-core compares at run time: see {@link #entry(Path)}.
+             * application runs, which micronaut-core compares at run time: see {@link #entry(Path)}. A jar renamed
+             * after this step makes micronaut-core set the index aside, with a {@code WARN} on every start.
              *
              * @param file        a jar or a directory
              * @param runtimeName the entry's file name when the application runs, such as {@code application.jar}

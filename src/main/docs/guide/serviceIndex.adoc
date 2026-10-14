@@ -1,0 +1,49 @@
+The `micronaut-aot-service-index` module generates micronaut-core's service index for a packaged application at build time.
+It generates a `StaticOptimizations.Loader` that registers the names of the application's services, so that service loading at startup does not scan `META-INF/services` and `META-INF/micronaut`.
+It needs micronaut-core 5.3.0 or later in the application.
+
+WARNING: This module is internal to the Micronaut build plugins and Micronaut Runner: its API and the classes it generates may change in any release.
+
+Unlike the optimizers of Micronaut AOT, this module does not start the application, uses no `AOTContext`, and needs no AOT run.
+Its artifact, `io.micronaut.aot:micronaut-aot-service-index`, has no dependencies, and needs Java 25 to run.
+An application does not depend on it: its build plugin calls it.
+
+== How the build plugins call it
+
+`ServiceIndexGenerator` is `@Internal`: it is not an API for applications.
+For a JVM Docker image, whose `application.jar` names its libraries in the `Class-Path` of its manifest, a plugin calls it like this:
+
+[source,java]
+----
+ServiceIndexGenerator.Request.Builder request = ServiceIndexGenerator.Request.builder()
+        .entry(runnerJar, "application.jar")
+        .holder(runnerJar);
+// then each other Class-Path entry that exists at run time, in Class-Path order,
+// under its file name at run time: resources/ (or its JAR), then each JAR of libs/
+request.entry(resourcesDirectory, "resources");
+libraries.forEach(library -> request.entry(library, library.getFileName().toString()));
+ServiceIndexGenerator.Result result = ServiceIndexGenerator.generate(request.build());
+// whatever the status: write result.entries() into the holder, delete result.removals() from it,
+// and log result.message(), as a warning when the status is FAILED
+----
+
+* The entries are the class path in run-time order, as files of the machine that builds, under the file names they have when the application runs. A fat JAR is one entry.
+* The holder is the entry that receives the generated classes and the service file that registers them.
+* An entry given without a run-time name gives an index that lists no class path, which micronaut-core does not compare at run time. That is for a packaging that cannot know those names, such as Micronaut Runner's.
+
+The index is built by the application's own micronaut-core, in an isolated class loader, and the generated loader is checked against it before it is returned.
+When the index cannot describe the class path, for example because its micronaut-core is older than 5.3.0 or another entry already registers an index, the status is `STOOD_DOWN`; when something fails, it is `FAILED`.
+In both cases nothing is generated, an index that an earlier run left in the holder is removed, and the application scans its class path as it does without this module.
+`generate` does not throw for anything about its inputs.
+
+== Where it applies
+
+An index describes a class path that cannot change, so a plugin generates it last, on the class path as it ships: after Micronaut AOT, the merging of service files, Shadow or Shade, and any other rewrite of the jars, and before a JDK AOT cache is trained.
+It applies to fat JARs and to JVM Docker images.
+It never applies to run tasks, tests, IDE class paths, native images, or `build/classes` and `target/classes`: micronaut-core does not compare the content of a directory, so a bean compiled after the index was generated would not be found.
+
+== At run time
+
+* `-Dmicronaut.service.index.enabled=false` switches the index off: the application scans its class path.
+* `-Dmicronaut.service.index.validate=true` also scans the class path when the index is first used, and makes service lookups fail if the names or the class path differ from the index. It costs more than having no index, so it is for diagnosis and tests.
+* micronaut-core compares the file names and sizes of the class path with those the index lists. A JAR renamed after packaging, for example with `COPY build/libs/app-0.1-all.jar /app.jar`, or replaced by one of another size, makes it set the index aside with a `WARN` on every start. Nothing is missed, but the gain is lost.
