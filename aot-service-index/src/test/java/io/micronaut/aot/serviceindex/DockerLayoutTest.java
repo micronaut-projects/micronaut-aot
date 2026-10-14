@@ -41,20 +41,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code Class-Path} names {@code libs/*.jar}, {@code resources/} and {@code classes/}, started with
  * {@code java -jar}. The request is made of what the plugin has before it lays the image out: its runner jar under
  * the name {@code application.jar}, its resources directory under {@code resources} and the libraries under their own
- * names, in the order of the manifest, without {@code classes/}, which the image does not have.
+ * names, in the order of the manifest, without {@code classes/}, which the image does not have. With a JDK AOT cache,
+ * the plugin packages the resources as a jar instead, and the manifest names it and the libraries only.
  */
 class DockerLayoutTest {
 
     @TempDir
     Path temporary;
 
-    /** The two manifests the plugin writes. */
+    /** The manifests the plugin writes. */
     enum Layout {
         /** {@code runnerJar}: {@code resources/ classes/ libs/...}, with a resources layer. */
         RUNNER,
         /** {@code optimizedRunnerJitJar}: {@code libs/... resources/ classes/}, and no resources layer. */
-        OPTIMIZED
+        OPTIMIZED,
+        /**
+         * {@code runnerJar} with a JDK AOT cache, which takes no directory: {@code resources/<jar> libs/...}, with the
+         * resources layer holding that jar.
+         */
+        RUNNER_RESOURCES_JAR
     }
+
+    private static final String RESOURCES_JAR = "app-0.1-runner-resources.jar";
 
     @ParameterizedTest
     @EnumSource(Layout.class)
@@ -62,16 +70,18 @@ class DockerLayoutTest {
         Path build = temporary.resolve("build");
         List<Path> libraries = new ArrayList<>(Fixtures.libraries());
         libraries.add(Fixtures.jar(build.resolve("dependencies/fixture-lib-1.0.jar"), Fixtures.library()));
-        Path resources = Fixtures.directory(build.resolve("resources/main"),
-                Fixtures.content().services(FAREWELL, "fixture.ResourceBye"));
+        Fixtures.Content resourceContent = Fixtures.content().services(FAREWELL, "fixture.ResourceBye");
+        Path resources = layout == Layout.RUNNER_RESOURCES_JAR
+                ? Fixtures.jar(build.resolve("libs").resolve(RESOURCES_JAR), resourceContent)
+                : Fixtures.directory(build.resolve("resources/main"), resourceContent);
         List<String> classPath = new ArrayList<>();
         for (Path library : libraries) {
             classPath.add("libs/" + library.getFileName());
         }
-        if (layout == Layout.RUNNER) {
-            classPath.addAll(0, List.of("resources/", "classes/"));
-        } else {
-            classPath.addAll(List.of("resources/", "classes/"));
+        switch (layout) {
+            case RUNNER -> classPath.addAll(0, List.of("resources/", "classes/"));
+            case OPTIMIZED -> classPath.addAll(List.of("resources/", "classes/"));
+            case RUNNER_RESOURCES_JAR -> classPath.addFirst("resources/" + RESOURCES_JAR);
         }
         Fixtures.Content runner = Fixtures.application().probe()
                 .manifest(Map.of("Main-Class", Fixtures.PROBE_CLASS, "Class-Path", String.join(" ", classPath)));
@@ -79,13 +89,15 @@ class DockerLayoutTest {
 
         Run scan = Fixtures.javaJar(image(layout, runnerJar, resources, libraries), List.of(VALIDATE), LOOKUPS);
         assertTrue(scan.lookups().contains("fixture.LibraryGreeting"), scan::out);
-        assertEquals(layout == Layout.RUNNER, scan.lookups().contains("fixture.ResourceBye"), scan::out);
+        assertEquals(layout != Layout.OPTIMIZED, scan.lookups().contains("fixture.ResourceBye"), scan::out);
 
         ServiceIndexGenerator.Request.Builder request = ServiceIndexGenerator.Request.builder()
                 .entry(runnerJar, "application.jar")
                 .holder(runnerJar);
         if (layout == Layout.RUNNER) {
             request.entry(resources, "resources");
+        } else if (layout == Layout.RUNNER_RESOURCES_JAR) {
+            request.entry(resources, RESOURCES_JAR);
         }
         for (Path library : libraries) {
             request.entry(library, library.getFileName().toString());
@@ -96,7 +108,7 @@ class DockerLayoutTest {
 
         assertEquals(scan.lookups(), indexed.lookups());
         assertTrue(indexed.usesTheIndex(), indexed::err);
-        int named = libraries.size() + (layout == Layout.RUNNER ? 1 : 0);
+        int named = libraries.size() + (layout == Layout.OPTIMIZED ? 0 : 1);
         assertTrue(indexed.err().contains("(class path compared: the 1 entry of java.class.path and the " + named
                 + " entries of the Class-Path of the manifest of application.jar, names validated against a scan)"),
                 indexed::err);
@@ -110,7 +122,10 @@ class DockerLayoutTest {
         for (Path library : libraries) {
             Files.copy(library, image.resolve("libs").resolve(library.getFileName()));
         }
-        if (layout == Layout.RUNNER) {
+        if (layout == Layout.RUNNER_RESOURCES_JAR) {
+            Files.createDirectories(image.resolve("resources"));
+            Files.copy(resources, image.resolve("resources").resolve(RESOURCES_JAR));
+        } else if (layout == Layout.RUNNER) {
             try (Stream<Path> files = Files.walk(resources)) {
                 for (Path file : files.toList()) {
                     Path target = image.resolve("resources").resolve(resources.relativize(file).toString());
