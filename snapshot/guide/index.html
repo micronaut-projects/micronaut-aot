@@ -60,7 +60,9 @@
                                 
                                 <div class="toc-item" style="margin-left:0"><a href="#classPathTransform"><strong>7</strong><span>Rewriting the Runtime Class Path</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>8</strong><span>Repository</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#serviceIndex"><strong>8</strong><span>Generating the Service Index</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>9</strong><span>Repository</span></a></div>
                                 
                             </div>
                         </div>
@@ -105,7 +107,9 @@
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-classPathTransform"><a href="#classPathTransform"><strong>7</strong><span>Rewriting the Runtime Class Path</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>8</strong><span>Repository</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-serviceIndex"><a href="#serviceIndex"><strong>8</strong><span>Generating the Service Index</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>9</strong><span>Repository</span></a></div>
         
         </div>
     </div>
@@ -1670,7 +1674,109 @@ A plugin documents how to silence the warning: turn its option off.</p>
 </div>
 </div>
 
-<h1 id="repository"><a class="anchor" href="#repository"></a>8 Repository</h1>
+<h1 id="serviceIndex"><a class="anchor" href="#serviceIndex"></a>8 Generating the Service Index</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.2.x/src/main/docs/guide/serviceIndex.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>The <code>micronaut-aot-service-index</code> module generates micronaut-core&#8217;s service index for a packaged application at build time.
+It generates a <code>StaticOptimizations.Loader</code> that registers the names of the application&#8217;s services, so that service loading at startup does not scan <code>META-INF/services</code> and <code>META-INF/micronaut</code>.
+It needs micronaut-core 5.3.0 or later in the application.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This module is internal to the Micronaut build plugins and Micronaut Runner: its API and the classes it generates may change in any release.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Unlike the optimizers of Micronaut AOT, this module does not start the application, uses no <code>AOTContext</code>, and needs no AOT run.
+Its artifact, <code>io.micronaut.aot:micronaut-aot-service-index</code>, has no dependencies, and needs Java 25 to run.
+An application does not depend on it: its build plugin calls it.</p>
+</div>
+<div class="sect1">
+<h2 id="_how_the_build_plugins_call_it">How the build plugins call it</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>ServiceIndexGenerator</code> is <code>@Internal</code>: it is not an API for applications.
+For a JVM Docker image, whose <code>application.jar</code> names its libraries in the <code>Class-Path</code> of its manifest, a plugin calls it like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">ServiceIndexGenerator.Request.Builder request = ServiceIndexGenerator.Request.builder()
+        .entry(runnerJar, "application.jar")
+        .holder(runnerJar);
+// then each other Class-Path entry that exists at run time, in Class-Path order,
+// under its file name at run time: resources/ (or its JAR), then each JAR of libs/
+request.entry(resourcesDirectory, "resources");
+libraries.forEach(library -&gt; request.entry(library, library.getFileName().toString()));
+ServiceIndexGenerator.Result result = ServiceIndexGenerator.generate(request.build());
+// whatever the status: write result.entries() into the holder, delete result.removals() from it,
+// and log result.message(), as a warning when the status is FAILED</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The entries are the class path in run-time order, as files of the machine that builds, under the file names they have when the application runs. A fat JAR is one entry.</p>
+</li>
+<li>
+<p>The holder is the entry that receives the generated classes and the service file that registers them.</p>
+</li>
+<li>
+<p>An entry given without a run-time name gives an index that lists no class path, which micronaut-core does not compare at run time. That is for a packaging that cannot know those names, such as Micronaut Runner&#8217;s.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The index is built by the application&#8217;s own micronaut-core, in an isolated class loader, and the generated loader is checked against it before it is returned.
+When the index cannot describe the class path, for example because its micronaut-core is older than 5.3.0 or another entry already registers an index, the status is <code>STOOD_DOWN</code>; when something fails, it is <code>FAILED</code>.
+In both cases nothing is generated, an index that an earlier run left in the holder is removed, and the application scans its class path as it does without this module.
+<code>generate</code> does not throw for anything about its inputs.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_where_it_applies">Where it applies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An index describes a class path that cannot change, so a plugin generates it last, on the class path as it ships: after Micronaut AOT, the merging of service files, Shadow or Shade, and any other rewrite of the jars, and before a JDK AOT cache is trained.
+It applies to fat JARs and to JVM Docker images.
+It never applies to run tasks, tests, IDE class paths, native images, or <code>build/classes</code> and <code>target/classes</code>: micronaut-core does not compare the content of a directory, so a bean compiled after the index was generated would not be found.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_at_run_time">At run time</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><code>-Dmicronaut.service.index.enabled=false</code> switches the index off: the application scans its class path.</p>
+</li>
+<li>
+<p><code>-Dmicronaut.service.index.validate=true</code> also scans the class path when the index is first used, and makes service lookups fail if the names or the class path differ from the index. It costs more than having no index, so it is for diagnosis and tests.</p>
+</li>
+<li>
+<p>micronaut-core compares the file names and sizes of the class path with those the index lists. A JAR renamed after packaging, for example with <code>COPY build/libs/app-0.1-all.jar /app.jar</code>, or replaced by one of another size, makes it set the index aside with a <code>WARN</code> on every start. Nothing is missed, but the gain is lost.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+<h1 id="repository"><a class="anchor" href="#repository"></a>9 Repository</h1>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-aot/edit/3.2.x/src/main/docs/guide/repository.adoc"'>

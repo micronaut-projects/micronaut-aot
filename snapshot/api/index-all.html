@@ -147,11 +147,19 @@ have no nestmates, so that a generated class can reach a private lambda body.</d
 <dd>
 <div class="block">Builds the request.</div>
 </dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html#build()" class="member-name-link">build()</a> - Method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Request.Builder</a></dt>
+<dd>
+<div class="block">Builds the request.</div>
+</dd>
 <dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.html#builder()" class="member-name-link">builder()</a> - Static method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Request.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Request</a></dt>
 <dd>
 <div class="block">A builder for a request.</div>
 </dd>
 <dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.html#builder()" class="member-name-link">builder()</a> - Static method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Request.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Request</a></dt>
+<dd>
+<div class="block">Starts a request.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.html#builder()" class="member-name-link">builder()</a> - Static method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Request</a></dt>
 <dd>
 <div class="block">Starts a request.</div>
 </dd>
@@ -362,6 +370,23 @@ lambdas are desugared, one per entry that holds a lambda call site, whether it w
 <div class="block">The generated entries: the class files and the
 <code>META-INF/services/ch.qos.logback.classic.spi.Configurator</code> file, by entry name, in order.</div>
 </dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html#entries()" class="member-name-link">entries()</a> - Method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Result</a></dt>
+<dd>
+<div class="block">The entries to write into the holder, by entry name, in order: the classes of the package
+<code>io.micronaut.aot.serviceindex.generated</code>, and the whole new
+<code>META-INF/services/io.micronaut.core.optim.StaticOptimizations$Loader</code> file, which names the generated
+loader first, then the lines the holder had, without an earlier index loader's.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html#entry(java.nio.file.Path)" class="member-name-link">entry(Path)</a> - Method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Request.Builder</a></dt>
+<dd>
+<div class="block">Adds the next entry of the class path the application runs with, without a runtime name: the index then
+lists no class path, and micronaut-core does not compare it at run time.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html#entry(java.nio.file.Path,java.lang.String)" class="member-name-link">entry(Path, String)</a> - Method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Request.Builder</a></dt>
+<dd>
+<div class="block">Adds the next entry of the class path the application runs with, and the file name it has when the
+application runs, which micronaut-core compares at run time: see <a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html#entry(java.nio.file.Path)"><code>ServiceIndexGenerator.Request.Builder.entry(Path)</code></a>.</div>
+</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" class="type-name-link" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
 <dd>
 <div class="block">A code generator which is responsible for precomputing the Micronaut property
@@ -398,6 +423,11 @@ a configuration file which includes all entries.</div>
 <div class="block">Nothing was generated because something went wrong: a generated name is already taken, the output of
 an earlier call is still in the application output, the class path could not be read, or the front end
 or the emitter failed.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html#FAILED" class="member-name-link">FAILED</a> - Enum constant in enum class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html" title="enum class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Status</a></dt>
+<dd>
+<div class="block">Nothing was generated because something went wrong: an entry is missing or cannot be read, a generated
+name is taken, or micronaut-core, the emitter or the check of the generated loader failed.</div>
 </dd>
 <dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#fallbacks()" class="member-name-link">fallbacks()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
 <dd>
@@ -461,9 +491,17 @@ class path, for a launcher whose own loader defines these packages first, such a
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#generate(io.micronaut.aot.core.AOTContext)" class="member-name-link">generate(AOTContext)</a> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.html#generate(io.micronaut.aot.serviceindex.ServiceIndexGenerator.Request)" class="member-name-link">generate(ServiceIndexGenerator.Request)</a> - Static method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator</a></dt>
+<dd>
+<div class="block">Generates the service index of a class path, or says why it does not.</div>
+</dd>
 <dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html#GENERATED" class="member-name-link">GENERATED</a> - Enum constant in enum class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a></dt>
 <dd>
 <div class="block">A configurator was generated.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html#GENERATED" class="member-name-link">GENERATED</a> - Enum constant in enum class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html" title="enum class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Status</a></dt>
+<dd>
+<div class="block">An index was generated.</div>
 </dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html#GENERATED_CLASS" class="member-name-link">GENERATED_CLASS</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/NettyPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">NettyPropertiesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
@@ -602,6 +640,11 @@ the optimized entry point at build time.</div>
 </dl>
 <h2 class="title" id="I:H">H</h2>
 <dl class="index">
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html#holder(java.nio.file.Path)" class="member-name-link">holder(Path)</a> - Method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Request.Builder</a></dt>
+<dd>
+<div class="block">The entry of the class path that the caller writes the <a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html" title="class in io.micronaut.aot.serviceindex"><code>ServiceIndexGenerator.Result</code></a> into: the application's jar, or
+its class directory.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html#HTML_REPORT_FILE_NAME" class="member-name-link">HTML_REPORT_FILE_NAME</a> - Static variable in class io.micronaut.aot.core.report.<a href="io/micronaut/aot/core/report/AotDiagnosticReportWriter.html" title="class in io.micronaut.aot.core.report">AotDiagnosticReportWriter</a></dt>
 <dd>
 <div class="block">The fixed HTML diagnostics report file name.</div>
@@ -658,6 +701,8 @@ the optimized entry point at build time.</div>
 <dt><a href="io/micronaut/aot/internal/package-summary.html">io.micronaut.aot.internal</a> - package io.micronaut.aot.internal</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/logback/package-summary.html">io.micronaut.aot.logback</a> - package io.micronaut.aot.logback</dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/serviceindex/package-summary.html">io.micronaut.aot.serviceindex</a> - package io.micronaut.aot.serviceindex</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a> - package io.micronaut.aot.std.sourcegen</dt>
 <dd>&nbsp;</dd>
@@ -787,6 +832,10 @@ set of values at build time.</div>
 <dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html#message()" class="member-name-link">message()</a> - Method in class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Result.html" title="class in io.micronaut.aot.logback">LogbackPrecompiler.Result</a></dt>
 <dd>
 <div class="block">One line for the caller to log: what was compiled, or why nothing was.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html#message()" class="member-name-link">message()</a> - Method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Result</a></dt>
+<dd>
+<div class="block">One line for the caller to log: what was generated, or why nothing was.</div>
 </dd>
 <dt><a href="io/micronaut/aot/core/config/MetadataUtils.html" class="type-name-link" title="class in io.micronaut.aot.core.config">MetadataUtils</a> - Class in <a href="io/micronaut/aot/core/config/package-summary.html">io.micronaut.aot.core.config</a></dt>
 <dd>
@@ -1009,6 +1058,11 @@ the optimized binary is loaded.</div>
 <dd>
 <div class="block">Registers a static optimization method.</div>
 </dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html#removals()" class="member-name-link">removals()</a> - Method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Result</a></dt>
+<dd>
+<div class="block">The entries to delete from the holder: what an earlier generation left in the package
+<code>io.micronaut.aot.serviceindex.generated</code> and <a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html#entries()"><code>ServiceIndexGenerator.Result.entries()</code></a> does not replace.</div>
+</dd>
 <dt><a href="io/micronaut/aot/ConfigKeys.html#REPORT_ENABLED" class="member-name-link">REPORT_ENABLED</a> - Static variable in interface io.micronaut.aot.<a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/ConfigKeys.html#REPORT_FILE_NAME" class="member-name-link">REPORT_FILE_NAME</a> - Static variable in interface io.micronaut.aot.<a href="io/micronaut/aot/ConfigKeys.html" title="interface in io.micronaut.aot">ConfigKeys</a></dt>
@@ -1062,6 +1116,30 @@ the optimized binary is loaded.</div>
 </dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/GenericPropertySourceGenerator.html#SERVICE_LOADER_EXCLUDE_OPTION" class="member-name-link">SERVICE_LOADER_EXCLUDE_OPTION</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/GenericPropertySourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">GenericPropertySourceGenerator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.html" class="type-name-link" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator</a> - Class in <a href="io/micronaut/aot/serviceindex/package-summary.html">io.micronaut.aot.serviceindex</a></dt>
+<dd>
+<div class="block">Generates micronaut-core's service index for a packaged application: a <code>StaticOptimizations.Loader</code> that
+registers a <code>ServiceIndex</code> of the application's class path, so that service loading at run time does not
+scan <code>META-INF/services</code> and <code>META-INF/micronaut</code>.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.html" class="type-name-link" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Request</a> - Class in <a href="io/micronaut/aot/serviceindex/package-summary.html">io.micronaut.aot.serviceindex</a></dt>
+<dd>
+<div class="block">The class path an index is generated for: plain paths, no build tool type.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.Builder.html" class="type-name-link" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Request.Builder</a> - Class in <a href="io/micronaut/aot/serviceindex/package-summary.html">io.micronaut.aot.serviceindex</a></dt>
+<dd>
+<div class="block">Builds a <a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Request.html" title="class in io.micronaut.aot.serviceindex"><code>ServiceIndexGenerator.Request</code></a>.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html" class="type-name-link" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Result</a> - Class in <a href="io/micronaut/aot/serviceindex/package-summary.html">io.micronaut.aot.serviceindex</a></dt>
+<dd>
+<div class="block">The outcome of one generation: its <a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html#status()"><code>ServiceIndexGenerator.Result.status()</code></a>, one <a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html#message()"><code>ServiceIndexGenerator.Result.message()</code></a> for the caller to log, the
+<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html#entries()"><code>ServiceIndexGenerator.Result.entries()</code></a> to write into the holder and the <a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html#removals()"><code>ServiceIndexGenerator.Result.removals()</code></a> to delete from it, which the caller
+applies whatever the status.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html" class="type-name-link" title="enum class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Status</a> - Enum Class in <a href="io/micronaut/aot/serviceindex/package-summary.html">io.micronaut.aot.serviceindex</a></dt>
+<dd>
+<div class="block">What a generation did.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html#simpleNameOf(java.lang.String)" class="member-name-link">simpleNameOf(String)</a> - Static method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/AbstractCodeGenerator.html" title="class in io.micronaut.aot.core.codegen">AbstractCodeGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#sitesLeft()" class="member-name-link">sitesLeft()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
@@ -1095,10 +1173,19 @@ order according to their dependencies.</div>
 <dd>
 <div class="block">What happened.</div>
 </dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html#status()" class="member-name-link">status()</a> - Method in class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Result.html" title="class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Result</a></dt>
+<dd>
+<div class="block">What happened.</div>
+</dd>
 <dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html#STOOD_DOWN" class="member-name-link">STOOD_DOWN</a> - Enum constant in enum class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a></dt>
 <dd>
 <div class="block">Nothing was generated because the result could not be proven to match Joran's, which is expected for
 many applications; Logback configures itself with Joran at startup.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html#STOOD_DOWN" class="member-name-link">STOOD_DOWN</a> - Enum constant in enum class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html" title="enum class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Status</a></dt>
+<dd>
+<div class="block">Nothing was generated because the class path is not one the index can describe, which is expected for some
+applications: for example, its micronaut-core has no service index.</div>
 </dd>
 <dt><a href="io/micronaut/aot/internal/StreamHelper.html" class="type-name-link" title="class in io.micronaut.aot.internal">StreamHelper</a> - Class in <a href="io/micronaut/aot/internal/package-summary.html">io.micronaut.aot.internal</a></dt>
 <dd>
@@ -1185,12 +1272,21 @@ use in properties files.</div>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html" title="enum class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Status</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
 <dt><a href="io/micronaut/aot/core/Runtime.html#values()" class="member-name-link">values()</a> - Static method in enum class io.micronaut.aot.core.<a href="io/micronaut/aot/core/Runtime.html" title="enum class in io.micronaut.aot.core">Runtime</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
 </dd>
 <dt><a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html#values()" class="member-name-link">values()</a> - Static method in enum class io.micronaut.aot.logback.<a href="io/micronaut/aot/logback/LogbackPrecompiler.Status.html" title="enum class in io.micronaut.aot.logback">LogbackPrecompiler.Status</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
+</dd>
+<dt><a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html#values()" class="member-name-link">values()</a> - Static method in enum class io.micronaut.aot.serviceindex.<a href="io/micronaut/aot/serviceindex/ServiceIndexGenerator.Status.html" title="enum class in io.micronaut.aot.serviceindex">ServiceIndexGenerator.Status</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
