@@ -59,7 +59,8 @@ public class NettyPropertiesSourceGenerator extends AbstractCodeGenerator {
     public static final String GENERATED_CLASS = "NettyPropertiesAOTContextConfigurer";
 
     public static final String ID = "netty.properties";
-    public static final String DESCRIPTION = "Defines some Netty system properties when starting the application which optimize startup times.";
+    public static final String DESCRIPTION = "Defines some Netty system properties when starting the application which optimize startup times. " +
+        "A property that is already set, for example with -D, is left unchanged.";
 
     public static final String MACHINE_ID = "netty.machine.id";
     public static final String MACHINE_ID_DESCRIPTION = "The machine id used by Netty. By default, generates a random value at runtime. Set it to a fixed MAC address to override, or use the value 'netty' to disable the optimization and get it at runtime.";
@@ -119,7 +120,11 @@ public class NettyPropertiesSourceGenerator extends AbstractCodeGenerator {
         }
     }
 
+    /**
+     * Defines the system property, unless the user already set it (for example with {@code -D}).
+     */
     private static void defineSystemProperty(TypeSpec.Builder clazz, MethodSpec.Builder configure, String name, String value, Supplier<MethodSpec> randomizer) {
+        configure.beginControlFlow("if (System.getProperty($S) == null)", name);
         if (RANDOM_VALUE.equals(value)) {
             MethodSpec methodSpec = randomizer.get();
             clazz.addMethod(methodSpec);
@@ -127,6 +132,7 @@ public class NettyPropertiesSourceGenerator extends AbstractCodeGenerator {
         } else {
             configure.addStatement("System.setProperty($S, $S)", name, value);
         }
+        configure.endControlFlow();
     }
 
     private static String pidOf(AOTContext context) {

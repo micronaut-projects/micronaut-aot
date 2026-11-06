@@ -1,0 +1,18 @@
+<configuration packagingData="true">
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
+    <logger name="com.example.before" level="debug" additivity="False">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%-5level [%logger] %msg%n</pattern>
+            <immediateFlush>false</immediateFlush>
+        </encoder>
+    </appender>
+    <logger name="com.example.null" level="null"/>
+    <logger name="com.example.additive" additivity="maybe"/>
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
