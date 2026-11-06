@@ -1,0 +1,13 @@
+<configuration>
+    <turboFilter class="ch.qos.logback.classic.turbo.MDCFilter">
+        <MDCKey>user</MDCKey>
+        <Value>admin</Value>
+        <OnMatch>ACCEPT</OnMatch>
+    </turboFilter>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder><pattern>%msg%n</pattern></encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
