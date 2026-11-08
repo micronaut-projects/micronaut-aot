@@ -68,7 +68,22 @@ public final class ServiceIndexProbe {
             Collections.sort(found);
             out.append(arg).append(' ').append(found).append('\n');
         }
+        logCheck(classLoader);
         System.out.print(out);
         System.out.println(END);
+    }
+
+    /**
+     * Logs the index check as the application context does when it starts. Micronaut core before 5.3 has no
+     * such method, because its lookups log the check themselves.
+     */
+    private static void logCheck(ClassLoader classLoader) throws Exception {
+        try {
+            Class.forName("io.micronaut.core.io.service.ServiceIndex", false, classLoader)
+                    .getMethod("logCheck")
+                    .invoke(null);
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+            // Micronaut core before 5.3
+        }
     }
 }
