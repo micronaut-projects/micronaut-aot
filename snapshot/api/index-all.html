@@ -29,6 +29,7 @@ loadScripts(document, 'script');</script>
 <ul id="navbar-top-firstrow" class="nav-list" title="Navigation">
 <li><a href="index.html">Overview</a></li>
 <li><a href="overview-tree.html">Tree</a></li>
+<li><a href="deprecated-list.html">Deprecated</a></li>
 <li class="nav-bar-cell1-rev">Index</li>
 <li><a href="search.html">Search</a></li>
 <li><a href="help-doc.html#index">Help</a></li>
@@ -174,11 +175,18 @@ have no nestmates, so that a generated class can reach a private lambda body.</d
 <dl class="index">
 <dt><a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html" class="type-name-link" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a> - Class in <a href="io/micronaut/aot/std/sourcegen/package-summary.html">io.micronaut.aot.std.sourcegen</a></dt>
 <dd>
-<div class="block">Generates the code used to enable environment variables and system
-properties caching in Micronaut.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">On the JVM, this optimization has had no effect since Micronaut 5.0:
+<code>CachedEnvironment</code> reads the caching flag when it is initialized, which
+happens before the generated application context configurer is loaded. In native
+images the flag is set at image build time, so environment variables and system
+properties are still frozen at startup there.</div>
+</div>
 </dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html#%3Cinit%3E()" class="member-name-link">CachedEnvironmentSourceGenerator()</a> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html#classesDesugared()" class="member-name-link">classesDesugared()</a> - Method in class io.micronaut.aot.bytecode.<a href="io/micronaut/aot/bytecode/ClassPathTransform.Result.Entry.html" title="class in io.micronaut.aot.bytecode">ClassPathTransform.Result.Entry</a></dt>
 <dd>
 <div class="block">The existing classes that desugaring rewrote: hosts whose call sites it rewrote, and nest hosts whose
@@ -283,8 +291,8 @@ customize the application context.</div>
 <dd>
 <div class="block">This code generator is responsible for taking the result
 of the environment deduction, which is the set of active
-environment names and the package names, and inject is
-via a custom application context configurer.</div>
+environment names, and inject it via a custom application
+context configurer.</div>
 </dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#%3Cinit%3E()" class="member-name-link">DeduceEnvironmentSourceGenerator()</a> - Constructor for class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
@@ -324,7 +332,9 @@ be executed before this generator is called.</div>
 <div class="block">Returns a description of this configuration option.</div>
 </dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html#DESCRIPTION" class="member-name-link">DESCRIPTION</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#DESCRIPTION" class="member-name-link">DESCRIPTION</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#DESCRIPTION" class="member-name-link">DESCRIPTION</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
@@ -472,7 +482,9 @@ class path, for a launcher whose own loader defines these packages first, such a
 <dt><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html#generate(io.micronaut.aot.core.AOTContext)" class="member-name-link">generate(AOTContext)</a> - Method in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html#generate(io.micronaut.aot.core.AOTContext)" class="member-name-link">generate(AOTContext)</a> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#generate(io.micronaut.aot.core.AOTContext)" class="member-name-link">generate(AOTContext)</a> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html#generate(io.micronaut.aot.core.AOTContext)" class="member-name-link">generate(AOTContext)</a> - Method in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/EnvironmentPropertiesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">EnvironmentPropertiesSourceGenerator</a></dt>
@@ -659,7 +671,9 @@ its class directory.</div>
 <dt><a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html#ID" class="member-name-link">ID</a> - Static variable in class io.micronaut.aot.core.codegen.<a href="io/micronaut/aot/core/codegen/ApplicationContextConfigurerGenerator.html" title="class in io.micronaut.aot.core.codegen">ApplicationContextConfigurerGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html#ID" class="member-name-link">ID</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/CachedEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">CachedEnvironmentSourceGenerator</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html#ID" class="member-name-link">ID</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/ConstantPropertySourcesSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">ConstantPropertySourcesSourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html#ID" class="member-name-link">ID</a> - Static variable in class io.micronaut.aot.std.sourcegen.<a href="io/micronaut/aot/std/sourcegen/DeduceEnvironmentSourceGenerator.html" title="class in io.micronaut.aot.std.sourcegen">DeduceEnvironmentSourceGenerator</a></dt>
