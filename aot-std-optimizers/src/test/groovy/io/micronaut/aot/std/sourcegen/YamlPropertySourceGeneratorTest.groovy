@@ -57,7 +57,7 @@ class YamlPropertySourceGeneratorTest extends AbstractSourceGeneratorSpec {
                 @Generated
                 public class TestConfigYamlStaticPropertySource extends MapPropertySource {
                   TestConfigYamlStaticPropertySource() {
-                    super("testConfig", new HashMap() {{
+                    super("test-config", new HashMap() {{
                         put("my.prop1", "val1");
                         put("my.prop2", "val2");
                         put("micronaut.application.name", "demoApp");

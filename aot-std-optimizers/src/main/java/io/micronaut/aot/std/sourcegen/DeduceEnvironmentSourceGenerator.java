@@ -35,10 +35,14 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 /**
  * This code generator is responsible for taking the result
  * of the environment deduction, which is the set of active
- * environment names and the package names, and inject is
- * via a custom application context configurer. The resulting
- * class will effectively disable environment deduction, so
- * it will be done at build time instead of run time.
+ * environment names, and inject it via a custom application
+ * context configurer. The resulting class will effectively
+ * disable environment deduction, so it will be done at build
+ * time instead of run time.
+ * <p>
+ * The package names are not injected: at build time they are
+ * deduced from the AOT tool's own call stack, not from the
+ * application, and package deduction still runs at run time.
  */
 @AOTModule(
     id = DeduceEnvironmentSourceGenerator.ID,
@@ -57,16 +61,15 @@ public class DeduceEnvironmentSourceGenerator extends AbstractCodeGenerator {
         if (contextConfiguration instanceof ApplicationContextConfiguration applicationContextConfiguration) {
             boolean deduceEnvironments = applicationContextConfiguration.getDeduceEnvironments().orElse(true);
             if (deduceEnvironments) {
-                Collection<String> packages = analyzer.getApplicationContext().getEnvironment().getPackages();
                 context.registerGeneratedSourceFile(
-                    context.javaFile(buildApplicationContextConfigurer(environmentNames, packages))
+                    context.javaFile(buildApplicationContextConfigurer(environmentNames))
                 );
                 context.registerServiceImplementation(ApplicationContextConfigurer.class, DEDUCED_ENVIRONMENT_CONFIGURER);
             }
         }
     }
 
-    private TypeSpec buildApplicationContextConfigurer(Set<String> environmentNames, Collection<String> packages) {
+    private TypeSpec buildApplicationContextConfigurer(Set<String> environmentNames) {
         MethodSpec.Builder bodyBuilder = MethodSpec.methodBuilder("configure")
             .addModifiers(PUBLIC)
             .addAnnotation(Override.class)
@@ -74,9 +77,6 @@ public class DeduceEnvironmentSourceGenerator extends AbstractCodeGenerator {
         bodyBuilder.addStatement("builder.deduceEnvironment(false)");
         if (!environmentNames.isEmpty()) {
             bodyBuilder.addStatement("builder.defaultEnvironments($L)", toQuotedStringList(environmentNames));
-        }
-        if (!packages.isEmpty()) {
-            bodyBuilder.addStatement("builder.packages($L)", toQuotedStringList(packages));
         }
         return TypeSpec.classBuilder(DEDUCED_ENVIRONMENT_CONFIGURER)
             .addSuperinterface(ApplicationContextConfigurer.class)

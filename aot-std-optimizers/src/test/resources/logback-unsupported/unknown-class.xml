@@ -1,0 +1,6 @@
+<configuration>
+    <appender name="STDOUT" class="com.example.MissingAppender"/>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
